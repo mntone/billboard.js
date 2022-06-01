@@ -16,7 +16,8 @@ import {
 type TExportOption = TSize & {
 	preserveAspectRatio: boolean,
 	preserveFontStyle: boolean,
-	mimeType: string
+	mimeType: string,
+	scale: number
 };
 
 type TSize = {x?: number, y?: number, width: number, height: number};
@@ -257,6 +258,7 @@ export default {
 	 * @param {string} [option.mimeType="image/png"] The desired output image format. (ex. 'image/png' for png, 'image/jpeg' for jpeg format)
 	 * @param {number} [option.width={currentWidth}] width
 	 * @param {number} [option.height={currentHeigth}] height
+	 * @param {number} [option.scale=1] scale
 	 * @param {boolean} [option.preserveAspectRatio=true] Preserve aspect ratio on given size
 	 * @param {boolean} [option.preserveFontStyle=false] Preserve font style(font-family).<br>
 	 * **NOTE:**
@@ -286,6 +288,7 @@ export default {
 	 *    {
 	 *      width: 800,
 	 *      height: 600,
+	 *      scale: 1,
 	 *      preserveAspectRatio: false,
 	 *      preserveFontStyle: false,
 	 *      mimeType: "image/png"
@@ -307,6 +310,7 @@ export default {
 		const opt = mergeObj(Object.create(null), {
 			width,
 			height,
+			scale: 1,
 			preserveAspectRatio: true,
 			preserveFontStyle: false,
 			mimeType: "image/png"
@@ -330,8 +334,9 @@ export default {
 				const canvas = document.createElement("canvas");
 				const ctx = canvas.getContext("2d");
 
-				canvas.width = opt.width || width;
-				canvas.height = opt.height || height;
+				canvas.width = Math.ceil(opt.scale * (opt.width || width));
+				canvas.height = Math.ceil(opt.scale * (opt.height || height));
+				ctx.scale(opt.scale, opt.scale);
 				ctx.drawImage(img, 0, 0);
 
 				if (glyph.length) {
