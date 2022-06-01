@@ -82,6 +82,7 @@ export default {
 	 * @param {string} [option.mimeType="image/png"] The desired output image format. (ex. 'image/png' for png, 'image/jpeg' for jpeg format)
 	 * @param {number} [option.width={currentWidth}] width
 	 * @param {number} [option.height={currentHeigth}] height
+	 * @param {number} [option.scale=1] scale
 	 * @param {boolean} [option.preserveAspectRatio=true] Preserve aspect ratio on given size
 	 * @param {Function} [callback] The callback to be invoked when export is ready.
 	 * @returns {string} dataURI
@@ -105,6 +106,7 @@ export default {
 	 *    {
 	 *      width: 800,
 	 *      height: 600,
+	 *      scale: 1,
 	 *      preserveAspectRatio: false,
 	 *      mimeType: "image/png"
 	 *    },
@@ -118,6 +120,7 @@ export default {
 		const opt = mergeObj({
 			width,
 			height,
+			scale: 1,
 			preserveAspectRatio: true,
 			mimeType: "image/png"
 		}, option) as ExportOption;
@@ -132,8 +135,9 @@ export default {
 				const canvas = document.createElement("canvas");
 				const ctx = canvas.getContext("2d");
 
-				canvas.width = opt.width || width;
-				canvas.height = opt.height || height;
+				canvas.width = Math.ceil(opts.scale * (opt.width || width));
+				canvas.height = Math.ceil(opts.scale * (opt.height || height));
+				ctx.scale(opts.scale, opts.scale);
 				ctx.drawImage(img, 0, 0);
 
 				callback.bind(this)(canvas.toDataURL(opt.mimeType));
