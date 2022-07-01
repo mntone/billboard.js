@@ -116,17 +116,32 @@ export default class TableView extends Plugin {
 		let tbody = "";
 		const rows: (number|string)[][] = [];
 
-		dataToShow.forEach(v => {
+		dataToShow.forEach((v, k: number) => {
 			thead += tplProcess(tpl.thead, {title: v.id});
 
 			// make up value rows
-			v.values.forEach((d, i: number) => {
-				if (!rows[i]) {
-					rows[i] = [d.x];
+			let j = 0;
+			for (let i = 0, d; (d = v.values[i]); j++) {
+				if (!rows[j]) {
+					rows.push([d.x, ...Array(k).fill(""), d.value]);
+					i++;
+				} else {
+					let x = rows[j][0];
+					if (x > d.x) {
+						rows.splice(j, 0, [d.x, ...Array(k).fill(""), d.value]);
+						i++;
+					} else if (x === d.x) {
+						rows[j].push(d.value);
+						i++;
+					} else {
+						rows[j].push("");
+					}
 				}
-
-				rows[i].push(d.value);
-			});
+			}
+			while (j < rows.length) {
+				rows[j].push("");
+				j++;
+			}
 		});
 
 		rows.forEach(v => {
@@ -139,13 +154,12 @@ export default class TableView extends Plugin {
 			}</tr>`;
 		});
 
-		const rx = /<[^>]+><\/[^>]+>/g;
 		const r = tplProcess(tpl.body, {
 			...config,
 			title: config.title || $$.config.title_text || "",
 			thead,
 			tbody
-		}).replace(rx, "");
+		});
 
 		element.innerHTML = r;
 	}

@@ -22,9 +22,17 @@ describe("PLUGIN: TABLE-VIEW", () => {
 	};
 	const args = {
 		data: {
+			xs: {
+				data1: "x1",
+				data2: "x2",
+				data3: "x3"
+			},
 			columns: [
+				["x1", 0, 1, 2],
+				["x2", 0, 1, 2, 3],
+				["x3", 0, 1, 3],
 				["data1", 30, 20, 50],
-				["data2", 200, 130, 90],
+				["data2", 200, 130, 90, 240],
 				["data3", 300, 200, 160]
 			],
 		},
@@ -47,7 +55,10 @@ describe("PLUGIN: TABLE-VIEW", () => {
 					rows[j] = [];
 				}
 
-				rows[j].push(+d.innerHTML);
+				const v = d.innerHTML;
+				if (v) {
+					rows[j].push(+v);
+				}
 			});
 		});
 
