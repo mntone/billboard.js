@@ -82,7 +82,7 @@
 
 /*-- Axis --*/
 .bb-axis {
-	shape-rendering: crispEdges;
+	shape-rendering: optimizeSpeed;
 
 	.bb-axis-x-tooltip, .bb-axis-y-tooltip, .bb-axis-y2-tooltip {
 		font-size: 1em;
@@ -122,6 +122,7 @@
 
 /*-- Line --*/
 .bb-line {
+	shape-rendering: geometricPrecision;
 	stroke-width: 1px;
 }
 
@@ -195,7 +196,7 @@
 
 /*-- Legend --*/
 .bb-legend-item {
-		user-select: none;
+	user-select: none;
 }
 
 @include canvasLegend.styles($font-family: sans-serif, $font-size: 12px, $color: #000);
