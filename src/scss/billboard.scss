@@ -21,9 +21,10 @@
 
 .bb-legend-item-tile,
 .bb-xgrid-focus,
+.bb-xgrid,
 .bb-ygrid-focus,
 .bb-ygrid {
-	shape-rendering: crispEdges;
+	shape-rendering: optimizeSpeed;
 }
 
 .bb-chart-arcs {
