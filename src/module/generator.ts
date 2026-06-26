@@ -2,39 +2,53 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {d3Transition} from "../../types/types";
-import {window} from "./browser";
-import {isArray, isTabVisible} from "./util";
+import type {d3Transition} from "../../types/types";
+import {cancelIdleCallback, requestIdleCallback, window} from "./browser";
+import {isArray, isNumber, isTabVisible, runUntil} from "./util";
 
 const {setTimeout, clearTimeout} = window;
 
 /**
  * Generate resize queue function
+ * @param {boolean|number} option Resize option
  * @returns {Fucntion}
  * @private
  */
-export function generateResize() {
-	const fn: any[] = [];
+export function generateResize(option: boolean | number) {
+	const fn: Function[] = [];
 	let timeout;
 
 	const callResizeFn = function() {
 		// Delay all resize functions call, to prevent unintended excessive call from resize event
 		callResizeFn.clear();
 
-		timeout = setTimeout(() => {
-			fn.forEach((f: Function) => f());
-		}, 200);
+		if (option === false) {
+			timeout = requestIdleCallback(() => {
+				timeout = null;
+				fn.forEach((f: Function) => f());
+			}, {timeout: 200});
+		} else {
+			timeout = setTimeout(() => {
+				timeout = null;
+				fn.forEach((f: Function) => f());
+			}, isNumber(option) ? option : 200);
+		}
 	};
 
 	callResizeFn.clear = () => {
 		if (timeout) {
-			clearTimeout(timeout);
+			(option === false ? cancelIdleCallback : clearTimeout)(timeout);
 			timeout = null;
 		}
 	};
 
 	callResizeFn.add = f => fn.push(f);
-	callResizeFn.remove = f => fn.splice(fn.indexOf(f), 1);
+
+	callResizeFn.remove = f => {
+		const index = fn.indexOf(f);
+
+		index !== -1 && fn.splice(index, 1);
+	};
 
 	return callResizeFn;
 }
@@ -43,7 +57,7 @@ type Transition = boolean | d3Transition;
 
 /**
  * Generate transition queue function
- * @returns {Function}
+ * @returns {function}
  * @private
  */
 export function generateWait() {
@@ -51,13 +65,12 @@ export function generateWait() {
 
 	// 'f' is called as selection.call(f, ...);
 	const f = function(selection: d3Transition, callback: Function) {
-		let timer;
-
 		/**
 		 * Check if transition is complete
+		 * @returns {boolean} Whether transition is complete
 		 * @private
 		 */
-		function loop() {
+		function loop(): boolean {
 			let done = 0;
 
 			for (let i = 0, t; (t = transitionsToWait[i]); i++) {
@@ -74,27 +87,21 @@ export function generateWait() {
 
 				try {
 					t.transition();
-				} catch (e) {
+				} catch {
 					done++;
 				}
 			}
 
-			timer && clearTimeout(timer);
-
-			if (done === transitionsToWait.length) {
-				callback?.();
-			} else {
-				timer = setTimeout(loop, 50);
-			}
+			return done === transitionsToWait.length;
 		}
 
-		loop();
+		runUntil(() => {
+			callback?.();
+		}, loop);
 	};
 
 	f.add = function(t: Transition | Transition[]) {
-		isArray(t) ?
-			(transitionsToWait = transitionsToWait.concat(t)) :
-			transitionsToWait.push(t);
+		isArray(t) ? (transitionsToWait = transitionsToWait.concat(t)) : transitionsToWait.push(t);
 	};
 
 	return f;

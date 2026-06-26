@@ -12,17 +12,21 @@ export const $COMMON = {
 	empty: "bb-empty",
 	main: "bb-main",
 	target: "bb-target",
-	EXPANDED: "_expanded_"
+	EXPANDED: "_expanded_",
+	dummy: "_dummy_"
 };
 
 export const $ARC = {
 	arc: "bb-arc",
 	arcLabelLine: "bb-arc-label-line",
+	arcLabelLineText: "bb-arc-label-line-text",
+	arcRange: "bb-arc-range",
 	arcs: "bb-arcs",
 	chartArc: "bb-chart-arc",
 	chartArcs: "bb-chart-arcs",
 	chartArcsBackground: "bb-chart-arcs-background",
-	chartArcsTitle: "bb-chart-arcs-title"
+	chartArcsTitle: "bb-chart-arcs-title",
+	needle: "bb-needle"
 };
 
 export const $AREA = {
@@ -37,14 +41,20 @@ export const $AXIS = {
 	axisY: "bb-axis-y",
 	axisY2: "bb-axis-y2",
 	axisY2Label: "bb-axis-y2-label",
-	axisYLabel: "bb-axis-y-label"
+	axisYLabel: "bb-axis-y-label",
+	axisXTooltip: "bb-axis-x-tooltip",
+	axisYTooltip: "bb-axis-y-tooltip",
+	axisY2Tooltip: "bb-axis-y2-tooltip",
+	axisTooltipX: "bb-axis-tooltip-x",
+	axisTooltipY: "bb-axis-tooltip-y"
 };
 
 export const $BAR = {
 	bar: "bb-bar",
 	bars: "bb-bars",
 	chartBar: "bb-chart-bar",
-	chartBars: "bb-chart-bars"
+	chartBars: "bb-chart-bars",
+	barConnectLine: "bb-bar-connectLine"
 };
 
 export const $CANDLESTICK = {
@@ -70,6 +80,13 @@ export const $COLOR = {
 export const $DRAG = {
 	dragarea: "bb-dragarea",
 	INCLUDED: "_included_"
+};
+
+export const $FUNNEL = {
+	funnel: "bb-funnel",
+	chartFunnel: "bb-chart-funnel",
+	chartFunnels: "bb-chart-funnels",
+	funnelBackground: "bb-funnel-background"
 };
 
 export const $GAUGE = {
@@ -101,8 +118,7 @@ export const $EVENT = {
 	eventRect: "bb-event-rect",
 	eventRects: "bb-event-rects",
 	eventRectsMultiple: "bb-event-rects-multiple",
-	eventRectsSingle: "bb-event-rects-single",
-
+	eventRectsSingle: "bb-event-rects-single"
 };
 
 export const $FOCUS = {
@@ -149,7 +165,7 @@ export const $SELECT = {
 
 export const $SHAPE = {
 	shape: "bb-shape",
-	shapes: "bb-shapes",
+	shapes: "bb-shapes"
 };
 
 export const $SUBCHART = {
@@ -163,6 +179,8 @@ export const $TEXT = {
 	text: "bb-text",
 	texts: "bb-texts",
 	title: "bb-title",
+	textBorderRect: "bb-text-border",
+	textLabelImage: "bb-text-label-image",
 	TextOverlapping: "text-overlapping"
 };
 
@@ -170,6 +188,12 @@ export const $TOOLTIP = {
 	tooltip: "bb-tooltip",
 	tooltipContainer: "bb-tooltip-container",
 	tooltipName: "bb-tooltip-name"
+};
+
+export const $TREEMAP = {
+	treemap: "bb-treemap",
+	chartTreemap: "bb-chart-treemap",
+	chartTreemaps: "bb-chart-treemaps"
 };
 
 export const $ZOOM = {
@@ -192,7 +216,9 @@ export default {
 	...$LINE,
 	...$EVENT,
 	...$FOCUS,
+	...$FUNNEL,
 	...$GRID,
+	...$LEVEL,
 	...$RADAR,
 	...$REGION,
 	...$SELECT,
@@ -200,5 +226,6 @@ export default {
 	...$SUBCHART,
 	...$TEXT,
 	...$TOOLTIP,
+	...$TREEMAP,
 	...$ZOOM
 };

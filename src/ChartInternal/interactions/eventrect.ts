@@ -2,8 +2,15 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import type {d3Selection} from "../../../types";
 import {$COMMON, $EVENT, $SHAPE} from "../../config/classes";
-import {isboolean, getPointer, isFunction} from "../../module/util";
+import {
+	getBoundingRect,
+	getPointer,
+	getScrollPosition,
+	isBoolean,
+	isFunction
+} from "../../module/util";
 
 export default {
 	/**
@@ -28,14 +35,19 @@ export default {
 		const $$ = this;
 		const {config, state, $el} = $$;
 		const isMultipleX = $$.isMultipleX();
+		const isInverted = config.axis_x_inverted;
 
 		if ($el.eventRect) {
 			$$.updateEventRect($el.eventRect, true);
-		} else {
+
+			// do not initialize eventRect when data is empty
+		} else if ($$.data.targets.length) {
 			const eventRects = $$.$el.main.select(`.${$EVENT.eventRects}`)
-				.style("cursor", config.zoom_enabled && config.zoom_type !== "drag" ? (
-					config.axis_rotated ? "ns-resize" : "ew-resize"
-				) : null)
+				.style("cursor", config.zoom_enabled && config.zoom_type !== "drag" ?
+					(
+						config.axis_rotated ? "ns-resize" : "ew-resize"
+					) :
+					null)
 				.classed($EVENT.eventRectsMultiple, isMultipleX)
 				.classed($EVENT.eventRectsSingle, !isMultipleX);
 
@@ -48,23 +60,31 @@ export default {
 			$$.updateEventRect(eventRectUpdate);
 
 			// bind event to <rect> element
-			isMultipleX ?
-				$$.generateEventRectsForMultipleXs(eventRectUpdate) :
-				$$.generateEventRectsForSingleX(eventRectUpdate);
+			$$.updateEventType(eventRectUpdate);
 
 			// bind draggable selection
 			eventRectUpdate.call($$.getDraggableSelection());
 
 			$el.eventRect = eventRectUpdate;
 
-			if ($$.state.inputType === "touch" && !$el.svg.on("touchstart.eventRect") && !$$.hasArcType()) {
-				$$.bindTouchOnEventRect(isMultipleX);
+			if (
+				$$.state.inputType === "touch" && !$el.svg.on("touchstart.eventRect") &&
+				!$$.hasArcType()
+			) {
+				$$.bindTouchOnEventRect();
 			}
+
+			// when initilazed with empty data and data loaded later, need to update eventRect
+			state.rendered && $$.updateEventRect($el.eventRect, true);
 		}
 
 		if (!isMultipleX) {
 			// Set data and update eventReceiver.data
 			const xAxisTickValues = $$.getMaxDataCountTarget();
+
+			if (!config.data_xSort || isInverted) {
+				xAxisTickValues.sort((a, b) => (isInverted ? b.x - a.x : a.x - b.x));
+			}
 
 			// update data's index value to be alinged with the x Axis
 			$$.updateDataIndexByX(xAxisTickValues);
@@ -77,21 +97,19 @@ export default {
 		$$.updateEventRectData();
 	},
 
-	bindTouchOnEventRect(isMultipleX: boolean): void {
+	bindTouchOnEventRect(): void {
 		const $$ = this;
 		const {config, state, $el: {eventRect, svg}} = $$;
 
 		const selectRect = context => {
-			if (isMultipleX) {
+			if ($$.isMultipleX()) {
 				$$.selectRectForMultipleXs(context);
 			} else {
 				const index = $$.getDataIndexFromEvent(state.event);
 
 				$$.callOverOutForTouch(index);
 
-				index === -1 ?
-					$$.unselectRect() :
-					$$.selectRectForSingle(context, eventRect, index);
+				index === -1 ? $$.unselectRect() : $$.selectRectForSingle(context, index);
 			}
 		};
 
@@ -103,9 +121,13 @@ export default {
 		// call event.preventDefault()
 		// according 'interaction.inputType.touch.preventDefault' option
 		const preventDefault = config.interaction_inputType_touch.preventDefault;
-		const isPrevented = (isboolean(preventDefault) && preventDefault) || false;
+		const isPrevented = (isBoolean(preventDefault) && preventDefault) || false;
 		const preventThreshold = (!isNaN(preventDefault) && preventDefault) || null;
 		let startPx;
+
+		// Determine passive option based on preventDefault setting
+		// If preventDefault is needed, passive must be false
+		const passiveOption = !isPrevented && preventThreshold === null;
 
 		const preventEvent = event => {
 			const eventType = event.type;
@@ -120,9 +142,12 @@ export default {
 					startPx = currentXY;
 				}
 			} else if (eventType === "touchmove") {
-				if (isPrevented || startPx === true || (
-					preventThreshold !== null && Math.abs(startPx - currentXY) >= preventThreshold
-				)) {
+				if (
+					isPrevented || startPx === true || (
+						preventThreshold !== null &&
+						Math.abs(startPx - currentXY) >= preventThreshold
+					)
+				) {
 					// once prevented, keep prevented during whole 'touchmove' context
 					startPx = true;
 					event.preventDefault();
@@ -135,13 +160,16 @@ export default {
 			.on("touchstart", event => {
 				state.event = event;
 				$$.updateEventRect();
-			})
+			}, {passive: passiveOption})
 			.on("touchstart.eventRect touchmove.eventRect", event => {
 				state.event = event;
 
 				if (!eventRect.empty() && eventRect.classed($EVENT.eventRect)) {
 					// if touch points are > 1, means doing zooming interaction. In this case do not execute tooltip codes.
-					if (state.dragging || state.flowing || $$.hasArcType() || event.touches.length > 1) {
+					if (
+						state.dragging || state.flowing || $$.hasArcType() ||
+						event.touches.length > 1
+					) {
 						return;
 					}
 
@@ -150,7 +178,7 @@ export default {
 				} else {
 					unselectRect();
 				}
-			}, true)
+			}, {passive: passiveOption})
 			.on("touchend.eventRect", event => {
 				state.event = event;
 
@@ -159,17 +187,16 @@ export default {
 						state.cancelClick && (state.cancelClick = false);
 					}
 				}
-			}, true);
+			}, {passive: passiveOption});
 
 		svg.on("touchstart", event => {
 			state.event = event;
-
 			const {target} = event;
 
 			if (target && target !== eventRect.node()) {
 				unselectRect();
 			}
-		});
+		}, {passive: passiveOption});
 	},
 
 	/**
@@ -185,9 +212,15 @@ export default {
 		const rectElement = eventRect || $el.eventRect;
 
 		const updateClientRect = (): void => {
-			eventReceiver && (
-				eventReceiver.rect = rectElement.node().getBoundingClientRect()
-			);
+			if (eventReceiver) {
+				const scrollPos = getScrollPosition($el.chart.node());
+
+				eventReceiver.rect = getBoundingRect(rectElement.node(), true)
+					.toJSON();
+
+				eventReceiver.rect.top += scrollPos.y;
+				eventReceiver.rect.left += scrollPos.x;
+			}
 		};
 
 		if (!rendered || resizing || force) {
@@ -198,12 +231,32 @@ export default {
 				.attr("height", height);
 
 			// only for init
-			if (!rendered) {
-				rectElement.attr("class", $EVENT.eventRect);
+			if (!rendered || force) {
+				rectElement.classed($EVENT.eventRect, true);
 			}
 		}
 
 		updateClientRect();
+	},
+
+	/**
+	 * Update event type (single or multiple x)
+	 * @param {d3Selection | boolean} target Target element or boolean to rebind event
+	 */
+	updateEventType(target: d3Selection | boolean): void {
+		const $$ = this;
+		const isRebindCall = isBoolean(target);
+		const eventRect = isRebindCall ? $$.$el.eventRect : target;
+		const unbindEvent = isRebindCall ? target !== eventRect?.datum().multipleX : false;
+
+		if (eventRect) {
+			// release previous event listeners
+			unbindEvent && eventRect?.on("mouseover mousemove mouseout click", null);
+
+			$$.isMultipleX() ?
+				$$.generateEventRectsForMultipleXs(eventRect) :
+				$$.generateEventRectsForSingleX(eventRect);
+		}
 	},
 
 	/**
@@ -215,12 +268,32 @@ export default {
 		const {config, scale, state} = $$;
 		const xScale = scale.zoom || scale.x;
 		const isRotated = config.axis_rotated;
+		const isMultipleX = $$.isMultipleX();
+
+		// Skip recalculation if scale domain, plot size or visibility hasn't changed.
+		// width/height must be part of the key: resize keeps the domain but moves coords.
+		const xDomain = xScale?.domain();
+		const fingerprint = xDomain ?
+			`${xDomain[0]}_${
+				xDomain[1]
+			}_${state.width}_${state.height}_${$$.data.targets.length}_${state.dataGeneration}_${
+				[...state.hiddenTargetIds].join(",")
+			}` :
+			null;
+
+		if (fingerprint && fingerprint === state._eventRectFingerprint) {
+			return;
+		}
+
+		state._eventRectFingerprint = fingerprint;
 		let x;
 		let y;
 		let w;
 		let h;
 
-		if ($$.isMultipleX()) {
+		$$.updateEventType(isMultipleX);
+
+		if (isMultipleX) {
 			// TODO: rotated not supported yet
 			x = 0;
 			y = 0;
@@ -242,33 +315,38 @@ export default {
 				rectW = (d): number => {
 					const x = getPrevNextX(d);
 					const xDomain = xScale.domain();
+					let val: number;
 
 					// if there this is a single data point make the eventRect full width (or height)
 					if (x.prev === null && x.next === null) {
-						return isRotated ? state.height : state.width;
+						val = isRotated ? state.height : state.width;
+					} else if (x.prev === null) {
+						val = (xScale(x.next) + xScale(d.x)) / 2;
+					} else if (x.next === null) {
+						val = xScale(xDomain[1]) - (
+							(xScale(x.prev) + xScale(d.x)) / 2
+						);
+					} else {
+						val = Math.max(0, (xScale(x.next) - xScale(x.prev)) / 2);
 					}
 
-					Object.keys(x).forEach((key, i) => {
-						x[key] = x[key] ?? xDomain[i];
-					});
-
-					return Math.max(0, (xScale(x.next) - xScale(x.prev)) / 2);
+					return val;
 				};
 
 				rectX = (d): number => {
 					const x = getPrevNextX(d);
-					const thisX = d.x;
+					let val: number;
 
 					// if there this is a single data point position the eventRect at 0
 					if (x.prev === null && x.next === null) {
-						return 0;
+						val = 0;
+					} else if (x.prev === null) {
+						val = xScale(xScale.domain()[0]);
+					} else {
+						val = (xScale(d.x) + xScale(x.prev)) / 2;
 					}
 
-					if (x.prev === null) {
-						x.prev = xScale.domain()[0];
-					}
-
-					return (xScale(thisX) + xScale(x.prev)) / 2;
+					return val;
 				};
 			}
 
@@ -294,10 +372,82 @@ export default {
 		});
 	},
 
-	selectRectForMultipleXs(context): void {
+	/**
+	 * Seletct rect for single x value
+	 * @param {d3Selection} context Event rect element
+	 * @param {number} index x Axis index
+	 * @private
+	 */
+	selectRectForSingle(context: SVGRectElement, index: number): void {
+		const $$ = this;
+		const {config, $el: {main, circle}} = $$;
+		const isSelectionEnabled = config.data_selection_enabled;
+		const isSelectionGrouped = config.data_selection_grouped;
+		const isSelectable = config.data_selection_isselectable;
+		const isTooltipGrouped = config.tooltip_grouped;
+		const selectedData = $$.getAllValuesOnIndex(index);
+
+		if (isTooltipGrouped) {
+			$$.showTooltip(selectedData, context);
+			$$.showGridFocus?.(selectedData);
+
+			if (!isSelectionEnabled || isSelectionGrouped) {
+				return;
+			}
+		}
+
+		// remove possible previous focused state
+		!circle &&
+			main.selectAll(`.${$COMMON.EXPANDED}:not(.${$SHAPE.shape}-${index})`).classed(
+				$COMMON.EXPANDED,
+				false
+			);
+
+		const shapeAtIndex = main.selectAll(`.${$SHAPE.shape}-${index}`)
+			.classed($COMMON.EXPANDED, true)
+			.style("cursor", isSelectable ? "pointer" : null)
+			.filter(function(d) {
+				return $$.isWithinShape(this, d);
+			});
+
+		if (shapeAtIndex.empty() && !isTooltipGrouped && config.interaction_onout) {
+			$$.hideGridFocus?.();
+			$$.hideTooltip();
+
+			!isSelectionGrouped && $$.setExpand(index);
+		}
+
+		shapeAtIndex
+			.call(selected => {
+				const d = selected.data();
+
+				if (
+					isSelectionEnabled &&
+					(isSelectionGrouped || isSelectable?.bind($$.api)(d))
+				) {
+					context.style.cursor = "pointer";
+				}
+
+				if (!isTooltipGrouped) {
+					$$.showTooltip(d, context);
+					$$.showGridFocus?.(d);
+					$$.unexpandCircles?.();
+
+					selected.each(d => $$.setExpand(index, d.id));
+				}
+			});
+	},
+
+	/**
+	 * Select rect for multiple x values
+	 * @param {d3Selection} context Event rect element
+	 * @param {boolean} [triggerEvent=true] Whether trigger event or not
+	 * @private
+	 */
+	selectRectForMultipleXs(context: SVGRectElement, triggerEvent = true): void {
 		const $$ = this;
 		const {config, state} = $$;
-		const targetsToShow = $$.filterTargetsToShow($$.data.targets);
+		const targetsToShow = $$.getTargetsToShow();
 
 		// do nothing when dragging
 		if (state.dragging || $$.hasArcType(targetsToShow)) {
@@ -307,7 +457,7 @@ export default {
 		const mouse = getPointer(state.event, context);
 		const closest = $$.findClosestFromTargets(targetsToShow, mouse);
 
-		if (state.mouseover && (!closest || closest.id !== state.mouseover.id)) {
+		if (triggerEvent && state.mouseover && (!closest || closest.id !== state.mouseover.id)) {
 			config.data_onout.call($$.api, state.mouseover);
 			state.mouseover = undefined;
 		}
@@ -318,8 +468,10 @@ export default {
 		}
 
 		const sameXData = (
-			$$.isBubbleType(closest) || $$.isScatterType(closest) || !config.tooltip_grouped
-		) ? [closest] : $$.filterByX(targetsToShow, closest.x);
+				$$.isBubbleType(closest) || $$.isScatterType(closest) || !config.tooltip_grouped
+			) ?
+			[closest] :
+			$$.filterByX(targetsToShow, closest.x);
 
 		// show tooltip when cursor is close to some point
 		const selectedData = sameXData.map(d => $$.addName(d));
@@ -329,14 +481,22 @@ export default {
 		// expand points
 		$$.setExpand(closest.index, closest.id, true);
 
-		// Show xgrid focus line
-		$$.showGridFocus(selectedData);
+		// Show xgrid focus line (optional module — grid resolver)
+		$$.showGridFocus?.(selectedData);
+
+		const dist = $$.dist(closest, mouse);
 
 		// Show cursor as pointer if point is close to mouse position
-		if ($$.isBarType(closest.id) || $$.dist(closest, mouse) < config.point_sensitivity) {
-			$$.$el.svg.select(`.${$EVENT.eventRect}`).style("cursor", "pointer");
+		if ($$.isBarType(closest.id) || dist < $$.getPointSensitivity(closest)) {
+			$$.$el.eventRect.style("cursor", "pointer");
 
-			if (!state.mouseover) {
+			if (
+				triggerEvent && (
+					!state.mouseover ||
+					state.mouseover.x !== closest.x ||
+					state.mouseover.id !== closest.id
+				)
+			) {
 				config.data_onover.call($$.api, closest);
 				state.mouseover = closest;
 			}
@@ -349,17 +509,25 @@ export default {
 	 */
 	unselectRect(): void {
 		const $$ = this;
-		const {config, $el: {circle, tooltip}} = $$;
+		const {state, $el: {circle, tooltip}} = $$;
 
-		$$.$el.svg.select(`.${$EVENT.eventRect}`).style("cursor", null);
-		$$.hideGridFocus();
+		state._lastTooltipMouse = null;
+
+		if (state.isCanvasMode) {
+			$$.clearCanvasFocus?.();
+			tooltip && $$.hideTooltip();
+			return;
+		}
+
+		$$.$el.eventRect?.style("cursor", null);
+		$$.hideGridFocus?.();
 
 		if (tooltip) {
 			$$.hideTooltip();
 			$$._handleLinkedCharts(false);
 		}
 
-		circle && !config.point_focus_only && $$.unexpandCircles();
+		circle && !$$.isPointFocusOnly() && $$.unexpandCircles();
 		$$.expandBarTypeShapes(false);
 	},
 
@@ -376,18 +544,19 @@ export default {
 		const {eventReceiver} = state;
 
 		const rect = eventRectEnter
-			.style("cursor", config.data_selection_enabled && config.data_selection_grouped ? "pointer" : null)
+			.style("cursor",
+				config.data_selection_enabled && config.data_selection_grouped ? "pointer" : null)
 			.on("click", function(event) {
 				state.event = event;
 
 				const {currentIdx, data} = eventReceiver;
 				const d = data[
-					currentIdx === -1 ?
-						$$.getDataIndexFromEvent(event) : currentIdx
+					currentIdx === -1 ? $$.getDataIndexFromEvent(event) : currentIdx
 				];
 
 				$$.clickHandlerForSingleX.bind(this)(d, $$);
-			});
+			})
+			.datum({multipleX: false});
 
 		if (state.inputType === "mouse") {
 			const getData = event => {
@@ -400,6 +569,9 @@ export default {
 				.on("mouseover", event => {
 					state.event = event;
 					$$.updateEventRect();
+
+					Object.values($$.$el.axisTooltip)
+						.forEach((v: d3Selection) => v?.style("display", null));
 				})
 				.on("mousemove", function(event) {
 					const d = getData(event);
@@ -414,7 +586,10 @@ export default {
 					const stepType = config.line_step_type;
 
 					// tooltip position match for step-before & step-after
-					if (config.line_step_tooltipMatch && $$.hasType("step") && /^step\-(before|after)$/.test(stepType)) {
+					if (
+						config.line_step_tooltipMatch && $$.hasType("step") &&
+						/^step\-(before|after)$/.test(stepType)
+					) {
 						const scale = $$.scale.zoom || $$.scale.x;
 						const xs = $$.axis.xs[index];
 						const inverted = scale.invert(getPointer(event, this)[0]);
@@ -426,10 +601,27 @@ export default {
 						}
 					}
 
+					$$.showAxisGridFocus();
+
+					const eventOnSameIdx = config.tooltip_grouped &&
+						index === eventReceiver.currentIdx;
+
 					// do nothing while dragging/flowing
-					if (state.dragging || state.flowing || $$.hasArcType() ||
-						(config.tooltip_grouped && index === eventReceiver.currentIdx)
-					) {
+					if (state.dragging || state.flowing || $$.hasArcType() || eventOnSameIdx) {
+						// Throttle tooltip position updates: skip if mouse hasn't moved enough
+						if (config.tooltip_show && eventOnSameIdx) {
+							const [mx, my] = getPointer(event, this);
+							const last = state._lastTooltipMouse;
+
+							if (
+								!last ||
+								(mx - last[0]) ** 2 + (my - last[1]) ** 2 >= 9
+							) {
+								state._lastTooltipMouse = [mx, my];
+								$$.setTooltipPosition();
+							}
+						}
+
 						return;
 					}
 
@@ -438,8 +630,7 @@ export default {
 						eventReceiver.currentIdx = index;
 					}
 
-					index === -1 ?
-						$$.unselectRect() : $$.selectRectForSingle(this, rect, index);
+					index === -1 ? $$.unselectRect() : $$.selectRectForSingle(this, index);
 
 					// As of individual data point(or <path>) element can't bind mouseover/out event
 					// to determine current interacting element, so use 'mousemove' event instead.
@@ -448,10 +639,15 @@ export default {
 				.on("mouseout", event => {
 					state.event = event;
 
-					// chart is destroyed
-					if (!config || $$.hasArcType() || eventReceiver.currentIdx === -1) {
+					// chart is destroyed ($$.config, not the closure-captured one, becomes null)
+					if (
+						!$$.config || $$.hasArcType() || eventReceiver.currentIdx === -1 ||
+						!config.interaction_onout
+					) {
 						return;
 					}
+
+					$$.hideAxisGridFocus();
 
 					$$.unselectRect();
 					$$.setOverOut(false, eventReceiver.currentIdx);
@@ -493,13 +689,14 @@ export default {
 	 */
 	generateEventRectsForMultipleXs(eventRectEnter): void {
 		const $$ = this;
-		const {state} = $$;
+		const {config, state} = $$;
 
 		eventRectEnter
 			.on("click", function(event) {
 				state.event = event;
 				$$.clickHandlerForMultipleXS.bind(this)($$);
-			});
+			})
+			.datum({multipleX: true});
 
 		if (state.inputType === "mouse") {
 			eventRectEnter
@@ -511,7 +708,7 @@ export default {
 					state.event = event;
 
 					// chart is destroyed
-					if (!$$.config || $$.hasArcType()) {
+					if (!$$.config || $$.hasArcType() || !config.interaction_onout) {
 						return;
 					}
 
@@ -523,7 +720,7 @@ export default {
 	clickHandlerForMultipleXS(ctx): void {
 		const $$ = ctx;
 		const {config, state} = $$;
-		const targetsToShow = $$.filterTargetsToShow($$.data.targets);
+		const targetsToShow = $$.getTargetsToShow();
 
 		if ($$.hasArcType(targetsToShow)) {
 			return;
@@ -536,8 +733,10 @@ export default {
 			return;
 		}
 
+		const sensitivity = $$.getPointSensitivity(closest);
+
 		// select if selection enabled
-		if ($$.isBarType(closest.id) || $$.dist(closest, mouse) < config.point_sensitivity) {
+		if ($$.isBarType(closest.id) || $$.dist(closest, mouse) < sensitivity) {
 			$$.$el.main.selectAll(`.${$SHAPE.shapes}${$$.getTargetSelectorSuffix(closest.id)}`)
 				.selectAll(`.${$SHAPE.shape}-${closest.index}`)
 				.each(function() {

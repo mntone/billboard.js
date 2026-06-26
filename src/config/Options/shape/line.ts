@@ -40,7 +40,7 @@ export default {
 	 *      // hide all data points ('point.show=false' also has similar effect)
 	 *      point: false,
 	 *
-	 *      // show data points for only indicated datas
+	 *      // show data points for only indicated data
 	 *      point: [
 	 *          "data1", "data3"
 	 *      ],
@@ -49,9 +49,9 @@ export default {
 	 *  }
 	 */
 	line_connectNull: false,
-	line_step_type: <"step"|"step-before"|"step-after"> "step",
+	line_step_type: <"step" | "step-before" | "step-after">"step",
 	line_step_tooltipMatch: false,
 	line_zerobased: false,
-	line_classes: <string[]|undefined> undefined,
-	line_point: <string[]|boolean> true
+	line_classes: <string[] | undefined>undefined,
+	line_point: <string[] | boolean>true
 };

@@ -3,25 +3,24 @@
  * billboard.js project is licensed under the MIT license
  */
 import {
-	scaleTime as d3ScaleTime,
-	scaleUtc as d3ScaleUtc,
 	scaleLinear as d3ScaleLinear,
 	scaleLog as d3ScaleLog,
-	scaleSymlog as d3ScaleSymlog
+	scaleSymlog as d3ScaleSymlog,
+	scaleTime as d3ScaleTime,
+	scaleUtc as d3ScaleUtc
 } from "d3-scale";
 import {isString, isValue, parseDate} from "../../module/util";
-import {IDataRow, IGridData} from "../data/IData";
-
+import type {IDataRow, IGridData} from "../data/IData";
 
 /**
  * Get scale
  * @param {string} [type='linear'] Scale type
- * @param {number} [min] Min range
- * @param {number} [max] Max range
+ * @param {number|Date} [min] Min range
+ * @param {number|Date} [max] Max range
  * @returns {d3.scaleLinear|d3.scaleTime} scale
  * @private
  */
-export function getScale(type = "linear", min = 0, max = 1): any {
+export function getScale<T = IDataRow["x"]>(type = "linear", min?: T, max?: T): any {
 	const scale = ({
 		linear: d3ScaleLinear,
 		log: d3ScaleSymlog,
@@ -33,24 +32,25 @@ export function getScale(type = "linear", min = 0, max = 1): any {
 	scale.type = type;
 	/_?log/.test(type) && scale.clamp(true);
 
-	return scale.range([min, max]);
+	return scale.range([min ?? 0, max ?? 1]);
 }
 
 export default {
 	/**
 	 * Get x Axis scale function
-	 * @param {number} min Min value
-	 * @param {number} max Max value
+	 * @param {number} min Min range value
+	 * @param {number} max Max range value
 	 * @param {Array} domain Domain value
-	 * @param {Function} offset The offset getter to be sum
-	 * @returns {Function} scale
+	 * @param {function} offset The offset getter to be sum
+	 * @returns {function} scale
 	 * @private
 	 */
 	getXScale(min: number, max: number, domain: number[], offset: Function) {
 		const $$ = this;
-		const scale = $$.scale.zoom || getScale($$.axis.getAxisType("x"), min, max);
+		const scale = ($$.state.loading !== "append" && $$.scale.zoom) ||
+			getScale($$.axis.getAxisType("x"), min, max);
 
-		return $$.getCustomizedScale(
+		return $$.getCustomizedXScale(
 			domain ? scale.domain(domain) : scale,
 			offset
 		);
@@ -62,12 +62,23 @@ export default {
 	 * @param {number} min Min value
 	 * @param {number} max Max value
 	 * @param {Array} domain Domain value
-	 * @returns {Function} Scale function
+	 * @param {object} [existing] Existing scale function to be updated
+	 * @returns {function} Scale function
 	 * @private
 	 */
-	getYScale(id: "y" | "y2", min: number, max: number, domain: number[]): Function {
+	getYScale(id: "y" | "y2", min: number, max: number, domain: number[], existing?): Function {
 		const $$ = this;
-		const scale = getScale($$.axis.getAxisType(id), min, max);
+		const type = $$.axis.getAxisType(id);
+
+		// Reuse existing scale if type hasn't changed — just update range
+		if (existing && existing.type === type) {
+			existing.range([min, max]);
+			domain && existing.domain(domain);
+
+			return existing;
+		}
+
+		const scale = getScale(type, min, max);
 
 		domain && scale.domain(domain);
 
@@ -78,30 +89,42 @@ export default {
 	 * Get y Axis scale
 	 * @param {string} id Axis id
 	 * @param {boolean} isSub Weather is sub Axis
-	 * @returns {Function} Scale function
+	 * @returns {function} Scale function
 	 * @private
 	 */
 	getYScaleById(id: string, isSub = false): Function {
-		const isY2 = this.axis.getId(id) === "y2";
+		const isY2 = this.axis?.getId(id) === "y2";
 		const key = isSub ? (isY2 ? "subY2" : "subY") : (isY2 ? "y2" : "y");
 
 		return this.scale[key];
 	},
 
 	/**
-	 * Get customized scale
+	 * Get customized x axis scale
 	 * @param {d3.scaleLinear|d3.scaleTime} scaleValue Scale function
-	 * @param {Function} offsetValue Offset getter to be sum
-	 * @returns {Function} Scale function
+	 * @param {function} offsetValue Offset getter to be sum
+	 * @returns {function} Scale function
 	 * @private
 	 */
-	getCustomizedScale(scaleValue: Function | any, offsetValue): Function {
+	getCustomizedXScale(scaleValue: Function | any, offsetValue): Function {
 		const $$ = this;
-		const offset = offsetValue || (() => $$.axis.x.tickOffset());
-		const scale = function(d, raw) {
-			const v = scaleValue(d) + offset();
+		const offset = () => {
+			const value = offsetValue ? offsetValue() : $$.axis.x.tickOffset();
 
-			return raw ? v : Math.ceil(v);
+			return value || (
+				$$.axis.isCategorized() ? (scaleValue(1) - scaleValue(0)) / 2 : 0
+			);
+		};
+		const isInverted = $$.config.axis_x_inverted;
+
+		/**
+		 * Get scaled value
+		 * @param {object} d Data object
+		 * @returns {number}
+		 * @private
+		 */
+		const scale = function(d: IDataRow): number {
+			return scaleValue(d) + offset();
 		};
 
 		// copy original scale methods
@@ -120,7 +143,7 @@ export default {
 				if (!arguments.length) {
 					domain = this.orgDomain();
 
-					return [domain[0], domain[1] + 1];
+					return isInverted ? [domain[0] + 1, domain[1]] : [domain[0], domain[1] + 1];
 				}
 
 				scaleValue.domain(domain);
@@ -140,8 +163,13 @@ export default {
 	 */
 	updateScales(isInit: boolean, updateXDomain = true): void {
 		const $$ = this;
-		const {axis, config, format, org, scale,
-			state: {width, height, width2, height2, hasAxis}
+		const {
+			axis,
+			config,
+			format,
+			org,
+			scale,
+			state: {current, width, height, width2, height2, hasAxis, hasTreemap}
 		} = $$;
 
 		if (hasAxis) {
@@ -165,13 +193,17 @@ export default {
 
 			// update scales
 			// x Axis
-			const xDomain = updateXDomain && scale.x?.orgDomain();
-			const xSubDomain = updateXDomain && org.xDomain;
+			const xDomain = updateXDomain ?
+				scale.x?.orgDomain() :
+				(scale.zoom ? undefined : scale.x?.domain?.());
+			const xSubDomain = updateXDomain ?
+				org.xDomain :
+				(scale.zoom ? undefined : scale.subX?.domain?.());
 
 			scale.x = $$.getXScale(min.x, max.x, xDomain, () => axis.x.tickOffset());
 			scale.subX = $$.getXScale(min.x, max.x, xSubDomain, d => (
-				d % 1 ? 0 : (axis.subX ?? axis.x).tickOffset())
-			);
+				d % 1 ? 0 : (axis.subX ?? axis.x).tickOffset()
+			));
 
 			format.xAxisTick = axis.getXAxisTickFormat();
 			format.subXAxisTick = axis.getXAxisTickFormat(true);
@@ -183,20 +215,37 @@ export default {
 			}
 
 			// y Axis
-			scale.y = $$.getYScale("y", min.y, max.y, scale.y ? scale.y.domain() : config.axis_y_default);
+			scale.y = $$.getYScale("y", min.y, max.y,
+				scale.y ? scale.y.domain() : config.axis_y_default, scale.y);
 			scale.subY = $$.getYScale(
-				"y", min.subY, max.subY, scale.subY ? scale.subY.domain() : config.axis_y_default);
+				"y",
+				min.subY,
+				max.subY,
+				scale.subY ? scale.subY.domain() : config.axis_y_default,
+				scale.subY
+			);
 
 			axis.setAxis("y", scale.y, config.axis_y_tick_outer, isInit);
 
 			// y2 Axis
 			if (config.axis_y2_show) {
-				scale.y2 = $$.getYScale("y2", min.y, max.y, scale.y2 ? scale.y2.domain() : config.axis_y2_default);
+				scale.y2 = $$.getYScale("y2", min.y, max.y,
+					scale.y2 ? scale.y2.domain() : config.axis_y2_default, scale.y2);
 				scale.subY2 = $$.getYScale(
-					"y2", min.subY, max.subY, scale.subY2 ? scale.subY2.domain() : config.axis_y2_default);
+					"y2",
+					min.subY,
+					max.subY,
+					scale.subY2 ? scale.subY2.domain() : config.axis_y2_default,
+					scale.subY2
+				);
 
 				axis.setAxis("y2", scale.y2, config.axis_y2_tick_outer, isInit);
 			}
+		} else if (hasTreemap) {
+			const padding = $$.getCurrentPadding();
+
+			scale.x = d3ScaleLinear().rangeRound([padding.left, current.width - padding.right]);
+			scale.y = d3ScaleLinear().rangeRound([padding.top, current.height - padding.bottom]);
 		} else {
 			// update for arc
 			$$.updateArc?.();
@@ -229,7 +278,7 @@ export default {
 			value = config.axis_x_categories.indexOf(value);
 		}
 
-		return Math.ceil(fn(value));
+		return fn(value);
 	},
 
 	yv(d: IGridData): number {
@@ -237,7 +286,7 @@ export default {
 		const {scale: {y, y2}} = $$;
 		const yScale = d.axis && d.axis === "y2" ? y2 : y;
 
-		return Math.ceil(yScale($$.getBaseValue(d)));
+		return yScale($$.getBaseValue(d));
 	},
 
 	subxx(d: IDataRow): number | null {

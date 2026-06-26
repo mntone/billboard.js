@@ -4,15 +4,40 @@
  */
 // @ts-nocheck
 import {interpolateHslLong as d3InterpolateHslLong} from "d3-interpolate";
-import {hsl as d3Hsl} from "d3-color";
 import {scaleSequentialLog as d3ScaleSequentialLog} from "d3-scale";
 import {$TOOLTIP} from "../../config/classes";
-import {loadConfig} from "../../config/config";
 import Plugin from "../Plugin";
-import Options from "./Options";
-import Elements from "./Elements";
 import ColorScale from "./ColorScale";
-import {compareEpochs, isEmpty, isFunction, isString, parseDate, pointInRegion} from "./util";
+import Elements from "./Elements";
+import Options from "./Options";
+import {compareEpochs, isEmpty, isFunction, pointInRegion} from "./util";
+
+/**
+ * HSL color object compatible with d3-interpolate
+ */
+interface HSLColor {
+	h: number;
+	s: number;
+	l: number;
+	opacity: number;
+}
+
+/**
+ * Creates an HSL color object.
+ * @param {number} h Hue (0-360)
+ * @param {number} s Saturation (0-1)
+ * @param {number} l Lightness (0-1)
+ * @param {number} opacity Opacity (0-1), defaults to 1
+ * @returns {HSLColor} HSL color object
+ */
+function hsl(h: number, s: number, l: number, opacity: number = 1): HSLColor {
+	return {
+		h: +h,
+		s: +s,
+		l: +l,
+		opacity: +opacity
+	};
+}
 
 /**
  * Stanford diagram plugin
@@ -23,19 +48,15 @@ import {compareEpochs, isEmpty, isFunction, isString, parseDate, pointInRegion} 
  * - **Required modules:**
  *   - [d3-selection](https://github.com/d3/d3-selection)
  *   - [d3-interpolate](https://github.com/d3/d3-interpolate)
- *   - [d3-color](https://github.com/d3/d3-color)
  *   - [d3-scale](https://github.com/d3/d3-scale)
  *   - [d3-brush](https://github.com/d3/d3-brush)
  *   - [d3-axis](https://github.com/d3/d3-axis)
- *   - [d3-format](https://github.com/d3/d3-format)
  * @class plugin-stanford
  * @requires d3-selection
  * @requires d3-interpolate
- * @requires d3-color
  * @requires d3-scale
  * @requires d3-brush
  * @requires d3-axis
- * @requires d3-format
  * @param {object} options Stanford plugin options
  * @augments Plugin
  * @returns {Stanford}
@@ -90,7 +111,7 @@ import {compareEpochs, isEmpty, isFunction, isString, parseDate, pointInRegion} 
  *     ]
  *  });
  * @example
- *	import {bb} from "billboard.js";
+ * 	import {bb} from "billboard.js";
  * import Stanford from "billboard.js/dist/billboardjs-plugin-stanford";
  *
  * bb.generate({
@@ -100,7 +121,6 @@ import {compareEpochs, isEmpty, isFunction, isString, parseDate, pointInRegion} 
  * })
  */
 export default class Stanford extends Plugin {
-	private config;
 	private colorScale;
 	private elements;
 
@@ -121,19 +141,21 @@ export default class Stanford extends Plugin {
 		$$.labelishData = d => d.values;
 		$$.opacityForCircle = () => 1;
 
-		const getCurrentPaddingRight = $$.getCurrentPaddingRight.bind($$);
+		const getCurrentPadding = $$.getCurrentPadding.bind($$);
 
-		$$.getCurrentPaddingRight = () => (
-			getCurrentPaddingRight() + (
-				this.colorScale ? this.colorScale.getColorScalePadding() : 0
-			)
-		);
+		$$.getCurrentPadding = () => {
+			const padding = getCurrentPadding();
+
+			padding.right += this.colorScale ? this.colorScale.getColorScalePadding() : 0;
+
+			return padding;
+		};
 	}
 
 	$init(): void {
 		const {$$} = this;
 
-		loadConfig.call(this, this.options);
+		this.loadConfig();
 		$$.color = this.getStanfordPointColor.bind($$);
 
 		this.colorScale = new ColorScale(this);
@@ -144,6 +166,8 @@ export default class Stanford extends Plugin {
 		this.setStanfordTooltip();
 		this.colorScale.drawColorScale();
 
+		$$.right += this.colorScale ? this.colorScale.getColorScalePadding() : 0;
+
 		this.$redraw();
 	}
 
@@ -151,7 +175,6 @@ export default class Stanford extends Plugin {
 		this.colorScale?.drawColorScale();
 		this.elements?.updateStanfordElements(duration);
 	}
-
 
 	getOptions(): Options {
 		return new Options();
@@ -173,29 +196,6 @@ export default class Stanford extends Plugin {
 		});
 	}
 
-	xvCustom(d, xyValue): number {
-		const $$ = this;
-		const {axis, config} = $$;
-		let value = xyValue ? d[xyValue] : $$.getBaseValue(d);
-
-		if (axis.isTimeSeries()) {
-			value = parseDate.call($$, value);
-		} else if (axis.isCategorized() && isString(value)) {
-			value = config.axis_x_categories.indexOf(d.value);
-		}
-
-		return Math.ceil($$.scale.x(value));
-	}
-
-	yvCustom(d, xyValue): number {
-		const $$ = this;
-		const {scale} = $$;
-		const yScale = d.axis && d.axis === "y2" ? scale.y2 : scale.y;
-		const value = xyValue ? d[xyValue] : $$.getBaseValue(d);
-
-		return Math.ceil(yScale(value));
-	}
-
 	initStanfordData(): void {
 		const {config} = this;
 		const target = this.$$.data.targets[0];
@@ -204,14 +204,23 @@ export default class Stanford extends Plugin {
 		// Make larger values appear on top
 		target.values.sort(compareEpochs);
 
-		// Get array of epochs
-		const epochs = target.values.map(a => a.epochs);
+		// Get min/max epochs
+		let minEpoch = Infinity;
+		let maxEpoch = -Infinity;
 
-		target.minEpochs = !isNaN(config.scale_min) ? config.scale_min : Math.min(...epochs);
-		target.maxEpochs = !isNaN(config.scale_max) ? config.scale_max : Math.max(...epochs);
+		for (let i = 0; i < target.values.length; i++) {
+			const e = target.values[i].epochs;
+
+			if (e < minEpoch) minEpoch = e;
+			if (e > maxEpoch) maxEpoch = e;
+		}
+
+		target.minEpochs = !isNaN(config.scale_min) ? config.scale_min : minEpoch;
+		target.maxEpochs = !isNaN(config.scale_max) ? config.scale_max : maxEpoch;
 
 		target.colors = isFunction(config.colors) ?
-			config.colors : d3InterpolateHslLong(d3Hsl(250, 1, 0.5), d3Hsl(0, 1, 0.5));
+			config.colors :
+			d3InterpolateHslLong(hsl(250, 1, 0.5), hsl(0, 1, 0.5));
 
 		target.colorscale = d3ScaleSequentialLog(target.colors)
 			.domain([target.minEpochs, target.maxEpochs]);
@@ -243,7 +252,9 @@ export default class Stanford extends Plugin {
 							<th class="value">${defaultValueFormat(value)}</th>
 						</tr>
 						<tr class="${$TOOLTIP.tooltipName}-${id}">
-							<td class="name"><span style="background-color:${color(v)}"></span>Epochs</td>
+							<td class="name"><span style="background-color:${
+						color(v)
+					}"></span>Epochs</td>
 							<td class="value">${defaultValueFormat(epochs)}</td>
 						</tr>`;
 				});
@@ -257,8 +268,10 @@ export default class Stanford extends Plugin {
 		const $$ = this;
 		const target = $$.data.targets[0];
 
-		const total = target.values.reduce((accumulator, currentValue) =>
-			accumulator + Number(currentValue.epochs), 0);
+		const total = target.values.reduce(
+			(accumulator, currentValue) => accumulator + Number(currentValue.epochs),
+			0
+		);
 
 		const value = target.values.reduce((accumulator, currentValue) => {
 			if (pointInRegion(currentValue, region)) {

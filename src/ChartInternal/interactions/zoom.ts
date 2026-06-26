@@ -3,9 +3,89 @@
  * billboard.js project is licensed under the MIT license
  */
 import {drag as d3Drag} from "d3-drag";
-import {zoomIdentity as d3ZoomIdentity, zoom as d3Zoom, ZoomTransform as d3ZoomTransform} from "d3-zoom";
+import {
+	zoom as d3Zoom,
+	zoomIdentity as d3ZoomIdentity,
+	zoomTransform as d3ZoomTransform
+} from "d3-zoom";
 import {$COMMON, $ZOOM} from "../../config/classes";
-import {callFn, diffDomain, getPointer, isFunction} from "../../module/util";
+import {window} from "../../module/browser";
+import {callFn, diffDomain, getPointer, isFunction, scheduleRAFUpdate} from "../../module/util";
+
+/**
+ * Get the element that owns zoom interaction state.
+ * @param {object} $$ ChartInternal instance
+ * @returns {object} d3 selection
+ * @private
+ */
+function getZoomTarget($$) {
+	return $$.state.isCanvasMode ? $$.$el.canvas : $$.$el.eventRect;
+}
+
+/**
+ * Convert a canvas-space transform to plot-space transform.
+ * @param {object} $$ ChartInternal instance
+ * @param {object} transform d3 zoom transform
+ * @returns {object} Plot-space transform
+ * @private
+ */
+function toPlotZoomTransform($$, transform) {
+	if (!$$.state.isCanvasMode) {
+		return transform;
+	}
+
+	const {margin} = $$.state;
+
+	return d3ZoomIdentity
+		.translate(
+			transform.x + (transform.k - 1) * margin.left,
+			transform.y + (transform.k - 1) * margin.top
+		)
+		.scale(transform.k);
+}
+
+/**
+ * Convert a plot-space transform to canvas-space transform.
+ * @param {object} $$ ChartInternal instance
+ * @param {object} transform d3 zoom transform
+ * @returns {object} Canvas-space transform
+ * @private
+ */
+function toCanvasZoomTransform($$, transform) {
+	if (!$$.state.isCanvasMode) {
+		return transform;
+	}
+
+	const {margin} = $$.state;
+
+	return d3ZoomIdentity
+		.translate(
+			transform.x - (transform.k - 1) * margin.left,
+			transform.y - (transform.k - 1) * margin.top
+		)
+		.scale(transform.k);
+}
+
+/**
+ * Get plot-local pointer coordinates for zoom drag.
+ * @param {object} $$ ChartInternal instance
+ * @param {object} event Event object
+ * @param {HTMLElement|SVGElement} element Event element
+ * @returns {Array} Plot-local pointer
+ * @private
+ */
+function getZoomDragPointer($$, event, element): number[] {
+	const pointer = getPointer(event, element);
+
+	if ($$.state.isCanvasMode) {
+		const {margin} = $$.state;
+
+		pointer[0] -= margin.left;
+		pointer[1] -= margin.top;
+	}
+
+	return pointer;
+}
 
 export default {
 	/**
@@ -18,7 +98,9 @@ export default {
 		$$.scale.zoom = null;
 
 		$$.generateZoom();
-		$$.initZoomBehaviour();
+
+		$$.config.zoom_type === "drag" &&
+			$$.initZoomBehaviour();
 	},
 
 	/**
@@ -67,6 +149,7 @@ export default {
 			const ratio = diffDomain($$.scale.x.orgDomain()) / diffDomain($$.getZoomDomain());
 			const extent = this.orgScaleExtent();
 
+			// https://d3js.org/d3-zoom#zoom_scaleExtent
 			this.scaleExtent([extent[0] * ratio, extent[1] * ratio]);
 
 			return this;
@@ -79,16 +162,23 @@ export default {
 		 * @private
 		 */
 		// @ts-ignore
-		zoom.updateTransformScale = (transform: d3ZoomTransform, correctTransform: boolean): void => {
+		zoom.updateTransformScale = (transform: d3ZoomTransform,
+			correctTransform: boolean): void => {
 			const isRotated = config.axis_rotated;
+			const transformForScale = toPlotZoomTransform($$, transform);
 
 			// in case of resize, update range of orgXScale
 			org.xScale?.range(scale.x.range());
 
 			// rescale from the original scale
-			const newScale = transform[
+			const newScale = transformForScale[
 				isRotated ? "rescaleY" : "rescaleX"
 			](org.xScale || scale.x);
+
+			// prevent drag zoom to be out of range
+			if (newScale.domain().some(v => /(Invalid Date|NaN)/.test(v.toString()))) {
+				return;
+			}
 
 			const domain = $$.trimXDomain(newScale.domain());
 			const rescale = config.zoom_rescale;
@@ -99,23 +189,26 @@ export default {
 			// https://github.com/naver/billboard.js/issues/2588
 			if (correctTransform) {
 				const t = newScale(scale.x.domain()[0]);
-				const tX = isRotated ? transform.x : t;
-				const tY = isRotated ? t : transform.y;
+				const tX = isRotated ? transformForScale.x : t;
+				const tY = isRotated ? t : transformForScale.y;
+				const targetTransform = toCanvasZoomTransform(
+					$$,
+					d3ZoomIdentity.translate(tX, tY).scale(transform.k)
+				);
 
-				$$.$el.eventRect.property("__zoom", d3ZoomIdentity.translate(tX, tY).scale(transform.k));
+				getZoomTarget($$)?.property("__zoom", targetTransform);
 			}
 
-			if (!$$.state.xTickOffset) {
-				$$.state.xTickOffset = $$.axis.x.tickOffset();
-			}
-
-			scale.zoom = $$.getCustomizedScale(newScale);
+			scale.zoom = $$.getCustomizedXScale(newScale);
 			$$.axis.x.scale(scale.zoom);
 
 			if (rescale) {
 				// copy current initial x scale in case of rescale option is used
 				!org.xScale && (org.xScale = scale.x.copy());
 				scale.x.domain(domain);
+			} else if (org.xScale) {
+				scale.x.domain(org.xScale.domain());
+				org.xScale = null;
 			}
 		};
 
@@ -125,7 +218,7 @@ export default {
 		 * @private
 		 */
 		// @ts-ignore
-		zoom.getDomain = (): number|Date[] => {
+		zoom.getDomain = (): (number | Date)[] => {
 			const domain = scale[scale.zoom ? "zoom" : "subX"].domain();
 			const isCategorized = $$.axis.isCategorized();
 
@@ -135,6 +228,7 @@ export default {
 
 			return domain;
 		};
+
 		$$.zoom = zoom;
 	},
 
@@ -168,13 +262,15 @@ export default {
 		if (
 			!config.zoom_enabled ||
 			$$.filterTargetsToShow($$.data.targets).length === 0 ||
-			(!scale.zoom && sourceEvent?.type.indexOf("touch") > -1 && sourceEvent?.touches.length === 1)
+			(!scale.zoom && sourceEvent?.type.indexOf("touch") > -1 &&
+				sourceEvent?.touches.length === 1)
 		) {
 			return;
 		}
 
 		if (event.sourceEvent) {
 			state.zooming = true;
+			state.domain = undefined;
 		}
 
 		const isMousemove = sourceEvent?.type === "mousemove";
@@ -192,21 +288,38 @@ export default {
 		// - when .unzoom() is called (event.transform === d3ZoomIdentity)
 		const doTransition = config.transition_duration > 0 &&
 			!config.subchart_show && (
-			state.dragging || isUnZoom || !event.sourceEvent
-		);
+				state.dragging || isUnZoom || !event.sourceEvent
+			);
 
-		$$.redraw({
-			withTransition: doTransition,
-			withY: config.zoom_rescale,
-			withSubchart: false,
-			withEventRect: false,
-			withDimension: false
-		});
+		// Use RAF batching for continuous drag zoom events only
+		// Wheel zoom and API calls need synchronous execution for correct behavior and tests
+		const useRAF = sourceEvent && isMousemove && config.zoom_type !== "wheel";
 
-		$$.state.cancelClick = isMousemove;
+		const executeRedraw = () => {
+			// chart can be destroyed before a RAF-deferred frame fires
+			if (!$$.config) {
+				return;
+			}
 
-		// do not call event cb when is .unzoom() is called
-		!isUnZoom && callFn(config.zoom_onzoom, $$.api, $$.zoom.getDomain());
+			$$.redraw({
+				withTransition: doTransition,
+				withY: config.zoom_rescale,
+				withSubchart: false,
+				withEventRect: false,
+				withDimension: false
+			});
+
+			$$.state.cancelClick = isMousemove;
+
+			// do not call event cb when is .unzoom() is called
+			!isUnZoom && callFn(
+				config.zoom_onzoom,
+				$$.api,
+				$$.state.domain ?? $$.zoom.getDomain()
+			);
+		};
+
+		useRAF ? scheduleRAFUpdate($$.state, executeRedraw) : executeRedraw();
 	},
 
 	/**
@@ -217,7 +330,13 @@ export default {
 	onZoomEnd(event): void {
 		const $$ = this;
 		const {config, state} = $$;
-		let {startEvent} = $$.zoom;
+		const zoom = $$.zoom;
+
+		if (!zoom) {
+			return;
+		}
+
+		let {startEvent} = zoom;
 		let e = event?.sourceEvent;
 		const isUnZoom = event?.transform === d3ZoomIdentity;
 
@@ -227,19 +346,24 @@ export default {
 		}
 
 		// if click, do nothing. otherwise, click interaction will be canceled.
-		if (config.zoom_type === "drag" && (
-			e && startEvent.clientX === e.clientX && startEvent.clientY === e.clientY
-		)) {
+		if (
+			config.zoom_type === "drag" && (
+				e && startEvent.clientX === e.clientX && startEvent.clientY === e.clientY
+			)
+		) {
 			return;
 		}
 
-		$$.redrawEventRect();
+		state.zooming = false;
+		!state.isCanvasMode && $$.redrawEventRect();
 		$$.updateZoom();
 
-		state.zooming = false;
-
 		// do not call event cb when is .unzoom() is called
-		!isUnZoom && (e || state.dragging) && callFn(config.zoom_onzoomend, $$.api, $$.zoom.getDomain());
+		!isUnZoom && (e || state.dragging) && callFn(
+			config.zoom_onzoomend,
+			$$.api,
+			$$.state.domain ?? $$.zoom.getDomain()
+		);
 	},
 
 	/**
@@ -256,8 +380,17 @@ export default {
 			const xDomain = subX.domain();
 			const delta = 0.015; // arbitrary value
 
-			const isfullyShown = (zoomDomain[0] <= xDomain[0] || (zoomDomain[0] - delta) <= xDomain[0]) &&
-				(xDomain[1] <= zoomDomain[1] || xDomain[1] <= (zoomDomain[1] - delta));
+			const isfullyShown = $$.config.axis_x_inverted ?
+				(
+					zoomDomain[0] >= xDomain[0] || (zoomDomain[0] + delta) >= xDomain[0]
+				) && (
+					xDomain[1] >= zoomDomain[1] || xDomain[1] >= (zoomDomain[1] + delta)
+				) :
+				(
+					zoomDomain[0] <= xDomain[0] || (zoomDomain[0] - delta) <= xDomain[0]
+				) && (
+					xDomain[1] <= zoomDomain[1] || xDomain[1] <= (zoomDomain[1] - delta)
+				);
 
 			// check if the zoomed chart is fully shown, then reset scale when zoom is out as initial
 			if (force || isfullyShown) {
@@ -269,20 +402,56 @@ export default {
 	},
 
 	/**
+	 * Set zoom transform to event rect
+	 * @param {function} x x Axis scale function
+	 * @param {Array} domain Domain value to be set
+	 * @private
+	 */
+	updateCurrentZoomTransform(x, domain: [number, number]): void {
+		const $$ = this;
+		const {config} = $$;
+		const isRotated = config.axis_rotated;
+
+		// Get transform from given domain value
+		// https://github.com/d3/d3-zoom/issues/57#issuecomment-246434951
+		const translate = [-x(domain[0]), 0];
+		const transform = d3ZoomIdentity
+			.scale(x.range()[1] / (
+				x(domain[1]) - x(domain[0])
+			))
+			.translate(
+				...(isRotated ? translate.reverse() : translate) as [number, number]
+			);
+
+		getZoomTarget($$)?.call($$.zoom.transform, toCanvasZoomTransform($$, transform));
+	},
+
+	/**
 	 * Attach zoom event on <rect>
 	 * @private
 	 */
 	bindZoomOnEventRect(): void {
 		const $$ = this;
-		const {config, $el: {eventRect}} = $$;
+		const {config, $el: {svg}} = $$;
+		const target = getZoomTarget($$);
 		const behaviour = config.zoom_type === "drag" ? $$.zoomBehaviour : $$.zoom;
 
-		// Since Chrome 89, wheel zoom not works properly
-		// Applying the workaround: https://github.com/d3/d3-zoom/issues/231#issuecomment-802305692
-		$$.$el.svg.on("wheel", () => {});
+		$$.state.isCanvasMode &&
+			behaviour?.touchable?.(() => config.interaction_inputType_touch !== false);
 
-		eventRect
-			.call(behaviour)
+		// On Safari, event can't be built inside the svg content
+		// for workaround, register wheel event on <svg> element first
+		// https://bugs.webkit.org/show_bug.cgi?id=226683#c3
+		// https://stackoverflow.com/questions/67836886/wheel-event-is-not-fired-on-a-svg-group-element-in-safari
+		if (
+			!$$.state.isCanvasMode &&
+			window.GestureEvent &&
+			/^((?!chrome|android|mobile).)*safari/i.test(window.navigator?.userAgent)
+		) {
+			svg.on("wheel", () => {});
+		}
+
+		target?.call(behaviour)
 			.on("dblclick.zoom", null);
 	},
 
@@ -297,6 +466,7 @@ export default {
 		let start = 0;
 		let end = 0;
 		let zoomRect;
+		let extent;
 
 		const prop = {
 			axis: isRotated ? "y" : "x",
@@ -304,14 +474,28 @@ export default {
 			index: isRotated ? 1 : 0
 		};
 
+		// Clamp pointer position to a valid range. When axis.x.extent is
+		// configured it takes precedence; otherwise fall back to chart bounds
+		// so that releasing outside the chart (issue #4131) still produces a
+		// usable end value instead of being silently dropped by withinRange().
+		const clampPointer = (v: number): number => {
+			const [lo, hi] = extent ?? [0, isRotated ? state.height : state.width];
+
+			return Math.min(Math.max(v, lo), hi);
+		};
+
 		$$.zoomBehaviour = d3Drag()
+			.touchable(() => !state.isCanvasMode || config.interaction_inputType_touch !== false)
 			.clickDistance(4)
 			.on("start", function(event) {
+				// get extent at first zooming, when is zoomed do not consider
+				extent = $$.scale.zoom ? null : $$.axis.getExtent();
+
 				state.event = event;
 				$$.setDragStatus(true);
 				$$.unselectRect();
 
-				if (!zoomRect) {
+				if (!state.isCanvasMode && !zoomRect) {
 					zoomRect = $$.$el.main.append("rect")
 						.attr("clip-path", state.clip.path)
 						.attr("class", $ZOOM.zoomBrush)
@@ -319,19 +503,25 @@ export default {
 						.attr("height", isRotated ? 0 : state.height);
 				}
 
-				start = getPointer(event, this)[prop.index];
+				// refresh the fixed dimension: the chart may have been resized since creation
+				zoomRect?.attr(
+					isRotated ? "width" : "height",
+					isRotated ? state.width : state.height
+				);
+
+				start = clampPointer(getZoomDragPointer($$, event, this)[prop.index]);
 				end = start;
 
-				zoomRect
+				state.isCanvasMode ? $$.renderCanvasZoomBrush?.(start, end) : zoomRect
 					.attr(prop.axis, start)
 					.attr(prop.attr, 0);
 
 				$$.onZoomStart(event);
 			})
 			.on("drag", function(event) {
-				end = getPointer(event, this)[prop.index];
+				end = clampPointer(getZoomDragPointer($$, event, this)[prop.index]);
 
-				zoomRect
+				state.isCanvasMode ? $$.renderCanvasZoomBrush?.(start, end) : zoomRect
 					.attr(prop.axis, Math.min(start, end))
 					.attr(prop.attr, Math.abs(end - start));
 			})
@@ -339,8 +529,12 @@ export default {
 				const scale = $$.scale.zoom || $$.scale.x;
 
 				state.event = event;
+				// Final clamp: when release happens outside the chart, the
+				// last pointer value may still be out-of-range (e.g. no drag
+				// event fired between the last in-bounds move and release).
+				end = clampPointer(end);
 
-				zoomRect
+				state.isCanvasMode ? $$.clearCanvasZoomBrush?.() : zoomRect
 					.attr(prop.axis, 0)
 					.attr(prop.attr, 0);
 
@@ -381,5 +575,13 @@ export default {
 				$el.zoomResetBtn.style("display", null);
 			}
 		}
+	},
+
+	getZoomTransform() {
+		const $$ = this;
+		const target = getZoomTarget($$);
+		const node = target?.node();
+
+		return node ? toPlotZoomTransform($$, d3ZoomTransform(node)) : {k: 1};
 	}
 };

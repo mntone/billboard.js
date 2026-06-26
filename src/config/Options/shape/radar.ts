@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /**
- * x Axis config options
+ * radar config options
  */
 export default {
 	/**
@@ -22,7 +22,7 @@ export default {
 	 * @property {boolean} [radar.direction.clockwise=false] Set the direction to be drawn.
 	 * @property {number} [radar.level.depth=3] Set the level depth.
 	 * @property {boolean} [radar.level.show=true] Show or hide level.
-	 * @property {Function} [radar.level.text.format] Set format function for the level value.<br>- Default value: `(x) => x % 1 === 0 ? x : x.toFixed(2)`
+	 * @property {function} [radar.level.text.format] Set format function for the level value.<br>- Default value: `(x) => x % 1 === 0 ? x : x.toFixed(2)`
 	 * @property {boolean} [radar.level.text.show=true] Show or hide level text.
 	 * @property {number} [radar.size.ratio=0.87] Set size ratio.
 	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Chart.RadarChart)
@@ -62,10 +62,10 @@ export default {
 	 *      }
 	 *  }
 	 */
-	radar_axis_max: <number|undefined> undefined,
+	radar_axis_max: <number | undefined>undefined,
 	radar_axis_line_show: true,
 	radar_axis_text_show: true,
-	radar_axis_text_position: <{x?: number; y?: number;}> {},
+	radar_axis_text_position: <{x?: number, y?: number}>{},
 	radar_level_depth: 3,
 	radar_level_show: true,
 	radar_level_text_format: (x: number) => (x % 1 === 0 ? x : x.toFixed(2)),

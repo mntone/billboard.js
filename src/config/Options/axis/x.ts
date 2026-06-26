@@ -35,6 +35,28 @@ export default {
 	axis_x_show: true,
 
 	/**
+	 * Force the x axis to interact as single rather than multiple x axes.
+	 * - **NOTE:** The tooltip event will be triggered nearing each data points(for multiple xs) rather than x axis based(as single x does) in below condition:
+	 *   - for `bubble` & `scatter` type
+	 *   - when `data.xs` is set
+	 *   - when `tooltip.grouped=false` is set
+	 *     - `tooltip.grouped` options will take precedence over `axis.forceSingleX` option.
+	 * @name axis․x․forceAsSingle
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.ForceAsSingle)
+	 * @example
+	 * axis: {
+	 *   x: {
+	 *      // will work as single x axis
+	 *      forceAsSingle: true
+	 *   }
+	 * }
+	 */
+	axis_x_forceAsSingle: false,
+
+	/**
 	 * Set type of x axis.<br><br>
 	 * **Available Values:**
 	 * - category
@@ -46,7 +68,7 @@ export default {
 	 * - **log** type:
 	 *   - the x values specified by [`data.x`](#.data%25E2%2580%25A4x)(or by any equivalent option), must be exclusively-positive.
 	 *   - x axis min value should be >= 0.
-	 *
+	 *   - for 'category' type, `data.xs` option isn't supported.
 	 * @name axis․x․type
 	 * @memberof Options
 	 * @type {string}
@@ -62,7 +84,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_type: <"category"|"indexed"|"log"|"timeseries"> "indexed",
+	axis_x_type: <"category" | "indexed" | "log" | "timeseries">"indexed",
 
 	/**
 	 * Set how to treat the timezone of x values.<br>
@@ -94,7 +116,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_categories: <string[]> [],
+	axis_x_categories: <string[]>[],
 
 	/**
 	 * centerize ticks on category axis.
@@ -117,9 +139,9 @@ export default {
 	 * A function to format tick value. Format string is also available for timeseries data.
 	 * @name axis․x․tick․format
 	 * @memberof Options
-	 * @type {Function|string}
+	 * @type {function|string}
 	 * @default undefined
-	 * @see [D3's time specifier](https://github.com/d3/d3-time-format#locale_format)
+	 * @see [D3's time specifier](https://d3js.org/d3-time-format#locale_format)
 	 * @example
 	 * axis: {
 	 *   x: {
@@ -140,14 +162,14 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_tick_format: <Function|string|undefined> undefined,
+	axis_x_tick_format: <Function | string | undefined>undefined,
 
 	/**
 	 * Setting for culling ticks.
 	 * - `true`: the ticks will be culled, then only limited tick text will be shown.<br>
 	 *   This option does not hide the tick lines by default, if want to hide tick lines, set `axis.x.tick.culling.lines=false`.
 	 * - `false`: all of ticks will be shown.<br><br>
-	 * The number of ticks to be shown can be chaned by `axis.x.tick.culling.max`.
+	 * The number of ticks to be shown can be changed by `axis.x.tick.culling.max`.
 	 * @name axis․x․tick․culling
 	 * @memberof Options
 	 * @type {boolean}
@@ -157,7 +179,7 @@ export default {
 	 * axis: {
 	 *   x: {
 	 *     tick: {
-	 *       culling: false
+	 *       culling: false,
 	 *     }
 	 *   }
 	 * }
@@ -203,6 +225,27 @@ export default {
 	axis_x_tick_culling_lines: true,
 
 	/**
+	 * Control culling start point to be reversed. If set to true, the culling will be started from the end to start.
+	 * - **NOTE:** This option is only available when `axis.x.tick.culling` is set to truthy value.
+	 * @name axis․x․tick․culling․reverse
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.XAxisTickCulling)
+	 * @example
+	 * axis: {
+	 *   x: {
+	 *     tick: {
+	 *       culling: {
+	 *           reverse: true,
+	 *       }
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_x_tick_culling_reverse: false,
+
+	/**
 	 * The number of x axis ticks to show.<br><br>
 	 * This option hides tick lines together with tick text. If this option is used on timeseries axis, the ticks position will be determined precisely and not nicely positioned (e.g. it will have rough second value).
 	 * @name axis․x․tick․count
@@ -218,7 +261,25 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_tick_count: <number|undefined>undefined,
+	axis_x_tick_count: <number | undefined>undefined,
+
+	/**
+	 * Set the axis tick line to be positioned inside of the chart.
+	 * @name axis․x․tick․inner
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.TickInner)
+	 * @example
+	 * axis: {
+	 *   x: {
+	 *     tick: {
+	 *       inner: true
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_x_tick_inner: false,
 
 	/**
 	 * Show or hide x axis tick line.
@@ -257,6 +318,32 @@ export default {
 	 * }
 	 */
 	axis_x_tick_text_show: true,
+
+	/**
+	 * Set the first/last axis tick text to be positioned inside of the chart on non-rotated axis.
+	 * @name axis․x․tick․text․inner
+	 * @memberof Options
+	 * @type {boolean|object}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.XAxisTickInner)
+	 * @example
+	 * axis: {
+	 *   x: {
+	 *     tick: {
+	 *       text: {
+	 *          inner: true,
+	 *
+	 *          // or specify each position of the first and last tick text
+	 *          inner: {
+	 *       	   first: true,
+	 *       	   last: true
+	 *       	}
+	 *       }
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_x_tick_text_inner: <{first?: boolean, last?: boolean} | boolean>false,
 
 	/**
 	 * Set the x Axis tick text's position relatively its original position
@@ -304,10 +391,10 @@ export default {
 	/**
 	 * Set the x values of ticks manually.<br><br>
 	 * If this option is provided, the position of the ticks will be determined based on those values.<br>
-	 * This option works with `timeseries` data and the x values will be parsed accoding to the type of the value and data.xFormat option.
+	 * This option works with `timeseries` data and the x values will be parsed according to the type of the value and data.xFormat option.
 	 * @name axis․x․tick․values
 	 * @memberof Options
-	 * @type {Array|Function}
+	 * @type {Array|function}
 	 * @default null
 	 * @example
 	 * axis: {
@@ -323,7 +410,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_tick_values: <(string|Date|number)[]|(()=> number[])|null> null,
+	axis_x_tick_values: <(string | Date | number)[] | (() => number[]) | null>null,
 
 	/**
 	 * Rotate x axis tick text if there is not enough space for 'category' and 'timeseries' type axis.
@@ -422,7 +509,6 @@ export default {
 	 */
 	axis_x_tick_multiline: true,
 
-
 	/**
 	 * Set tick width
 	 * - **NOTE:**
@@ -440,10 +526,10 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_tick_width: <number|null> null,
+	axis_x_tick_width: <number | null>null,
 
 	/**
-	 * Set to display system tooltip(via 'title' attribute) for tick text
+	 * Set to display system tooltip(via `<title>` element) for tick text
 	 * - **NOTE:** Only available for category axis type (`axis.x.type='category'`)
 	 * @name axis․x․tick․tooltip
 	 * @memberof Options
@@ -483,7 +569,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_max: <number|undefined> undefined,
+	axis_x_max: <number | undefined>undefined,
 
 	/**
 	 * Set min value of x axis range.
@@ -508,7 +594,24 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_min: <number|undefined> undefined,
+	axis_x_min: <number | undefined>undefined,
+
+	/**
+	 * Change the direction of x axis.<br><br>
+	 * If true set, the direction will be `right -> left`.
+	 * @name axis․x․inverted
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.InvertedAxis)
+	 * @example
+	 * axis: {
+	 *   x: {
+	 *     inverted: true
+	 *   }
+	 * }
+	 */
+	axis_x_inverted: false,
 
 	/**
 	 * Set padding for x axis.<br><br>
@@ -522,7 +625,7 @@ export default {
 	 *     - **timeseries:** Numeric time value
 	 *       ex. the given value `1000*60*60*24`, which is numeric time equivalent of a day, is same as the width of 1 tick width
 	 *   - If want values to be treated as pixels, specify `unit:"px"`.
-	 *     - The pixel value will be convered based on the scale values. Hence can not reflect accurate padding result.
+	 *     - The pixel value will be converted based on the scale values. Hence can not reflect accurate padding result.
 	 * @name axis․x․padding
 	 * @memberof Options
 	 * @type {object|number}
@@ -552,7 +655,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_padding: <number|{left?: number; right?: number;}> {},
+	axis_x_padding: <number | {left?: number, right?: number}>{},
 
 	/**
 	 * Set height of x axis.<br><br>
@@ -568,13 +671,14 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_height: <number|undefined> undefined,
+	axis_x_height: <number | undefined>undefined,
 
 	/**
-	 * Set default extent for subchart and zoom. This can be an array or function that returns an array.
+	 * Set extent for subchart and zoom(drag only). This can be an array or function that returns an array.
+	 * - **NOTE:** Specifying value, will limit the zoom scope selection within.
 	 * @name axis․x․extent
 	 * @memberof Options
-	 * @type {Array|Function}
+	 * @type {Array|function}
 	 * @default undefined
 	 * @example
 	 * axis: {
@@ -598,7 +702,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_x_extent: <(number|string)[]|Function|undefined> undefined,
+	axis_x_extent: <(number | string)[] | Function | undefined>undefined,
 
 	/**
 	 * Set label on x axis.<br><br>

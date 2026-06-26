@@ -2,20 +2,22 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import type {RegionOptions} from "../../../../types/options";
+
 /**
  * main config options
  */
 export default {
 	/**
 	 * Specify the CSS selector or the element which the chart will be set to. D3 selection object can be specified also.<br>
-	 * If other chart is set already, it will be replaced with the new one (only one chart can be set in one element).
-	 * - **NOTE:** In case of element doesn't exist or not specified, will add a `<div>` element to the body.
+	 * If another chart is already set, it will be replaced with the new one (only one chart can be set in one element).
+	 * - **NOTE:** In case the element doesn't exist or not specified, will add a `<div>` element to the body.
 	 * @name bindto
 	 * @memberof Options
 	 * @property {string|HTMLElement|d3.selection|object} [bindto="#chart"] Specify the element where chart will be drawn.
 	 * @property {string|HTMLElement|d3.selection} bindto.element="#chart" Specify the element where chart will be drawn.
 	 * @property {string} [bindto.classname=bb] Specify the class name of bind element.<br>
-	 *     **NOTE:** When class name isn't `bb`, then you also need to update the default CSS to be rendered correctly.
+	 *     **NOTE:** When the class name isn't `bb`, then you also need to update the default CSS to be rendered correctly.
 	 * @default #chart
 	 * @example
 	 * bindto: "#myContainer"
@@ -32,7 +34,7 @@ export default {
 	 *    classname: "bill-board"  // ex) <div id='chart' class='bill-board'>
 	 * }
 	 */
-	bindto: <string|{element: string; classname?: string}> "#chart",
+	bindto: <string | {element: string, classname?: string}>"#chart",
 
 	/**
 	 * Set chart background.
@@ -53,13 +55,13 @@ export default {
 	 *    imgUrl: "https://naver.github.io/billboard.js/img/logo/billboard.js.svg",
 	 * }
 	 */
-	background: <{class?: string; color?: string; imgUrl?: string;}> {},
+	background: <{class?: string, color?: string, imgUrl?: string}>{},
 
 	/**
 	 * Set 'clip-path' attribute for chart element
 	 * - **NOTE:**
-	 *  > When is false, chart node element is positioned after the axis node in DOM tree hierarchy.
-	 *  > Is to make chart element positioned over axis element.
+	 *  > When false, chart node element is positioned after the axis node in DOM tree hierarchy.
+	 *  > This is to make the chart element positioned over axis element.
 	 * @name clipPath
 	 * @memberof Options
 	 * @type {boolean}
@@ -83,11 +85,11 @@ export default {
 	 *   classname: "test_class"
 	 * }
 	 */
-	svg_classname: <string|undefined> undefined,
+	svg_classname: <string | undefined>undefined,
 
 	/**
 	 * The desired size of the chart element.
-	 * If value is not specified, the width of the chart will be calculated by the size of the parent element it's appended to.
+	 * If the value is not specified, the width of the chart will be calculated by the size of the parent element it's appended to.
 	 * @name size
 	 * @memberof Options
 	 * @type {object}
@@ -101,27 +103,43 @@ export default {
 	 *   height: 480
 	 * }
 	 */
-	size_width: <number|undefined> undefined,
-	size_height: <number|undefined> undefined,
+	size_width: <number | undefined>undefined,
+	size_height: <number | undefined>undefined,
 
 	/**
 	 * The padding of the chart element.
+	 * - **NOTE:** for more information, see the "[`Understanding padding`](https://github.com/naver/billboard.js/wiki/Understanding-padding)" wiki documentation.
 	 * @name padding
 	 * @memberof Options
 	 * @type {object}
 	 * @property {object|boolean} [padding=true] Set padding of chart, and accepts object or boolean type.
 	 * - `Object`: Specify each side's padding.
-	 * - `false`: Remove padding completely and make shape to fully occupy the container element.
+	 * - `false`: Remove padding completely and make the shape fully occupy the container element.
 	 *   - In this case, axes and subchart will be hidden.
 	 *   - To adjust some padding from this state, use `axis.[x|y].padding` option.
+	 * @property {string} [padding.mode] padding mode
+	 * - `"fit"`: Reduce padding as much as possible to make chart fit to the container element for chart types w/axis.<br>When specified, all padding values will be relative from fitted value.
 	 * @property {number} [padding.top] padding on the top of chart
 	 * @property {number} [padding.right] padding on the right of chart
 	 * @property {number} [padding.bottom] padding on the bottom of chart
 	 * @property {number} [padding.left] padding on the left of chart
 	 * @see [Demo](https://naver.github.io/billboard.js/demo/#ChartOptions.Padding)
+	 * @see [Demo: Fit padding](https://naver.github.io/billboard.js/demo/#ChartOptions.FitPadding)
 	 * @example
 	 * // remove padding completely.
 	 * padding: false,
+	 *
+	 * padding: {
+	 *   // specifying mode value, will reduce padding and make fit to the container element.
+	 *   mode: "fit"
+	 *
+	 *   // when mode is "fit", all padding values will be relative from fitted value.
+	 *   // so, 0 will be initial fitted value.
+	 *   top: 20,
+	 *   right: 20,
+	 *   bottom: 20,
+	 *   left: 20
+	 * }
 	 *
 	 * // or specify padding value for each side
 	 * padding: {
@@ -132,10 +150,11 @@ export default {
 	 * }
 	 */
 	padding: true,
-	padding_left: <number|undefined> undefined,
-	padding_right: <number|undefined> undefined,
-	padding_top: <number|undefined> undefined,
-	padding_bottom: <number|undefined> undefined,
+	padding_mode: <"fit" | undefined>undefined,
+	padding_left: <number | undefined>undefined,
+	padding_right: <number | undefined>undefined,
+	padding_top: <number | undefined>undefined,
+	padding_bottom: <number | undefined>undefined,
 
 	/**
 	 * Set chart resize options
@@ -143,19 +162,48 @@ export default {
 	 * @memberof Options
 	 * @type {object}
 	 * @property {object} [resize] resize object
-	 * @property {boolean} [resize.auto=true] Set chart resize automatically on viewport changes.
+	 * @property {boolean|string} [resize.auto=true] Set chart resize automatically on viewport changes.
+	 * - **NOTE:** Available options
+	 *   - true: Enables automatic resize.
+	 *   - false: Disables automatic resize.
+	 *   - "parent": Enables automatic resize when the parent node is resized.
+	 *   - "viewBox": Enables automatic resize, and size will be fixed based on the viewbox.
+	 * @property {boolean|number} [resize.timer=true] Set resize timer option.
+	 * - **NOTE:** Available options
+	 *   - The resize function will be called using:
+	 *     - true: `setTimeout()`
+	 *     - false: `requestIdleCallback()`
+	 *   - Given number(delay in ms) value, resize function will be triggered using `setTimeout()` with given delay.
+	 * @see [Demo: resize "parent"](https://naver.github.io/billboard.js/demo/#ChartOptions.resizeParent)
+	 * @see [Demo: resize "viewBox"](https://naver.github.io/billboard.js/demo/#ChartOptions.resizeViewBox)
 	 * @example
 	 *  resize: {
-	 *      auto: false
+	 *      auto: false,
+	 *
+	 *      // set resize based on parent node width value
+	 *      auto: "parent",
+	 *
+	 *      // set resize based on viewBox value
+	 *      auto: "viewBox",
+	 *
+	 *      // set resize function will be triggered using `setTimeout()`
+	 *      timer: true,
+	 *
+	 *      // set resize function will be triggered using `requestIdleCallback()`
+	 *      timer: false,
+	 *
+	 *      // set resize function will be triggered using `setTimeout()` with a delay of `100ms`.
+	 *      timer: 100
 	 *  }
 	 */
-	resize_auto: true,
+	resize_auto: <boolean | "parent" | "viewBox">true,
+	resize_timer: true,
 
 	/**
 	 * Set a callback to execute when the chart is clicked.
 	 * @name onclick
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onclick: function(event) {
@@ -164,13 +212,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onclick: <(() => void)|undefined> undefined,
+	onclick: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute when mouse/touch enters the chart.
 	 * @name onover
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onover: function(event) {
@@ -179,13 +227,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onover: <(() => void)|undefined> undefined,
+	onover: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute when mouse/touch leaves the chart.
 	 * @name onout
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onout: function(event) {
@@ -194,13 +242,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onout: <(() => void)|undefined> undefined,
+	onout: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute when user resizes the screen.
 	 * @name onresize
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onresize: function() {
@@ -208,13 +256,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onresize: <(() => void)|undefined> undefined,
+	onresize: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute when screen resize finished.
 	 * @name onresized
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onresized: function() {
@@ -222,13 +270,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onresized: <(() => void)|undefined> undefined,
+	onresized: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute before the chart is initialized
 	 * @name onbeforeinit
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onbeforeinit: function() {
@@ -236,13 +284,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onbeforeinit: <(() => void)|undefined> undefined,
+	onbeforeinit: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute when the chart is initialized.
 	 * @name oninit
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * oninit: function() {
@@ -250,13 +298,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	oninit: <(() => void)|undefined> undefined,
+	oninit: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set a callback to execute after the chart is initialized
 	 * @name onafterinit
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onafterinit: function() {
@@ -264,13 +312,13 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onafterinit: <(() => void)|undefined> undefined,
+	onafterinit: <(() => void) | undefined>undefined,
 
 	/**
-	 * Set a callback which is executed when the chart is rendered. Basically, this callback will be called in each time when the chart is redrawed.
+	 * Set a callback which is executed when the chart is rendered. Basically, this callback will be called in each time when the chart is redrawn.
 	 * @name onrendered
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * onrendered: function() {
@@ -278,16 +326,17 @@ export default {
 	 *   ...
 	 * }
 	 */
-	onrendered: <(() => void)|undefined> undefined,
+	onrendered: <(() => void) | undefined>undefined,
 
 	/**
 	 * Set duration of transition (in milliseconds) for chart animation.<br><br>
-	 * - **NOTE:** If `0 `or `null` set, transition will be skipped. So, this makes initial rendering faster especially in case you have a lot of data.
+	 * - **NOTE:** If `0` or `null` is set, transition will be skipped. So, this makes initial rendering faster especially in case you have a lot of data.
+	 * - **NOTE:** In canvas mode, `transition.duration` is ignored. Canvas frames are redrawn synchronously. For canvas `flow()`, pass `duration` to the `flow()` call when an x-domain interpolation is required.
 	 * @name transition
 	 * @memberof Options
 	 * @type {object}
 	 * @property {object} [transition] transition object
-	 * @property {number} [transition.duration=350] duration in milliseconds
+	 * @property {number} [transition.duration=250] duration in milliseconds
 	 * @example
 	 * transition: {
 	 *    duration: 500
@@ -315,17 +364,29 @@ export default {
 	 * @memberof Options
 	 * @type {object}
 	 * @property {object} [render] render object
-	 * @property {boolean} [render.lazy=true] Make to not render at initialization (enabled by default when bind element's visibility is hidden).
-	 * @property {boolean} [render.observe=true] Observe bind element's visibility(`display` or `visiblity` inline css property or class value) & render when is visible automatically (for IEs, only works IE11+). When set to **false**, call [`.flush()`](./Chart.html#flush) to render.
+	 * @property {boolean} [render.lazy=true] Make it not render at initialization.
+	 * - **NOTE**:
+	 *   - Enabled by default when bind element's visibility is hidden.
+	 *   - When set to `false`, will initialize the chart regardless the bind element's visibility state, but in this case chart can't be guaranteed to be rendered properly.
+	 * @property {boolean} [render.observe=true] Observe bind element's visibility(`display` or `visibility` inline css property or class value) & render when it is visible automatically (for IEs, only works IE11+). When set to **false**, call [`.flush()`](./Chart.html#flush) to render.
+	 * @property {"svg"|"canvas"} [render.mode="svg"] Select rendering backend. Available values are `"svg"` and `"canvas"`. In canvas mode, chart primitives are rendered to a single `<canvas>` instead of SVG nodes.
+	 * - **NOTE:** Canvas mode doesn't create per-shape, per-tick, grid, region and label SVG DOM nodes/classes. SVG CSS selectors that depend on those nodes, such as `.bb-target-data1 .bb-bar`, `.bb-bar-0` or `.bb-axis .tick text`, won't style canvas-drawn primitives. Use chart options, supported CSS theme probes or `canvas.theme` overrides.
+	 * - **NOTE:** Arc chart types (`pie`, `donut`, `gauge`, `polar` and `radar`) and funnel charts don't get meaningful rendering benefit from canvas mode. They are rendered as SVG only and `render.mode="canvas"` is ignored for those types.
 	 * @see [Demo](https://naver.github.io/billboard.js/demo/#ChartOptions.LazyRender)
 	 * @example
 	 *  render: {
 	 *    lazy: true,
-	 *    observe: true
+	 *    observe: true,
+	 *    mode: "svg"
 	 * }
 	 *
 	 * @example
-	 *	// <!-- render.lazy will detect visibility defined -->
+	 *  render: {
+	 *    mode: "canvas"
+	 * }
+	 *
+	 * @example
+	 * 	// <!-- render.lazy will detect visibility defined -->
 	 *  // (a) <div id='chart' class='hide'></div>
 	 *  // (b) <div id='chart' style='display:none'></div>
 	 *
@@ -338,7 +399,7 @@ export default {
 	 *  document.getElementById('chart').style.display = 'block';  // (b)
 	 *
 	 * @example
-	 *	// chart won't be rendered and not observing bind element's visiblity changes
+	 * 	// chart won't be rendered and not observing bind element's visibility changes
 	 *  var chart = bb.generate({
 	 *     render: {
 	 *          lazy: true,
@@ -349,29 +410,89 @@ export default {
 	 *  // call at any point when you want to render
 	 *  chart.flush();
 	 */
-	render: <{lazy?: boolean; observe?: boolean;}> {},
+	render: <{lazy?: boolean, observe?: boolean, mode?: "svg" | "canvas"}>{},
+	render_mode: <"svg" | "canvas">"svg",
+
+	/**
+	 * Override canvas drawing style values read from supported SVG CSS probes.
+	 * Use this for canvas-specific styling that can't be represented by per-node SVG CSS selectors.
+	 * @name canvas
+	 * @memberof Options
+	 * @type {object}
+	 * @property {object} [canvas] Canvas options.
+	 * @property {object} [canvas.theme] Canvas theme override.
+	 * @property {object} [canvas.theme.selectors] Canvas theme overrides keyed by supported billboard.js SVG selectors. Use this to style canvas-rendered primitives with familiar CSS selectors and CSS property names.
+	 * - **NOTE:** `canvas.theme.selectors` keys are compatibility aliases for supported canvas primitives, not a full DOM/CSS selector engine. They don't match live SVG nodes 1:1 in canvas mode, and unsupported or per-data selectors such as `.bb-target-data1 .bb-bar` or `.bb-bar-0` are ignored. Use `canvas.theme` direct overrides or chart options for styles that need exact per-node behavior.
+	 * @see [Canvas theme selector reference](https://github.com/naver/billboard.js/blob/master/CANVAS_THEME_SELECTORS.md)
+	 * @example
+	 *  canvas: {
+	 *    theme: {
+	 *      selectors: {
+	 *        ".bb-axis .tick text": {
+	 *          fill: "#555",
+	 *          font: "12px sans-serif"
+	 *        },
+	 *        ".bb-grid line": {
+	 *          stroke: "#ddd",
+	 *          "stroke-width": 1,
+	 *          "stroke-dasharray": "2 2"
+	 *        },
+	 *        ".bb-bar": {
+	 *          stroke: "#fff",
+	 *          "stroke-width": 1
+	 *        }
+	 *      }
+	 *    }
+	 *  }
+	 */
+	canvas_theme: {},
 
 	/**
 	 * Show rectangles inside the chart.<br><br>
-	 * This option accepts array including object that has axis, start, end and class.
-	 * The keys start, end and class are optional.
-	 * axis must be x, y or y2. start and end should be the value where regions start and end.
-	 * If not specified, the edge values will be used.
-	 * If timeseries x axis, date string, Date object and unixtime integer can be used.
-	 * If class is set, the region element will have it as class.
+	 * - **NOTE:**<br>
+	 *   - axis must be x, y or y2. start and end should be the value where regions start and end.
+	 *   - If not specified, the edge values will be used.
+	 *   - If timeseries x axis, date string, Date object and unixtime integer can be used.
+	 *   - If category x axis, category name can be used for start and end.
+	 *   - If class is set, the region element will have it as class.
+	 *
+	 * This option accept array of object with below values:
+	 * - `axis {string}`: 'x', 'y', or 'y2'
+	 * - `[start] {number|Date|string}`: Start position of the region. If not set, the start will be the edge of the chart.
+	 * - `[end] {number|Date|string}`: End position of the region. If not set, the end will be the edge of the chart.
+	 * - `[class] {string}`: Class value to apply to the region.
+	 * - `[label] {object}` Label text option.
+	 *   - `text {string}`: Text value.
+	 *   - `x {number}`: x Position.
+	 *   - `y {number}`: y Position.
+	 *   - `center {string}`: Align label at the center. Allowed values are 'x', 'y', 'xy'.
+	 *   - `color {string}`: Color string.
+	 *   - `rotated (boolean)`: Whether rotate label or not.
 	 * @name regions
 	 * @memberof Options
 	 * @type {Array}
 	 * @default []
+	 * @see [Demo: Regions](https://naver.github.io/billboard.js/demo/#Region.Region)
+	 * @see [Demo: Regions Timeseries](https://naver.github.io/billboard.js/demo/#Region.RegionWithTimeseries)
+	 * @see [Demo: Regions Label](https://naver.github.io/billboard.js/demo/#Region.RegionLabel)
 	 * @example
 	 *  regions: [
 	 *    {
 	 *      axis: "x",
 	 *      start: 1,
 	 *      end: 4,
-	 *      class: "region-1-4"
+	 *      class: "region-1-4",
+	 *      opacity: 0.2,
+	 *      label: {
+	 *      	text: "Region Text",
+	 *      	x: 5,  // position relative of the initial x coordinate
+	 *      	y: 5,  // position relative of the initial y coordinate
+	 *      	center: "xy",  // center text label in both direction.
+	 *      	color: "red",  // color string
+	 *      	rotated: true  // make text to show in vertical or horizontal
+	 *      }
 	 *    }
 	 *  ]
 	 */
-	regions: <{axis?: string; start?: number; end?: number; class?: string;}[]> []
+	regions: <RegionOptions[]>[]
 };

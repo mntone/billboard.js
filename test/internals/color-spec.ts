@@ -8,7 +8,7 @@ import {
 	select as d3Select,
 	namespaces as d3Namespaces
 } from "d3-selection";
-import {expect} from "chai";
+import {beforeEach, beforeAll, afterAll, describe, expect, it} from "vitest";
 import util from "../assets/util";
 import {$ARC, $BAR, $COLOR, $COMMON, $EVENT, $LEGEND, $SHAPE, $TOOLTIP} from "../../src/config/classes";
 import {KEY as CACHE_KEY} from "../../src/module/Cache";
@@ -42,7 +42,7 @@ describe("COLOR", () => {
 		const pattern = ["#00c73c", "#fa7171", "#2ad0ff", "#7294ce", "#e3e448", "#cc7e6e", "#fb6ccf", "#c98dff", "#4aea99", "#bbbbbb"];
 		const styleSheet = document.createElement("style");
 
-		before(() => {
+		beforeAll(() => {
 			styleSheet.innerHTML = `.${$COLOR.colorPattern} {
 				background-image: url("${pattern.join(";")}");
 			}`;
@@ -50,17 +50,22 @@ describe("COLOR", () => {
 			document.head.appendChild(styleSheet);
 		});
 
-		after(() => {
-			styleSheet.parentNode.removeChild(styleSheet);
+		afterAll(() => {
+			styleSheet.parentNode?.removeChild(styleSheet);
 			document.body[CACHE_KEY.colorPattern] = null;
 		});
 
 		it("should get and parse from the stylesheet", () => {			
-			const pttrn = chart.internal.getColorFromCss();
+			const color = chart.internal.generateColor();
+			const pttrn: string[] = [];
+			
+			chart.data().forEach(v => {
+				pttrn.push(color(v.id));
+			});
 
 			expect(pttrn).to.deep.equal(pattern);
 
-			// check if pattern value are cached
+			// // check if pattern value are cached
 			expect(document.body["__colorPattern__"]).to.deep.equal(pattern);
 		});
 
@@ -73,7 +78,7 @@ describe("COLOR", () => {
 	});
 
 	describe("tiles", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -167,7 +172,7 @@ describe("COLOR", () => {
 		});
 
 		describe("pattern names", () => {
-			before(() => {
+			beforeAll(() => {
 				args.color.pattern = ['red', 'gold', 'green'];
 			});
 
@@ -242,7 +247,7 @@ describe("COLOR", () => {
 	describe("color.onover", () => {
 		const barStrokeColor = "blue";
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -270,7 +275,7 @@ describe("COLOR", () => {
 			const {$: {main}, internal: {$el}} = chart;
 			const eventRect = $el.eventRect.node();
 			const shape = main.selectAll(`.${$SHAPE.shape}-1`);
-			const originalColor = [];
+			const originalColor: any = [];
 
 			shape.each(function() {
 				originalColor.push({
@@ -355,7 +360,7 @@ describe("COLOR", () => {
 			};
 		});
 
-		it("check for the arc type", done => {
+		it("check for the arc type", () => new Promise(done => {
 			setTimeout(() => {
 				const {main} = chart.$;
 				const arc = main.select(`.${$ARC.arc}-data1`).node();
@@ -368,13 +373,13 @@ describe("COLOR", () => {
 				util.fireEvent(arc, "mouseout");
 				expect(arc.style.fill).to.be.equal(originalColor);
 
-				done();
-			}, 1000);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("color.threshold", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -387,11 +392,14 @@ describe("COLOR", () => {
 					threshold: {
 						values: [0, 20, 40, 60, 80]
 					}
+				},
+				transition: {
+					duration: 200
 				}
 			}
 		});
 
-		it("check for color update", done => {
+		it("check for color update", () => new Promise(done => {
 			const path = chart.$.arc.select(`path.${$ARC.arc}-data`);
 			let i = 0;
 
@@ -401,20 +409,24 @@ describe("COLOR", () => {
 
 			setTimeout(() => {
 				expect(path.style("fill")).to.be.equal(args.color.pattern[i++]);
-				chart.load({columns: [["data", 40]]});
-			}, 500);
 
-			setTimeout(() => {
-				expect(path.style("fill")).to.be.equal(args.color.pattern[i++]);
-				done();
-			}, 1000);
-		});
+				chart.load({
+					columns: [["data", 40]],
+					done() {
+						setTimeout(() => {
+							expect(path.style("fill")).to.be.equal(args.color.pattern[i++]);
+							done(1);
+						}, 350);
+					}
+				});
+			}, 350);
+		}));
 	});
 
 	describe("Tooltip color", () => {
 		const c = {data1: "yellow", data2: "green"};
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -450,6 +462,45 @@ describe("COLOR", () => {
 					chart.internal.$el.legend.select(`.${$LEGEND.legendItem}-${d.data.id} line`).style("stroke")
 				);
 			});
-		})
+		});
+	});
+
+	describe("XSS prevention", () => {
+		describe("data.labels.backgroundColors", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 30, 200, 100]
+						],
+						labels: {
+							backgroundColors: "<script>alert(1)</script>red"
+						}
+					}
+				};
+			});
+
+			it("should sanitize malicious backgroundColors value", () => {
+				const filter = chart.internal.$el.defs.select("filter");
+				const filterHtml = filter.html();
+
+				expect(filterHtml).to.not.include("<script>");
+				expect(filterHtml).to.not.include("</script>");
+			});
+
+			it("set options: backgroundColors with script tag in object value", () => {
+				args.data.labels.backgroundColors = {
+					data1: "<script>alert(1)</script>blue"
+				};
+			});
+
+			it("should sanitize script tag in object backgroundColors value", () => {
+				const filter = chart.internal.$el.defs.select("filter");
+				const filterHtml = filter.html();
+
+				expect(filterHtml).to.not.include("<script>");
+				expect(filterHtml).to.not.include("</script>");
+			});
+		});
 	});
 });

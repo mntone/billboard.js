@@ -2,62 +2,82 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {DataRow} from "../../../types/types";
+import {select as d3Select} from "d3-selection";
+import type {d3Selection, DataRow} from "../../../types/types";
 import {$BAR, $COMMON} from "../../config/classes";
 import {getRandom, isNumber} from "../../module/util";
-import {IDataRow} from "../data/IData";
+import type {IBarData} from "../data/IData";
+import {getBarRadiusInfo, getBarRadiusResolver, getStackingBarRadiusSet} from "./core/barRadius";
+import {getShapeColorWithGradient, updateTargetsForShape} from "./shape";
 
 type BarTypeDataRow = DataRow<number | number[]>;
+type BarConnectLine = {x: number, y: number, width: number, height: number};
+type BarPath = (string | BarConnectLine)[];
+
+/**
+ * Get the type of connect line for bar chart
+ * @param {string} id Data id
+ * @returns {string|null} Connect line type or null if not applicable
+ * @private
+ */
+function _getConnectLineType(id: string): string | null {
+	const connectLine = this.config.bar_connectLine;
+	const type = connectLine?.[id] || connectLine;
+
+	return (/^(start|end)\-(start|end)$/.test(type)) ? type : null;
+}
 
 export default {
 	initBar(): void {
 		const {$el, config, state: {clip}} = this;
 
-		$el.bar = $el.main.select(`.${$COMMON.chart}`)
-			// should positioned at the beginning of the shape node to not overlap others
-			.insert("g", ":first-child")
-			.attr("class", $BAR.chartBars);
+		$el.bar = $el.main.select(`.${$COMMON.chart}`);
+		$el.bar = config.bar_front ? $el.bar.append("g") : $el.bar.insert("g", ":first-child");
+
+		$el.bar
+			.attr("class", $BAR.chartBars)
+			.call(this.setCssRule(false, `.${$BAR.chartBars}`, ["pointer-events:none"]));
 
 		// set clip-path attribute when condition meet
 		// https://github.com/naver/billboard.js/issues/2421
-		if (config.clipPath === false && (
-			config.bar_radius || config.bar_radius_ratio
-		)) {
+		if (
+			config.clipPath === false && (
+				config.bar_radius || config.bar_radius_ratio
+			)
+		) {
 			$el.bar.attr("clip-path", clip.pathXAxis.replace(/#[^)]*/, `#${clip.id}`));
 		}
 	},
 
 	updateTargetsForBar(targets: BarTypeDataRow[]): void {
 		const $$ = this;
-		const {config, $el} = $$;
-		const classChartBar = $$.getChartClass("Bar");
+		const {config} = $$;
 		const classBars = $$.getClass("bars", true);
-		const classFocus = $$.classFocus.bind($$);
 		const isSelectable = config.interaction_enabled && config.data_selection_isselectable;
 
-		if (!$el.bar) {
-			$$.initBar();
-		}
-
-		const mainBarUpdate = $$.$el.main.select(`.${$BAR.chartBars}`)
-			.selectAll(`.${$BAR.chartBar}`)
-			.data(
-				// remove
-				targets.filter(
-					v => v.values.some(d => (isNumber(d.value) || $$.isBarRangeType(d)))
-				)
-			)
-			.attr("class", d => classChartBar(d) + classFocus(d));
-
-		const mainBarEnter = mainBarUpdate.enter().append("g")
-			.attr("class", classChartBar)
-			.style("opacity", "0")
-			.style("pointer-events", "none");
+		const mainBarEnter = updateTargetsForShape.call($$, targets, {
+			type: "Bar",
+			elKey: "bar",
+			containerClass: $BAR.chartBars,
+			itemClass: $BAR.chartBar,
+			initFn: $$.initBar
+		});
 
 		// Bars for each data
 		mainBarEnter.append("g")
 			.attr("class", classBars)
-			.style("cursor", d => (isSelectable?.bind?.($$.api)(d) ? "pointer" : null));
+			.style("cursor", d => (isSelectable?.bind?.($$.api)(d) ? "pointer" : null))
+			.call(selection => {
+				$$.setCssRule(true, ` .${$BAR.bar}`, ["fill"], $$.color)(selection);
+
+				// add bar connect line
+				selection.each(function(d) {
+					if (_getConnectLineType.call($$, d.id)) {
+						d3Select(this).append("path")
+							.attr("class", $BAR.barConnectLine);
+					}
+				});
+			});
 	},
 
 	/**
@@ -68,10 +88,17 @@ export default {
 	 */
 	updateBar(withTransition: boolean, isSub = false): void {
 		const $$ = this;
-		const {$el, $T} = $$;
+
+		if ($$.state.isCanvasMode) {
+			return;
+		}
+
+		const {config, $el, $T} = $$;
 		const $root = isSub ? $el.subchart : $el;
 		const classBar = $$.getClass("bar", true);
 		const initialOpacity = $$.initialOpacity.bind($$);
+
+		config.bar_linearGradient && $$.updateLinearGradient();
 
 		const bar = $root.main.selectAll(`.${$BAR.bars}`)
 			.selectAll(`.${$BAR.bar}`)
@@ -83,26 +110,81 @@ export default {
 
 		$root.bar = bar.enter().append("path")
 			.attr("class", classBar)
-			.style("fill", $$.color)
+			.style("fill", $$.updateBarColor.bind($$))
 			.merge(bar)
 			.style("opacity", initialOpacity);
+
+		// calculate ratio if grouped data exists
+		$$.setRatioForGroupedData($root.bar.data());
+	},
+
+	/**
+	 * Update bar color
+	 * @param {object} d Data object
+	 * @returns {string} Color string
+	 * @private
+	 */
+	updateBarColor(d: IBarData): string | null {
+		const $$ = this;
+		const fn = $$.getStylePropValue($$.color);
+
+		return getShapeColorWithGradient.call($$, d, "bar_linearGradient", fn || (() => null));
 	},
 
 	/**
 	 * Redraw function
-	 * @param {Function} drawFn Retuned function from .getDrawShape() => .generateDrawBar()
+	 * @param {function} drawFn Retuned function from .getDrawShape() => .generateDrawBar()
 	 * @param {boolean} withTransition With or without transition
 	 * @param {boolean} isSub Subchart draw
 	 * @returns {Array}
+	 * @private
 	 */
 	redrawBar(drawFn, withTransition?: boolean, isSub = false) {
 		const $$ = this;
-		const {bar} = (isSub ? $$.$el.subchart : $$.$el);
+
+		if ($$.state.isCanvasMode) {
+			return [];
+		}
+
+		const {bar} = isSub ? $$.$el.subchart : $$.$el;
+		const barPath: BarConnectLine[] = [];
+		const connectLineCache = new Map<string, string | null>();
 
 		return [
 			$$.$T(bar, withTransition, getRandom())
-				.attr("d", d => (isNumber(d.value) || $$.isBarRangeType(d)) && drawFn(d))
-				.style("fill", $$.color)
+				.attr("d", function(d, i, arr) {
+					const path = (isNumber(d.value) || $$.isBarRangeType(d)) && drawFn(d, i);
+
+					// Memoize per series id: config lookup + regex runs once per id, not per bar
+					let connectLineType = connectLineCache.get(d.id);
+
+					if (connectLineType === undefined) {
+						connectLineType = _getConnectLineType.call($$, d.id);
+						connectLineCache.set(d.id, connectLineType);
+					}
+
+					// for bar.connectLine option
+					if (path.length > 1) {
+						barPath.push(path[1]);
+					}
+
+					// flush per series even when the last datum is null,
+					// otherwise the accumulated path leaks into the next series
+					if (i === arr.length - 1 && barPath.length) {
+						const barConnectLineNode = $$.$T(
+							d3Select(this.parentNode.querySelector(`.${$BAR.barConnectLine}`)),
+							withTransition,
+							getRandom()
+						);
+
+						$$.updateConnectLine(barConnectLineNode, connectLineType, barPath);
+						barPath.splice(0);
+					}
+
+					return path[0];
+				})
+				.style("fill", $$.updateBarColor.bind($$))
+				.style("clip-path", d => d.clipPath)
 				.style("opacity", null)
 		];
 	},
@@ -114,70 +196,91 @@ export default {
 	 *
 	 * When gropus given as:
 	 *  groups: [
-	 *		["data1", "data2"],
-	 *		["data3", "data4"]
-	 *	],
+	 * 		["data1", "data2"],
+	 * 		["data3", "data4"]
+	 * 	],
 	 *
 	 * Will be rendered as:
 	 * 		data1 data3   data1 data3
-	 *		data2 data4   data2 data4
-	 *		-------------------------
-	 *			 0             1
+	 * 		data2 data4   data2 data4
+	 * 		-------------------------
+	 * 			 0             1
 	 * @param {boolean} isSub If is for subchart
-	 * @returns {Function}
+	 * @returns {function}
 	 * @private
 	 */
-	generateDrawBar(barIndices, isSub?: boolean): (d: IDataRow, i: number) => string {
+	generateDrawBar(barIndices, isSub?: boolean): (d: IBarData, i: number) => BarPath {
 		const $$ = this;
 		const {config} = $$;
 		const getPoints = $$.generateGetBarPoints(barIndices, isSub);
-		const isRotated = config.axis_rotated;
-		const barRadius = config.bar_radius;
-		const barRadiusRatio = config.bar_radius_ratio;
+		const getRadius = getBarRadiusResolver($$);
+		const stackingRadiusSet = getRadius ? getStackingBarRadiusSet($$) : new Set<string>();
 
-		// get the bar radius
-		const getRadius = isNumber(barRadius) && barRadius > 0 ?
-			() => barRadius : (
-				isNumber(barRadiusRatio) ? w => w * barRadiusRatio : null
-			);
-
-		return (d: IDataRow, i: number) => {
+		return (d: IBarData, i: number): BarPath => {
 			// 4 points that make a bar
 			const points = getPoints(d, i);
-
-			// switch points if axis is rotated, not applicable for sub chart
-			const indexX = +isRotated;
-			const indexY = +!indexX;
-
-			const isNegative = d.value < 0;
+			const {
+				indexX,
+				indexY,
+				isNegative,
+				pos,
+				radius,
+				clipPath
+			} = getBarRadiusInfo(
+				$$,
+				d,
+				points,
+				getRadius,
+				stackingRadiusSet,
+				$$.isStackingRadiusData.bind($$)
+			);
 			const pathRadius = ["", ""];
-			let radius = 0;
 
-			const isGrouped = $$.isGrouped(d.id);
-			// const hasRadius = d.value !== 0 && getRadius;
-			const isRadiusData = getRadius && isGrouped ? $$.isStackingRadiusData(d) : false;
+			// initialize as null to not set attribute if isn't needed
+			d.clipPath = clipPath;
 
-			if (getRadius && (!isGrouped || isRadiusData)) {
-				const index = isRotated ? indexY : indexX;
-				const barW = points[2][index] - points[0][index];
+			if (getRadius) {
+				const arc = `a${radius} ${radius} ${isNegative ? "1 0 0" : "0 0 1"} `;
 
-				radius = getRadius(barW);
-
-				const arc = `a${radius},${radius} ${isNegative ? `1 0 0` : `0 0 1`} `;
-
-				pathRadius[+!isRotated] = `${arc}${radius},${radius}`;
-				pathRadius[+isRotated] = `${arc}${[-radius, radius][isRotated ? "sort" : "reverse"]()}`;
+				pathRadius[indexY] = `${arc}${radius},${radius}`;
+				pathRadius[indexX] = `${arc}${
+					[-radius, radius][
+						config.axis_rotated ? "sort" : "reverse"
+					]()
+				}`;
 
 				isNegative && pathRadius.reverse();
 			}
 
 			// path string data shouldn't be containing new line chars
 			// https://github.com/naver/billboard.js/issues/530
-			const path = isRotated ?
-				`H${points[1][indexX] - radius} ${pathRadius[0]}V${points[2][indexY] - radius} ${pathRadius[1]}H${points[3][indexX]}` :
-				`V${points[1][indexY] + (isNegative ? -radius : radius)} ${pathRadius[0]}H${points[2][indexX] - radius} ${pathRadius[1]}V${points[3][indexY]}`;
+			const path = config.axis_rotated ?
+				`H${pos} ${pathRadius[0]}V${points[2][indexY] - radius} ${pathRadius[1]}H${
+					points[3][indexX]
+				}` :
+				`V${pos} ${pathRadius[0]}H${points[2][indexX] - radius} ${pathRadius[1]}V${
+					points[3][indexY]
+				}`;
 
-			return `M${points[0][indexX]},${points[0][indexY]}${path}z`;
+			const coords: BarPath = [`M${points[0][indexX]},${points[0][indexY]}${path}z`];
+
+			if (_getConnectLineType.call($$, d.id)) {
+				coords.push(config.axis_rotated ?
+					{
+						x: points[0][indexX],
+						y: points[0][indexY],
+						width: points[0][indexX] - pos,
+						height: points[2][indexY] - points[0][indexY]
+					} :
+					{
+						x: points[0][indexX],
+						y: pos,
+						width: points[2][indexX] - points[0][indexX],
+						height: points[3][indexY] - pos
+					});
+			}
+
+			return coords;
 		};
 	},
 
@@ -186,13 +289,13 @@ export default {
 	 * @param {object} d Data row
 	 * @returns {boolean}
 	 */
-	isStackingRadiusData(d: IDataRow): boolean {
+	isStackingRadiusData(d: IBarData): boolean {
 		const $$ = this;
 		const {$el, config, data, state} = $$;
 		const {id, index, value} = d;
 
 		// when the data is hidden, check if has rounded edges
-		if (state.hiddenTargetIds.indexOf(id) > -1) {
+		if (state.hiddenTargetIds.has(id)) {
 			const target = $el.bar.filter(d => d.id === id && d.value === value);
 
 			return !target.empty() && /a\d+/i.test(target.attr("d"));
@@ -208,11 +311,16 @@ export default {
 
 		// Get sorted Ids. Filter positive or negative values Ids from given value
 		const sortedIds = sortedList
-			.map(v => v.values.filter(
-				v2 => v2.index === index && (
-					value > 0 ? v2.value > 0 : v2.value < 0
-				))[0]
-			)
+			.map(v => {
+				// Direct index access (values are sorted by index from convertDataToTargets)
+				const v2 = v.values[index];
+
+				if (v2 && (isNumber(value) && value > 0 ? v2.value > 0 : v2.value < 0)) {
+					return v2;
+				}
+
+				return undefined;
+			})
 			.filter(Boolean)
 			.map(v => v.id);
 
@@ -221,50 +329,42 @@ export default {
 	},
 
 	/**
-	 * Generate bar coordinate points data
-	 * @param {object} barIndices Data order within x axis.
-	 * @param {boolean} isSub If is for subchart
-	 * @returns {Array} Array of coordinate points
-	 * @private
+	 * Update the bar connect line path
+	 * @param {d3Selection} node d3 selection of bar connect line
+	 * @param {string} type Type of connect line, one of "start-start", "start-end", "end-start", "end-end"
+	 * @param {Array} barPath d3 path data for the bar
 	 */
-	generateGetBarPoints(barIndices, isSub?: boolean): (d: IDataRow, i: number) => [number, number][] {
-		const $$ = this;
-		const {config} = $$;
-		const axis = isSub ? $$.axis.subX : $$.axis.x;
-		const barTargetsNum = $$.getIndicesMax(barIndices) + 1;
-		const barW = $$.getBarW("bar", axis, barTargetsNum);
-		const barX = $$.getShapeX(barW, barIndices, !!isSub);
-		const barY = $$.getShapeY(!!isSub);
-		const barOffset = $$.getShapeOffset($$.isBarType, barIndices, !!isSub);
-		const yScale = $$.getYScaleById.bind($$);
+	updateConnectLine(
+		node: d3Selection,
+		type: "start-start" | "start-end" | "end-start" | "end-end",
+		barPath: BarConnectLine[]
+	): void {
+		const path = barPath.map((v: BarConnectLine, i: number, arr: BarConnectLine[]): string => {
+			const isRotated = this.config.axis_rotated;
+			const isStart = /^start-(start|end)$/.test(type);
+			const isEnd = /^end-(start|end)$/.test(type);
+			const path: string[] = [];
 
-		return (d: IDataRow, i: number) => {
-			const y0 = yScale.call($$, d.id, isSub)($$.getShapeYMin(d.id));
-			const offset = barOffset(d, i) || y0; // offset is for stacked bar chart
-			const width = isNumber(barW) ? barW : barW[d.id] || barW._$width;
-			const posX = barX(d);
-			let posY = barY(d);
+			const x = isRotated ? (isEnd ? v.x - v.width : v.x) : (v.x + v.width);
+			const y = isRotated ? v.y + v.height : isStart ? v.y + v.height : v.y;
 
-			// fix posY not to overflow opposite quadrant
-			if (config.axis_rotated && (
-				(d.value > 0 && posY < y0) || (d.value < 0 && y0 < posY)
-			)) {
-				posY = y0;
+			if (i === 0) {
+				path.push(`${x},${y}`);
+			} else {
+				path.push(
+					isRotated ?
+						`L${v.x - (/\w+-end$/.test(type) ? v.width : 0)},${v.y}` :
+						`L${v.x},${v.y + (/\w+-start$/.test(type) ? v.height : 0)}`
+				);
+
+				if (i < arr.length - 1) {
+					path.push(`M${x},${y}`);
+				}
 			}
 
-			if (!$$.isBarRangeType(d)) {
-				posY -= (y0 - offset);
-			}
+			return path.join(" ");
+		});
 
-			const startPosX = posX + width;
-
-			// 4 points that make a bar
-			return [
-				[posX, offset],
-				[posX, posY],
-				[startPosX, posY],
-				[startPosX, offset]
-			];
-		};
+		node.attr("d", `M${path.join("")}z`);
 	}
 };

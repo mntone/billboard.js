@@ -29,6 +29,23 @@ export default {
 		const $$ = this.internal;
 		const {state} = $$;
 		const targetIds = $$.mapToTargetIds(targetIdsValue);
+
+		if (state.isCanvasMode) {
+			const focusedIds = targetIds.filter($$.isTargetToShow, $$);
+			const focusedSet = new Set(focusedIds);
+			const defocusedIds = $$.mapToTargetIds()
+				.filter(id => !focusedSet.has(id) && $$.isTargetToShow(id));
+
+			$$.revertLegend();
+			$$.toggleFocusLegend(defocusedIds, false);
+			$$.toggleFocusLegend(focusedIds, true);
+
+			state.focusedTargetIds = focusedSet;
+			state.defocusedTargetIds = new Set(defocusedIds);
+			$$.renderCanvasFrame?.(undefined, null, false);
+			return;
+		}
+
 		const candidates = $$.$el.svg.selectAll(
 			$$.selectorTargets(targetIds.filter($$.isTargetToShow, $$))
 		);
@@ -47,8 +64,8 @@ export default {
 
 		$$.toggleFocusLegend(targetIds, true);
 
-		state.focusedTargetIds = targetIds;
-		state.defocusedTargetIds = state.defocusedTargetIds.filter(id => targetIds.indexOf(id) < 0);
+		state.focusedTargetIds = new Set(targetIds);
+		targetIds.forEach(id => state.defocusedTargetIds.delete(id));
 	},
 
 	/**
@@ -72,6 +89,18 @@ export default {
 		const $$ = this.internal;
 		const {state} = $$;
 		const targetIds = $$.mapToTargetIds(targetIdsValue);
+
+		if (state.isCanvasMode) {
+			const defocusedIds = targetIds.filter($$.isTargetToShow, $$);
+
+			$$.toggleFocusLegend(defocusedIds, false);
+
+			defocusedIds.forEach(id => state.focusedTargetIds.delete(id));
+			state.defocusedTargetIds = new Set(defocusedIds);
+			$$.renderCanvasFrame?.(undefined, null, false);
+			return;
+		}
+
 		const candidates = $$.$el.svg.selectAll(
 			$$.selectorTargets(targetIds.filter($$.isTargetToShow, $$))
 		);
@@ -87,22 +116,22 @@ export default {
 
 		$$.toggleFocusLegend(targetIds, false);
 
-		state.focusedTargetIds = state.focusedTargetIds.filter(id => targetIds.indexOf(id) < 0);
-		state.defocusedTargetIds = targetIds;
+		targetIds.forEach(id => state.focusedTargetIds.delete(id));
+		state.defocusedTargetIds = new Set(targetIds);
 	},
 
 	/**
-	 * This API reverts specified targets.<br><br>
-	 * You can specify multiple targets by giving an array that includes id as String. If no argument is given, all of targets will be reverted.
+	 * Revert focused or defocused state to initial state.<br><br>
+	 * You can specify multiple targets by giving an array that includes id as string. If no argument is given, all of targets will be reverted.
 	 * @function revert
 	 * @instance
 	 * @memberof Chart
 	 * @param {string|Array} targetIdsValue Target ids to be reverted
 	 * @example
-	 * // data1 will be reverted.
+	 * // 'data1' will be reverted.
 	 * chart.revert("data1");
 	 *
-	 * // data1 and data2 will be reverted.
+	 * // 'data1' and 'data2' will be reverted.
 	 * chart.revert(["data1", "data2"]);
 	 *
 	 * // all targets will be reverted.
@@ -112,6 +141,25 @@ export default {
 		const $$ = this.internal;
 		const {config, state, $el} = $$;
 		const targetIds = $$.mapToTargetIds(targetIdsValue);
+
+		if (state.isCanvasMode) {
+			const changed = !!state.focusedTargetIds?.size || !!state.defocusedTargetIds?.size;
+
+			if (config.legend_show) {
+				$$.showLegend(targetIds.filter($$.isLegendToShow.bind($$)));
+				$el.legend.selectAll($$.selectorLegends(targetIds))
+					.filter(function() {
+						return d3Select(this).classed($FOCUS.legendItemFocused);
+					})
+					.classed($FOCUS.legendItemFocused, false);
+			}
+
+			state.focusedTargetIds = new Set();
+			state.defocusedTargetIds = new Set();
+			changed && $$.renderCanvasFrame?.(undefined, null, false);
+			return;
+		}
+
 		const candidates = $el.svg.selectAll($$.selectorTargets(targetIds)); // should be for all targets
 
 		candidates.classed($FOCUS.focused, false).classed($FOCUS.defocused, false);
@@ -127,7 +175,7 @@ export default {
 				.classed($FOCUS.legendItemFocused, false);
 		}
 
-		state.focusedTargetIds = [];
-		state.defocusedTargetIds = [];
+		state.focusedTargetIds = new Set();
+		state.defocusedTargetIds = new Set();
 	}
 };

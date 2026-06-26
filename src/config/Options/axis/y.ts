@@ -59,7 +59,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_type: <"indexed"|"log"|"timeseries"> "indexed",
+	axis_y_type: <"indexed" | "log" | "timeseries">"indexed",
 
 	/**
 	 * Set max value of y axis.
@@ -75,7 +75,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_max: <number|undefined> undefined,
+	axis_y_max: <number | undefined>undefined,
 
 	/**
 	 * Set min value of y axis.
@@ -92,15 +92,16 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_min: <number|undefined> undefined,
+	axis_y_min: <number | undefined>undefined,
 
 	/**
 	 * Change the direction of y axis.<br><br>
-	 * If true set, the direction will be from the top to the bottom.
+	 * If true set, the direction will be `top -> bottom`.
 	 * @name axis․y․inverted
 	 * @memberof Options
 	 * @type {boolean}
 	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.InvertedAxis)
 	 * @example
 	 * axis: {
 	 *   y: {
@@ -123,7 +124,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_center: <number|undefined> undefined,
+	axis_y_center: <number | undefined>undefined,
 
 	/**
 	 * Show y axis inside of the chart.
@@ -164,14 +165,14 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_label: <string|object> {},
+	axis_y_label: <string | object>{},
 
 	/**
 	 * Set formatter for y axis tick text.<br><br>
 	 * This option accepts d3.format object as well as a function you define.
 	 * @name axis․y․tick․format
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * axis: {
@@ -184,14 +185,14 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_tick_format: <Function|undefined> undefined,
+	axis_y_tick_format: <Function | undefined>undefined,
 
 	/**
 	 * Setting for culling ticks.
 	 * - `true`: the ticks will be culled, then only limited tick text will be shown.<br>
 	 *   This option does not hide the tick lines by default, if want to hide tick lines, set `axis.y.tick.culling.lines=false`.
 	 * - `false`: all of ticks will be shown.<br><br>
-	 * The number of ticks to be shown can be chaned by `axis.y.tick.culling.max`.
+	 * The number of ticks to be shown can be changed by `axis.y.tick.culling.max`.
 	 * @name axis․y․tick․culling
 	 * @memberof Options
 	 * @type {boolean}
@@ -246,6 +247,43 @@ export default {
 	axis_y_tick_culling_lines: true,
 
 	/**
+	 * Control culling start point to be reversed. If set to true, the culling will be started from the end to start.
+	 * - **NOTE:** This option is only available when `axis.y.tick.culling` is set to truthy value.
+	 * @name axis․y․tick․culling․reverse
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @example
+	 * axis: {
+	 *   y: {
+	 *     tick: {
+	 *       culling: {
+	 *           reverse: true,
+	 *       }
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_y_tick_culling_reverse: false,
+
+	/**
+	 * Set the axis tick line to be positioned inside of the chart.
+	 * @name axis․y․tick․inner
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.TickInner)
+	 * axis: {
+	 *   y: {
+	 *     tick: {
+	 *       inner: true
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_y_tick_inner: false,
+
+	/**
 	 * Show y axis outer tick.
 	 * @name axis․y․tick․outer
 	 * @memberof Options
@@ -266,7 +304,7 @@ export default {
 	 * Set y axis tick values manually.
 	 * @name axis․y․tick․values
 	 * @memberof Options
-	 * @type {Array|Function}
+	 * @type {Array|function}
 	 * @default null
 	 * @example
 	 * axis: {
@@ -282,7 +320,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_tick_values: <number[]|(()=> number[])|null> null,
+	axis_y_tick_values: <number[] | (() => number[]) | null>null,
 
 	/**
 	 * Rotate y axis tick text.
@@ -319,7 +357,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_tick_count: <number|undefined> undefined,
+	axis_y_tick_count: <number | undefined>undefined,
 
 	/**
 	 * Show or hide y axis tick line.
@@ -357,7 +395,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_tick_stepSize: <number|null> null,
+	axis_y_tick_stepSize: <number | null>null,
 
 	/**
 	 * Show or hide y axis tick text.
@@ -409,7 +447,7 @@ export default {
 	 * @private
 	 * @type {object}
 	 * @property {object} time time object
-	 * @property {Function} [time.value] D3's time interval function (https://github.com/d3/d3-time#intervals)
+	 * @property {function} [time.value] D3's time interval function (https://github.com/d3/d3-time#intervals)
 	 * @example
 	 * axis: {
 	 *   y: {
@@ -424,7 +462,7 @@ export default {
 	 * }
 	 */
 	// @TODO: not fully implemented yet
-	axis_y_tick_time_value: <Function|undefined> undefined,
+	axis_y_tick_time_value: <Function | undefined>undefined,
 
 	/**
 	 * Set padding for y axis.<br><br>
@@ -451,7 +489,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_padding: <number|{top?: number; bottom?: number;}> {},
+	axis_y_padding: <number | {top?: number, bottom?: number}>{},
 
 	/**
 	 * Set default range of y axis.<br><br>
@@ -467,7 +505,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y_default: <number[]|undefined> undefined,
+	axis_y_default: <number[] | undefined>undefined,
 
 	/**
 	 * Set additional axes for y Axis.
@@ -506,5 +544,5 @@ export default {
 	 *    ]
 	 * }
 	 */
-	axis_y_axes: <object[]> []
+	axis_y_axes: <object[]>[]
 };

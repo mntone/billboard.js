@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeAll, afterAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
 import {$AXIS} from "../../src/config/classes";
@@ -11,10 +11,10 @@ import {$AXIS} from "../../src/config/classes";
 describe("API axis", function() {
 	let chart;
 	let main;
-	const rx = /translate\((\d+),.*/;
+	const rx = /translate\(([^,]*),.*/;
 
-	before(() => {
-		return new Promise((resolve) => {
+	beforeAll(() => {
+		return new Promise(resolve => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -42,14 +42,14 @@ describe("API axis", function() {
 				},
 				onrendered: function() {
 					main = this.internal.$el.main;
-					resolve(true);
+					resolve(1);
 				}
 			});
 		});
-	});
+	}, 1500);
 
 	describe("axis.labels()", () => {
-		it("should update y axis label", done => {
+		it("should update y axis label", () => new Promise(done => {
 			const axisLabel = {
 				y: "New Y Axis Label"
 			};
@@ -69,11 +69,11 @@ describe("API axis", function() {
 					y2: "Y2 Axis Label"
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("should update y axis label", done => {
+		it("should update y axis label", () => new Promise(done => {
 			// when
 			chart.axis.labels({
 				y2: "New Y2 Axis Label"
@@ -86,9 +86,9 @@ describe("API axis", function() {
 				expect(label.attr("dx")).to.be.equal("-0.5em");
 				expect(label.attr("dy")).to.be.equal("-0.5em");
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		it("should return axis labels", () => {
 			expect(chart.axis.labels()).to.be.deep.equal({
@@ -99,7 +99,7 @@ describe("API axis", function() {
 	});
 
 	describe("axis.min/max()", () => {
-		it("should update axis min value", done => {
+		it("should update axis min value", () => new Promise(done => {
 			const xAxisTick = main.select(`.${$AXIS.axisX} .tick`).node();
 			const xTickValue = +xAxisTick.getAttribute("transform").replace(rx, "$1");
 			const x = -1;
@@ -115,7 +115,7 @@ describe("API axis", function() {
 
 			setTimeout(() => {
 				let tspan;
-
+				
 				// check for x max value
 				expect(xTickValue).to.be.below(+xAxisTick.getAttribute("transform").replace(rx, "$1"));
 
@@ -132,11 +132,11 @@ describe("API axis", function() {
 
 				expect(tspan.empty()).to.be.false;
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("should update axis max value", done => {
+		it("should update axis max value", () => new Promise(done => {
 			const xAxisTick = main.selectAll(`.${$AXIS.axisX} .tick`).nodes();
 			const lastIndex = xAxisTick.length - 1;
 
@@ -166,15 +166,15 @@ describe("API axis", function() {
 				tspan = main.selectAll(`.${$AXIS.axisY2} tspan`).nodes();
 				expect(+tspan[tspan.length - 1].innerHTML).to.be.equal(y2);
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		it("axis.min(): check unset & shorthand", () => {
 			const current = chart.axis.min();
 
-			after(() => {
-				chart.axis.min(current);
+			afterAll(() => {
+				chart.axis?.min?.(current);
 			})
 
 			// when
@@ -210,8 +210,8 @@ describe("API axis", function() {
 		it("axis.max(): check unset & shorthand", () => {
 			const current = chart.axis.max();
 
-			after(() => {
-				chart.axis.max(current);
+			afterAll(() => {
+				chart.axis?.max?.(current);
 			})
 
 			// when
@@ -246,7 +246,7 @@ describe("API axis", function() {
 	});
 
 	describe("axis.range()", () => {
-		it("should update axis min/max value", done => {
+		it("should update axis min/max value", () => new Promise(done => {
 			const xAxisTick = main.selectAll(`.${$AXIS.axisX} .tick`).nodes();
 			const xTickValueMin = +xAxisTick[0].getAttribute("transform").replace(rx, "$1");
 			const xTickValueMax = +xAxisTick[xAxisTick.length - 1].getAttribute("transform").replace(rx, "$1");
@@ -300,15 +300,15 @@ describe("API axis", function() {
 
 				expect(tspan.size()).to.be.equal(2);
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		it("axis.range(): check unset & shorthand", () => {
 			const current = chart.axis.range();
 
-			after(() => {
-				chart.axis.range(current);
+			afterAll(() => {
+				chart.axis?.range?.(current);
 			});
 
 			// when

@@ -5,6 +5,8 @@ $font-family: "Sans Pro",Arial,sans-serif, "nanumgothic", "Dotum";
 $line-stroke-widdth: 0.7px;
 $text-font-size: 11px;
 
+@use "../canvas-legend" as canvasLegend;
+
 /*-- Default color pattern --*/
 .bb-color-pattern {
     background-image: url("#2ac4b3;#feaf29;#ff617b;#73a2ef;#b180d0;#3064cf;#d0a45f;#8aaec7;#ef65a2;#8aaec7;");
@@ -34,9 +36,32 @@ $text-font-size: 11px;
     }
 }
 
+.bb-chart-arcs {
+	.bb-needle {
+		fill: #000;
+	}
+}
+
+/*-- Funnel --*/
+.bb-chart-funnels {
+	path {
+		stroke-width: 0;
+	}
+
+	+ .bb-chart-texts text {
+		fill: #fff;
+	}
+}
+
 /*-- Axis --*/
 .bb-axis {
     stroke-width: $line-stroke-widdth;
+
+	.bb-axis-x-tooltip, .bb-axis-y-tooltip, .bb-axis-y2-tooltip {
+        font-size: 0.9em;
+        fill: #fff;
+		white-space: nowrap;
+	}
 }
 
 .bb-axis-y text, .bb-axis-y2 text {
@@ -142,7 +167,10 @@ $text-font-size: 11px;
 /*-- Region --*/
 .bb-region {
     fill: steelblue;
-    fill-opacity: 0.1;
+
+    rect {
+        fill-opacity: 0.1;
+    }
 
     &.selected rect {
         fill: rgb(39, 201, 3);
@@ -162,6 +190,8 @@ $text-font-size: 11px;
 }
 
 /*-- Legend --*/
+@include canvasLegend.styles($font-family: $font-family, $font-size: $text-font-size, $color: #555);
+
 .bb-legend-item {
     user-select: none;
 
@@ -189,11 +219,18 @@ $text-font-size: 11px;
     font-size: 14px;
 }
 
+/*-- Treemap --*/
+.bb-chart-treemaps rect {
+    stroke: #000;
+    stroke-width: 1px;
+}
+
 /*-- Tooltip --*/
 .bb-tooltip-container {
     z-index: 10;
     font-family: $font-family;
 	user-select: none;
+    transform: translateZ(0);
 }
 
 .bb-tooltip {
@@ -206,6 +243,7 @@ $text-font-size: 11px;
     text-align: left;
     font-size: 11px;
     -webkit-font-smoothing: antialiased;
+    white-space: nowrap;
 
     th {
         font-size: 13px;
@@ -329,6 +367,10 @@ text.bb-chart-arcs-gauge-title {
 	}
 }
 
+.bb-line {
+	shape-rendering: crispEdges;
+}
+
 .bb-chart-arc {
     .bb-gauge-value {
         fill: #3b6969;        
@@ -347,6 +389,21 @@ text.bb-chart-arcs-gauge-title {
     text {
         fill: #fff;
         font-size: 14px;
+    }
+
+	/* Connector line base styles */
+	.bb-arc-label-line {
+		fill: none;
+		stroke-width: 1px;
+		pointer-events: none;
+	}
+
+    .bb-arc-label-line {
+        stroke: #7f7f7f;
+    }
+
+    > text.bb-arc-label-line-text {
+        fill: #000;
     }
 }
 

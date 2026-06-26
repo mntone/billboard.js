@@ -2,6 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import {isEmpty} from "../../module/util";
+
 export default {
 	/**
 	 * Set specified category name on category axis.
@@ -20,6 +22,7 @@ export default {
 
 		if (arguments.length > 1) {
 			config.axis_x_categories[i] = category;
+			$$.state.dirty.data = true;
 			$$.redraw();
 		}
 
@@ -27,7 +30,7 @@ export default {
 	},
 
 	/**
-	 * Set category names on category axis.
+	 * Set or get category names on category axis.
 	 * @function categories
 	 * @instance
 	 * @memberof Chart
@@ -38,15 +41,18 @@ export default {
 	 *      "Category 1", "Category 2", ...
 	 * ]);
 	 */
-	categories(categories: string[]): string[] {
+	categories(categories?: string[]): string[] {
 		const $$ = this.internal;
 		const {config} = $$;
 
-		if (!arguments.length) {
-			return config.axis_x_categories;
+		if (!categories || !Array.isArray(categories)) {
+			const cat = config.axis_x_categories;
+
+			return isEmpty(cat) ? Object.values($$.data.xs)[0] as string[] : cat;
 		}
 
 		config.axis_x_categories = categories;
+		$$.state.dirty.data = true;
 		$$.redraw();
 
 		return config.axis_x_categories;

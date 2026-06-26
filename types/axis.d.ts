@@ -1,14 +1,32 @@
-import {Chart} from "./chart";
+import {Chart} from "./chart.js";
 
 /**
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+export type AxisTickValue = number | string | Date;
+export type AxisTickValues = AxisTickValue[] | ((this: Chart) => AxisTickValue[]);
+export type AxisTickFormat = (value: AxisTickValue) => unknown;
+
 export interface Axis {
+	/**
+	 * Setup the way to evaluate tick text size.
+	 * - **NOTE:**
+	 *   - Setting `false` or custom evaluator, highly recommended to memoize evaluated text dimension value to not degrade performance.
+	 */
+	evalTextSize?: boolean | ((text: SVGTextElement) => {w: number, h: number});
+
 	/**
 	 * Switch x and y axis position.
 	 */
 	rotated?: boolean;
+
+	/**
+	 * Set axis tooltip.
+	 */
+	tooltip?: boolean | {
+		backgroundColor?: string | {x?: string; y?: string; y2?: string}
+	};
 	x?: xAxisConfiguration;
 	y?: yAxisConfiguration;
 	y2?: yAxisConfigurationBase;
@@ -24,6 +42,12 @@ export interface AxisConfigurationBase {
 	 * Set additional axes for Axis
 	 */
 	axes?: AxesConfiguration[];
+
+	/**
+	 * Change the direction of axis.
+	 * If true set, the direction will be from: right -> left for x axis / top -> bottom for y/y2 axis.
+	 */
+	inverted?: boolean;
 }
 
 export interface xAxisConfiguration extends AxisConfigurationBase {
@@ -36,6 +60,16 @@ export interface xAxisConfiguration extends AxisConfigurationBase {
 	 *   - x axis min value should be >= 0.
 	 */
 	type?: "category" | "indexed" | "log" | "timeseries";
+
+	/**
+	 * Force the x axis to interact as single rather than multiple x axes.
+	 * - NOTE: The tooltip event will be triggered nearing each data points(for multiple xs) rather than x axis based(as single x does) in below condition:
+	 *   - for `bubble` & `scatter` type
+	 *   - when `data.xs` is set
+	 *   - when `tooltip.grouped=false` is set
+	 *     - `tooltip.grouped` options will take precedence over `axis.forceSingleX` option.
+	 */
+	forceAsSingle?: boolean;
 
 	/**
 	 * Set how to treat the timezone of x values.
@@ -91,8 +125,8 @@ export interface xAxisConfiguration extends AxisConfigurationBase {
 	height?: number;
 
 	/**
-	 * Set default extent for subchart and zoom.
-	 * This can be an array or function that returns an array.
+	 * Set extent for subchart and zoom(drag only). This can be an array or function that returns an array.
+	 * - **NOTE:** Specifying value, will limit the zoom scope selection within.
 	 */
 	extent?: Array<number|string> | (
 		(
@@ -136,12 +170,6 @@ export interface yAxisConfigurationBase extends AxisConfigurationBase {
 	min?: number;
 
 	/**
-	 * Change the direction of y axis.
-	 * If true set, the direction will be from the top to the bottom.
-	 */
-	inverted?: boolean;
-
-	/**
 	 * Set center value of y axis.
 	 */
 	center?: number;
@@ -180,6 +208,21 @@ export interface yAxisConfiguration extends yAxisConfigurationBase {
 	 * Set clip-path attribute for y axis element.
 	 */
 	clipPath?: boolean;
+
+	/**
+	 * Set type of y axis.<br><br>
+	 * **Available Values:**
+	 *  - indexed
+	 *  - log
+	 *  - timeseries
+	 *
+	 * **NOTE:**
+	 * - **log** type:
+	 *   - the bound data values must be exclusively-positive.
+	 *   - y axis min value should be >= 0.
+	 *   - `data.groups`(stacked data) option aren't supported.
+	 */
+	type?: "indexed" | "log" | "timeseries";
 }
 
 export interface XTickConfiguration {
@@ -192,7 +235,7 @@ export interface XTickConfiguration {
 	 * A function to format tick value. Format string is also available for timeseries data.
 	 */
 	format?: string
-		| ((this: Chart, x: number | Date) => string | number)
+		| ((this: Chart, x: Date) => string | number)
 		| ((this: Chart, index: number, categoryName: string) => string);
 
 	/**
@@ -200,7 +243,7 @@ export interface XTickConfiguration {
 	 * - `true`: the ticks will be culled, then only limited tick text will be shown.
 	 *   This option does not hide the tick lines by default, if want to hide tick lines, set `axis.x.tick.culling.lines=false`.
 	 * - `false`: all of ticks will be shown.
-	 * The number of ticks to be shown can be chaned by `axis.x.tick.culling.max`.
+	 * The number of ticks to be shown can be changed by `axis.x.tick.culling.max`.
 	 */
 	culling?: boolean | {
 		/**
@@ -212,6 +255,12 @@ export interface XTickConfiguration {
 		 * Control visibility of tick lines within culling option, along with tick text.
 		 */
 		lines?: boolean;
+
+		/**	
+		 * Control culling start point to be reversed. If set to true, the culling will be started from the end to start.
+	     * - **NOTE:** This option is only available when `axis.x.tick.culling` is set to truthy value.
+		 */
+		reverse?: boolean;
 	};
 
 	/**
@@ -231,9 +280,9 @@ export interface XTickConfiguration {
 	/**
 	 * Set the x values of ticks manually.
 	 * If this option is provided, the position of the ticks will be determined based on those values.
-	 * This option works with timeseries data and the x values will be parsed accoding to the type of the value and data.xFormat option.
+	 * This option works with timeseries data and the x values will be parsed according to the type of the value and data.xFormat option.
 	 */
-	values?: Array<number|string> | ((this: Chart) => number[]);
+	values?: AxisTickValues;
 
 	/**
 	 * Rotate x axis tick text.
@@ -281,6 +330,11 @@ export interface XTickConfiguration {
 	 */
 	show?: boolean;
 
+	/**
+	 * Set the axis tick line to be positioned inside of the chart.
+	 */
+	inner?: boolean;
+
 	text?: {
 		/**
 		 * Set the x Axis tick text's position relatively its original position
@@ -294,6 +348,14 @@ export interface XTickConfiguration {
 		 * Show or hide tick text
 		 */
 		show?: boolean;
+
+		/**
+		 * Set the first/last axis tick text to be positioned inside the chart on non-rotated axis.
+		 */
+		inner?: boolean | {
+			first? : boolean;
+			last?: boolean;
+		};
 	};
 
 	/**
@@ -305,7 +367,7 @@ export interface XTickConfiguration {
 	 *   - axis min value should be >= 0.
 	 *   - `data.groups`(stacked data) option aren't supported.
 	 */
-	type?: "indexed" | "log" | "timeseries";
+	type?: "category" | "indexed" | "log" | "timeseries";
 }
 
 export interface YTickConfiguration {
@@ -317,7 +379,7 @@ export interface YTickConfiguration {
 	/**
 	 * Set the y values of ticks manually.
 	 */
-	values?: number[] | ((this: Chart) => number[]);
+	values?: AxisTickValues;
 
 	/**
 	 * Rotate y(or y2) axis tick text.
@@ -337,14 +399,15 @@ export interface YTickConfiguration {
 	 * Set formatter for y axis tick text.
 	 * This option accepts d3.format object as well as a function you define.
 	 */
-	format?(this: Chart, x: number): string;
+	format?: ((this: Chart, x: number) => string | number) |
+		((this: Chart, x: Date) => string | number);
 
 	/**
 	 * Setting for culling ticks.
 	 * - `true`: the ticks will be culled, then only limited tick text will be shown.
 	 *   This option does not hide the tick lines by default, if want to hide tick lines, set `axis.[y|y2].tick.culling.lines=false`.
 	 * - `false`: all of ticks will be shown.
-	 * The number of ticks to be shown can be chaned by `axis.[y|y2].tick.culling.max`.
+	 * The number of ticks to be shown can be changed by `axis.[y|y2].tick.culling.max`.
 	 */
 	culling?: boolean | {
 		/**
@@ -356,6 +419,12 @@ export interface YTickConfiguration {
 		 * Control visibility of tick lines within culling option, along with tick text.
 		 */
 		lines?: boolean;
+
+		/**	
+		 * Control culling start point to be reversed. If set to true, the culling will be started from the end to start.
+	     * - **NOTE:** This option is only available when `axis.x.tick.culling` is set to truthy value.
+		 */
+		reverse?: boolean;
 	};
 
 	/**
@@ -368,6 +437,11 @@ export interface YTickConfiguration {
 	 * Show or hide axis tick line.
 	 */
 	show?: boolean;
+
+	/**
+	 * Set the axis tick line to be positioned inside of the chart.
+	 */
+	inner?: boolean;
 
 	text?: {
 		/**
@@ -414,6 +488,6 @@ export interface AxesConfiguration {
 		/**
 		 * Set tick values manually
 		 */
-		values?: Array<number|string|Date>;
+		values?: AxisTickValue[];
 	};
 }

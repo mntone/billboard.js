@@ -3,10 +3,24 @@
  * billboard.js project is licensed under the MIT license
  */
 import {axisRight as d3AxisRight} from "d3-axis";
-import {format as d3Format} from "d3-format";
-import {scaleSequential as d3ScaleSequential, scaleLog as d3ScaleLog} from "d3-scale";
+import {scaleSequential as d3ScaleSequential, scaleSymlog as d3ScaleSymlog} from "d3-scale";
 import CLASS from "./classes";
-import {isFunction, getRange} from "./util";
+import {getBBox, getRange, isFunction} from "./util";
+
+/**
+ * Simple number formatter.
+ * Supports "d" specifier (decimal notation, rounded to integer).
+ * @param {string} specifier Format specifier
+ * @returns {function} Formatter function
+ */
+function format(specifier: string): (n: number) => string {
+	if (specifier === "d") {
+		return (n: number): string => Math.round(n).toString();
+	}
+
+	// Default: return as-is
+	return (n: number): string => String(n);
+}
 
 /**
  * Stanford diagram plugin color scale class
@@ -55,7 +69,7 @@ export default class ColorScale {
 			.attr("fill", d => inverseScale(d));
 
 		// Legend Axis
-		const axisScale = d3ScaleLog()
+		const axisScale = d3ScaleSymlog()
 			.domain([target.minEpochs, target.maxEpochs])
 			.range([
 				points[0] + config.padding_top + points[points.length - 1] + barHeight - 1,
@@ -70,7 +84,7 @@ export default class ColorScale {
 		} else if (isFunction(scaleFormat)) {
 			legendAxis.tickFormat(scaleFormat);
 		} else {
-			legendAxis.tickFormat(d3Format("d"));
+			legendAxis.tickFormat(format("d"));
 		}
 
 		// Draw Axis
@@ -89,12 +103,13 @@ export default class ColorScale {
 				.text(d => Math.round(Math.log(d) / Math.LN10));
 		}
 
-		this.colorScale.attr("transform", `translate(${$$.state.current.width - this.xForColorScale()}, 0)`);
+		this.colorScale.attr("transform",
+			`translate(${$$.state.current.width - this.xForColorScale()}, 0)`);
 	}
 
 	xForColorScale(): number {
 		return this.owner.config.padding_right +
-			this.colorScale.node().getBBox().width;
+			getBBox(this.colorScale.node(), true).width;
 	}
 
 	getColorScalePadding(): number {

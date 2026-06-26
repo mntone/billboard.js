@@ -2,6 +2,7 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import type {ChartOptions} from "../../types/options";
 import {isDefined, isObjectType} from "../module/util";
 import Options from "./Options/Options";
 
@@ -10,7 +11,7 @@ import Options from "./Options/Options";
  * @param {object} config User's generation config value
  * @private
  */
-export function loadConfig(config: Options): void {
+export function loadConfig(config: ChartOptions): void {
 	const thisConfig: Options = this.config;
 	let target;
 	let keys;
@@ -38,4 +39,9 @@ export function loadConfig(config: Options): void {
 			thisConfig[key] = read;
 		}
 	});
+
+	// only should run in the ChartInternal context
+	if (this.api) {
+		this.state.orgConfig = config;
+	}
 }

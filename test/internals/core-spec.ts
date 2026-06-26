@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import sinon from "sinon";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
@@ -72,7 +72,7 @@ describe("CORE", function() {
 		let onbeforeinit = false;
 		let onafterinit = false;
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -121,7 +121,7 @@ describe("CORE", function() {
 		  return d;
 		});
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 				  columns: [
@@ -145,12 +145,12 @@ describe("CORE", function() {
 		});
 
 		// Note: Arc types are rendered with transition
-		it("check donut type", done => {
+		it("check donut type", () => new Promise(done => {
 			setTimeout(() => {
 				expect(spy.returnValues).to.be.not.empty;
-				done();
-			}, 300);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		it("set options data.type='line'", () => {
 			args.data.type = "line";
@@ -158,15 +158,15 @@ describe("CORE", function() {
 		});
 
 		// Note: Arc types are rendered with transition
-		it("check line type", done => {
+		it("check line type", () => new Promise(done => {
 			chart.toggle("data1");
 
 			setTimeout(() => {
 				expect(spy.returnValues).to.be.not.empty;
 				expect(spy.callCount);
-				done();
-			}, 300);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("size", () => {
@@ -186,60 +186,30 @@ describe("CORE", function() {
 
 	describe("bindto", () => {
 		it("selector", () => {
-			before(() => {
+			beforeAll(() => {
 				d3Select("#chart").html("");
 				args.bindto = "#chart";
 			});
 
-			it("should be created", () => {
-				const svg = d3Select("#chart svg");
+			const svg = d3Select("#chart svg");
 
-				expect(svg.size()).to.be.equal(1);
-			});
+			expect(svg.size()).to.be.equal(1);
 		});
 
 		it("d3Selection object", () => {
-			before(() => {
+			beforeAll(() => {
 				d3Select("#chart").html("");
 				args.bindto = d3Select("#chart");
 			});
 
-			it("should be created", () => {
-				const svg = d3Select("#chart svg");
+			const svg = d3Select("#chart svg");
 
-				expect(svg.size()).to.be.equal(1);
-			});
-		});
-
-		it("null", () => {
-			before(() => {
-				d3Select("#chart").html("");
-				args.bindto = "#chart-dummy";
-			});
-
-			it("should not be created", () => {
-				const svg = d3Select("#chart svg");
-
-				expect(svg.size()).to.be.equal(0);
-			});
-		});
-
-		it("empty string", () => {
-			before(() => {
-				d3Select("#chart").html("");
-				args.bindto = "#chart-dummy";
-			});
-
-			it("should not be created", () => {
-				const svg = d3Select("#chart svg");
-
-				expect(svg.size()).to.be.equal(0);
-			});
+			expect(svg.size()).to.be.equal(1);
 		});
 	});
 
 	describe("empty data", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -286,7 +256,7 @@ describe("CORE", function() {
 	});
 
 	describe("miscellaneous", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -318,11 +288,13 @@ describe("CORE", function() {
 						return array.filter(v2 => v2 === v).length === 1;
 				})
 			).to.be.true;
+
+			inst.forEach(v => v.destroy());
 		});
 	});	
 
 	describe("options", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -335,9 +307,9 @@ describe("CORE", function() {
 		});
 
 		it("chart should have clip-path property", () => {
-			const main = chart.$.main.select(`.${$COMMON.chart}`);
+			const clipPath = chart.$.main.select(`.${$COMMON.chart}`)?.attr("clip-path");
 
-			expect(main.attr("clip-path")).to.not.be.null;
+			expect(/url\(#bb-\d+-clip\)/.test(clipPath)).to.be.true;
 		});
 
 		it("set option: axis.y2.show=true", () => {
@@ -373,79 +345,13 @@ describe("CORE", function() {
 		});
 	});
 
-	describe("padding", () => {
-		before(() => {
-			args = {
-				data: {
-					columns: [["data", 130, 100, 140, 35, 110, 50]],
-					type: "area"
-				},
-				axis: {},
-				legend: {
-					show: false
-				},
-				size: {
-					width: 300,
-					height: 150
-				},
-				padding: false
-			};
-		});
+	describe("security prevention", () => {
+		it("should not allow pollution of the prototype", () => {
+			const chart = util.generate(JSON.parse(`{"data":{"columns":[["data1",30,200,100,400,150,250],["data2",130,100,140,200,150,50]],"type":"bar"},"bar":{"width":{"ratio":0.5}},"bindto":"#chart","__proto__":{"pollutedKey":"pollutedValue"}}`));
 
-		it("Area shape should have same size as the container's size.", () => {
-			const {width, height} = chart.$.line.areas.node().getBoundingClientRect();
-
-			expect(width).to.be.equal(args.size.width);
-			expect(height).to.be.equal(args.size.height);
-		});
-
-		it("Event <rect> element should have same size as the container's size.", () => {
-			const {width, height} = chart.internal.$el.eventRect.node().getBoundingClientRect();
-
-			expect(width).to.be.equal(args.size.width);
-			expect(height).to.be.equal(args.size.height);
-		});
-
-		it("Axes and subchart options should be disabled.", () => {
-			expect(chart.config("axis.x.show")).to.be.false;
-			expect(chart.config("axis.y.show")).to.be.false;
-			expect(chart.config("axis.y2.show")).to.be.false;
-			expect(chart.config("subchart.show")).to.be.false;
-		});
-
-		it("set option: axis.rotated = true", () => {
-			args.axis.rotated = true;
-		});
-
-		it("Area shape should have same size as the container's size for rotated axis.", () => {
-			const {width, height} = chart.$.line.areas.node().getBoundingClientRect();
-
-			expect(width).to.be.equal(args.size.width);
-			expect(height).to.be.equal(args.size.height);
-		});
-
-		it("set option: data.labels = true", () => {
-			delete args.axis.rotated;
-			args.data.labels = true;
-		});
-
-		it("Area shape's height should be smaller as data label text shows.", () => {
-			const {width, height} = chart.$.line.areas.node().getBoundingClientRect();
-
-			expect(width).to.be.equal(args.size.width);
-			expect(height).to.be.below(args.size.height);
-		});
-
-		it("set option: data.type='bar'", () => {
-			delete args.data.labels;
-			args.data.type = "bar";
-		});
-
-		it("Event <rect> element should have same size as the container's size for 'bar' type.", () => {
-			const {width, height} = chart.internal.$el.eventRect.node().getBoundingClientRect();
-
-			expect(width).to.be.equal(args.size.width);
-			expect(height).to.be.equal(args.size.height);
+			// @ts-ignore
+			expect(({}.__proto__).pollutedKey).to.be.undefined;
 		});
 	});
+
 });

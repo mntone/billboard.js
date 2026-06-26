@@ -30,7 +30,7 @@ export default {
 	 *   - If json specified, keys is required as well as data.json.
 	 * 	 - If tab isn't visible(by evaluating `document.hidden`), will not be executed to prevent unnecessary work.
 	 * @example
-	 * // 2 data points will be apprended to the tail and popped from the head.
+	 * // 2 data points will be appended to the tail and popped from the head.
 	 * // After that, 4 data points will be appended and no data points will be poppoed.
 	 * chart.flow({
 	 *  columns: [
@@ -57,153 +57,231 @@ export default {
 	flow(args): void {
 		const $$ = this.internal;
 		let data;
-		let domain;
-		let length: number = 0;
-		let tail = 0;
-		let diff;
-		let to;
 
 		if (args.json || args.rows || args.columns) {
-			data = $$.convertData(args);
+			$$.convertData(args, res => {
+				data = res;
+				_();
+			});
 		}
 
-		if ($$.state.redrawing || !data || !isTabVisible()) {
-			return;
-		}
+		/**
+		 * Process flows
+		 * @private
+		 */
+		function _(): void {
+			let domain;
+			let length: number = 0;
+			let tail = 0;
+			let diff;
+			let to;
 
-		const notfoundIds: string[] = [];
-		const orgDataCount = $$.getMaxDataCount();
-		const targets = $$.convertDataToTargets(data, true);
-		const isTimeSeries = $$.axis.isTimeSeries();
+			if ($$.state.redrawing || !data || !isTabVisible()) {
+				return;
+			}
 
-		// Update/Add data
-		$$.data.targets.forEach(t => {
-			let found = false;
+			$$.flushCanvasFlow?.();
 
-			for (let i = 0; i < targets.length; i++) {
-				if (t.id === targets[i].id) {
-					found = true;
+			const notfoundIds: string[] = [];
+			const orgDataCount = $$.getMaxDataCount();
+			const targets = $$.convertDataToTargets(data, true);
+			const isTimeSeries = $$.axis.isTimeSeries();
 
-					if (t.values[t.values.length - 1]) {
-						tail = t.values[t.values.length - 1].index + 1;
+			// Update/Add data
+			$$.data.targets.forEach(t => {
+				let found = false;
+
+				for (let i = 0; i < targets.length; i++) {
+					if (t.id === targets[i].id) {
+						found = true;
+
+						if (t.values[t.values.length - 1]) {
+							tail = t.values[t.values.length - 1].index + 1;
+						}
+
+						const values = targets[i].values;
+
+						length = values.length;
+
+						for (let j = 0; j < length; j++) {
+							values[j].index = tail + j;
+
+							if (!isTimeSeries) {
+								values[j].x = tail + j;
+							}
+
+							t.values.push(values[j]);
+						}
+
+						targets.splice(i, 1);
+						break;
 					}
+				}
 
-					length = targets[i].values.length;
+				!found && notfoundIds.push(t.id);
+			});
 
-					for (let j = 0; j < length; j++) {
-						targets[i].values[j].index = tail + j;
+			// Append null for not found targets
+			$$.data.targets.forEach(t => {
+				for (let i = 0; i < notfoundIds.length; i++) {
+					if (t.id === notfoundIds[i]) {
+						// target can have no values when fully flowed out
+						if (!t.values[t.values.length - 1]) {
+							continue;
+						}
 
-						if (!isTimeSeries) {
-							targets[i].values[j].x = tail + j;
+						tail = t.values[t.values.length - 1].index + 1;
+
+						for (let j = 0; j < length; j++) {
+							t.values.push({
+								id: t.id,
+								index: tail + j,
+								x: isTimeSeries ? $$.getOtherTargetX(tail + j) : tail + j,
+								value: null
+							});
+						}
+					}
+				}
+			});
+
+			// Generate null values for new target
+			if ($$.data.targets.length) {
+				targets.forEach(t => {
+					const firstIndex = $$.data.targets[0].values[0].index;
+					const values = t.values;
+					const valueLength = values.length;
+					const missingLength = Math.max(tail - firstIndex, 0);
+
+					if (missingLength) {
+						values.length = valueLength + missingLength;
+
+						for (let i = valueLength - 1; i >= 0; i--) {
+							values[i + missingLength] = values[i];
+						}
+
+						for (let i = 0; i < missingLength; i++) {
+							const index = firstIndex + i;
+
+							values[i] = {
+								id: t.id,
+								index,
+								x: isTimeSeries ? $$.getOtherTargetX(index) : index,
+								value: null
+							};
 						}
 					}
 
-					t.values = t.values.concat(targets[i].values);
-					targets.splice(i, 1);
-					break;
-				}
-			}
+					for (let i = missingLength; i < values.length; i++) {
+						const v = values[i];
 
-			!found && notfoundIds.push(t.id);
-		});
+						v.index += tail;
 
-		// Append null for not found targets
-		$$.data.targets.forEach(t => {
-			for (let i = 0; i < notfoundIds.length; i++) {
-				if (t.id === notfoundIds[i]) {
-					tail = t.values[t.values.length - 1].index + 1;
-
-					for (let j = 0; j < length; j++) {
-						t.values.push({
-							id: t.id,
-							index: tail + j,
-							x: isTimeSeries ? $$.getOtherTargetX(tail + j) : tail + j,
-							value: null
-						});
+						if (!isTimeSeries) {
+							v.x += tail;
+						}
 					}
-				}
+				});
 			}
-		});
 
-		// Generate null values for new target
-		if ($$.data.targets.length) {
-			targets.forEach(t => {
-				const missing: any[] = [];
+			for (let i = 0; i < targets.length; i++) {
+				$$.data.targets.push(targets[i]); // add remained
+			}
 
-				for (let i = $$.data.targets[0].values[0].index; i < tail; i++) {
-					missing.push({
-						id: t.id,
-						index: i,
-						x: isTimeSeries ? $$.getOtherTargetX(i) : i,
-						value: null
+			// check data count because behavior needs to change when it"s only one
+			// const dataCount = $$.getMaxDataCount();
+			const baseTarget = $$.data.targets[0];
+			const baseValue = baseTarget.values[0];
+
+			// Update length to flow if needed
+			if (isDefined(args.to)) {
+				length = 0;
+				to = isTimeSeries ? parseDate.call($$, args.to) : args.to;
+
+				baseTarget.values.forEach(v => {
+					v.x < to && length++;
+				});
+			} else if (isDefined(args.length)) {
+				length = args.length;
+			}
+
+			// If only one data, update the domain to flow from left edge of the chart
+			if (!orgDataCount) {
+				if (isTimeSeries) {
+					diff = baseTarget.values.length > 1 ?
+						baseTarget.values[baseTarget.values.length - 1].x - baseValue.x :
+						baseValue.x - $$.getXDomain($$.data.targets)[0];
+				} else {
+					diff = 1;
+				}
+
+				domain = [baseValue.x - diff, baseValue.x];
+			} else if (orgDataCount === 1 && isTimeSeries) {
+				diff = (baseTarget.values[baseTarget.values.length - 1].x - baseValue.x) / 2;
+				domain = [new Date(+baseValue.x - diff), new Date(+baseValue.x + diff)];
+			}
+
+			domain && $$.updateXDomain(null, true, true, false, domain);
+
+			if ($$.state.isCanvasMode) {
+				const duration = isValue(args.duration) ?
+					args.duration :
+					$$.config.transition_duration;
+				const animated = $$.animateCanvasFlow?.({
+					done: args.done,
+					duration,
+					length,
+					orgDataCount
+				});
+
+				if (animated) {
+					return;
+				}
+
+				// Canvas mode has no retained SVG nodes to transition. Mutate the data to the
+				// post-flow state, then redraw the final frame.
+				if (length && orgDataCount) {
+					$$.data.targets.forEach(d => {
+						d.values.splice(0, length);
 					});
 				}
 
-				t.values.forEach(v => {
-					v.index += tail;
+				$$.state.dirty.data = true;
+				$$.state._eventRectFingerprint = null;
 
-					if (!isTimeSeries) {
-						v.x += tail;
-					}
+				$$.redraw({
+					withLegend: true,
+					withTransition: false,
+					withTrimXDomain: false,
+					withUpdateOrgXDomain: true,
+					withUpdateXAxis: true,
+					withUpdateXDomain: true
 				});
-
-				t.values = missing.concat(t.values);
-			});
-		}
-
-		$$.data.targets = $$.data.targets.concat(targets); // add remained
-
-		// check data count because behavior needs to change when it"s only one
-		// const dataCount = $$.getMaxDataCount();
-		const baseTarget = $$.data.targets[0];
-		const baseValue = baseTarget.values[0];
-
-		// Update length to flow if needed
-		if (isDefined(args.to)) {
-			length = 0;
-			to = isTimeSeries ? parseDate.call($$, args.to) : args.to;
-
-			baseTarget.values.forEach(v => {
-				v.x < to && length++;
-			});
-		} else if (isDefined(args.length)) {
-			length = args.length;
-		}
-
-		// If only one data, update the domain to flow from left edge of the chart
-		if (!orgDataCount) {
-			if (isTimeSeries) {
-				diff = baseTarget.values.length > 1 ?
-					baseTarget.values[baseTarget.values.length - 1].x - baseValue.x :
-					baseValue.x - $$.getXDomain($$.data.targets)[0];
-			} else {
-				diff = 1;
+				$$.updateTypesElements();
+				args.done?.call($$.api);
+				return;
 			}
 
-			domain = [baseValue.x - diff, baseValue.x];
-		} else if (orgDataCount === 1 && isTimeSeries) {
-			diff = (baseTarget.values[baseTarget.values.length - 1].x - baseValue.x) / 2;
-			domain = [new Date(+baseValue.x - diff), new Date(+baseValue.x + diff)];
+			// Set targets
+			$$.updateTargets($$.data.targets);
+			$$.state.dirty.data = true;
+			$$.state._eventRectFingerprint = null;
+
+			// Redraw with new targets
+			$$.redraw({
+				flow: {
+					index: baseValue.index,
+					length: length,
+					duration: isValue(args.duration) ?
+						args.duration :
+						$$.config.transition_duration,
+					done: args.done,
+					orgDataCount: orgDataCount
+				},
+				withLegend: true,
+				withTransition: orgDataCount > 1,
+				withTrimXDomain: false,
+				withUpdateXAxis: true
+			});
 		}
-
-		domain && $$.updateXDomain(null, true, true, false, domain);
-
-		// Set targets
-		$$.updateTargets($$.data.targets);
-
-		// Redraw with new targets
-		$$.redraw({
-			flow: {
-				index: baseValue.index,
-				length: length,
-				duration: isValue(args.duration) ? args.duration : $$.config.transition_duration,
-				done: args.done,
-				orgDataCount: orgDataCount,
-			},
-			withLegend: true,
-			withTransition: orgDataCount > 1,
-			withTrimXDomain: false,
-			withUpdateXAxis: true
-		});
 	}
 };

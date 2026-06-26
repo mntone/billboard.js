@@ -7,52 +7,34 @@
  */
 // Chart
 import apiAxis from "../../Chart/api/axis";
-import apiCategory from "../../Chart/api/category";
-import apiXGrid from "../../Chart/api/grid.x";
-import apiYGrid from "../../Chart/api/grid.y";
 import apiGroup from "../../Chart/api/group";
-import apiRegion from "../../Chart/api/regions";
 import apiX from "../../Chart/api/x";
-import apiFlow from "../../Chart/api/flow";
 
 // ChartInternal
 import axis from "../../ChartInternal/Axis/Axis";
 import eventrect from "../../ChartInternal/interactions/eventrect";
-import flow from "../../ChartInternal/interactions/flow";
 
 import clip from "../../ChartInternal/internals/clip";
-import grid from "../../ChartInternal/internals/grid";
-import region from "../../ChartInternal/internals/region";
 import sizeAxis from "../../ChartInternal/internals/size.axis";
 
 // Axis based options
-import optDataAxis from "../Options/data/axis";
 import optAxis from "../Options/axis/axis";
-import optGrid from "../Options/common/grid";
+import optDataAxis from "../Options/data/axis";
 
 export const api = [
 	apiAxis,
-	apiCategory,
-	apiXGrid,
-	apiYGrid,
-	apiFlow,
 	apiGroup,
-	apiRegion,
 	apiX
 ];
 
-export const internal = [
+export const internal = {
 	axis,
 	clip,
 	eventrect,
-	flow,
-	grid,
-	region,
-	sizeAxis,
-];
+	sizeAxis
+};
 
-export const options = [
+export const options = {
 	optDataAxis,
-	optAxis,
-	optGrid,
-];
+	optAxis
+};

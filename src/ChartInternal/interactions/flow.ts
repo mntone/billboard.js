@@ -2,16 +2,15 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {easeLinear as d3EaseLinear} from "d3-ease";
+import CLASS from "../../config/classes";
 import {generateWait} from "../../module/generator";
 import {diffDomain} from "../../module/util";
-import CLASS from "../../config/classes";
 
 export default {
 	/**
 	 * Generate flow
 	 * @param {object} args option object
-	 * @returns {Function}
+	 * @returns {function}
 	 * @private
 	 */
 	generateFlow(args): Function {
@@ -29,6 +28,9 @@ export default {
 				d.values.splice(0, flowLength);
 			});
 
+			// Increment dataGeneration to invalidate data-dependent caches
+			state.dataGeneration++;
+
 			// update elements related to x scale
 			if ($$.updateXGrid) {
 				$$.updateXGrid(true);
@@ -37,7 +39,17 @@ export default {
 			// target elements
 			const elements = {};
 
-			["axis.x", "grid.x", "gridLines.x", "region.list", "text", "bar", "line", "area", "circle"]
+			[
+				"axis.x",
+				"grid.x",
+				"gridLines.x",
+				"region.list",
+				"text",
+				"bar",
+				"line",
+				"area",
+				"circle"
+			]
 				.forEach(v => {
 					const name = v.split(".");
 					let node = $el[name[0]];
@@ -51,7 +63,7 @@ export default {
 					}
 				});
 
-			$$.hideGridFocus();
+			$$.hideGridFocus?.();
 			$$.setFlowList(elements, args);
 		};
 	},
@@ -69,7 +81,7 @@ export default {
 			duration = args.duration,
 			index: flowIndex,
 			length: flowLength,
-			orgDataCount,
+			orgDataCount
 		} = flow;
 
 		const transform = $$.getFlowTransform(targets, orgDataCount, flowIndex, flowLength);
@@ -79,7 +91,7 @@ export default {
 		wait.add(Object.keys(elements).map(v => {
 			n = elements[v]
 				.transition()
-				.ease(d3EaseLinear)
+				.ease((t: number): number => +t)
 				.duration(duration);
 
 			if (v === "axis.x") {
@@ -150,9 +162,6 @@ export default {
 			} else if (v === "gridLines.x") {
 				n.attr("x1", isRotated ? 0 : xv)
 					.attr("x2", isRotated ? state.width : xv);
-			} else if (v === "gridLines.x") {
-				n.select("line").attr("x1", isRotated ? 0 : xv)
-					.attr("x2", isRotated ? state.width : xv);
 
 				n.select("text")
 					.attr("x", isRotated ? state.width : 0)
@@ -170,10 +179,7 @@ export default {
 					const xFunc = d => cx(d) - config.point_r;
 					const yFunc = d => cy(d) - config.point_r;
 
-					n.attr("x", xFunc)
-						.attr("y", yFunc)
-						.attr("cx", cx) // when pattern is used, it possibly contain 'circle' also.
-						.attr("cy", cy);
+					n.attr("x", xFunc).attr("y", yFunc);
 				}
 			} else if (v === "region.list") {
 				n.select("rect").filter($$.isRegionOnX)
@@ -233,7 +239,7 @@ export default {
 				x(flowStart?.x || 0) - x(flowEnd.x);
 		}
 
-		const scaleX = (diffDomain(orgDomain) / diffDomain(domain));
+		const scaleX = diffDomain(orgDomain) / diffDomain(domain);
 
 		return `translate(${translateX},0) scale(${scaleX},1)`;
 	}

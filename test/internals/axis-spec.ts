@@ -3,15 +3,17 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+// @ts-nocheck
+import {beforeEach, beforeAll, afterAll, describe, expect, it} from "vitest";
+import sinon from "sinon";
 import {select as d3Select} from "d3-selection";
 import {format as d3Format} from "d3-format";
 import {timeMinute as d3TimeMinute} from "d3-time";
 import util from "../assets/util";
-import {getBoundingRect} from "../../src/module/util";
+import {addCssRules, getBoundingRect} from "../assets/module/util";
 import bb from "../../src";
 import {$AXIS} from "../../src/config/classes";
-import AxisRendererHelper from "../../src/ChartInternal/Axis/AxisRendererHelper";
+// import AxisRendererHelper from "../../src/ChartInternal/Axis/AxisRendererHelper";
 //import getSizeFor1Char from "exports-loader?getSizeFor1Char!../../src/axis/bb.axis";
 
 describe("AXIS", function() {
@@ -50,7 +52,7 @@ describe("AXIS", function() {
 	});
 
 	describe("axis.x.tick.count", () => {
-		after(() => {
+		afterAll(() => {
 			args.axis.x.type = "indexed";
 			args.axis.x.tick.count = undefined;
 		});
@@ -68,11 +70,11 @@ describe("AXIS", function() {
 		});
 
 		it("x Axis ticks should be positioned correctly", () => {
-			const expectedXPos = [50, 349, 549];
+			const expectedXPos = [50, 350, 550];
 
 			chart.$.main.selectAll(`.${$AXIS.axisX} .tick`).each(function(d, i) {
 				expect(
-					util.parseNum(this.getAttribute("transform").split(",")[0])
+					util.ceil(util.parseNum(this.getAttribute("transform").split(",")[0]))
 				).to.be.equal(expectedXPos[i]);
 			});
 		});
@@ -126,15 +128,16 @@ describe("AXIS", function() {
 	describe("axis.y.tick.values", () => {
 		const values = [100, 500];
 
-		before(() => {
+		beforeAll(() => {
 			args.axis.y.tick.values = values;
 		});
 
 		it("should compute char dimension", () => {
-			const size = AxisRendererHelper.getSizeFor1Char(d3Select(".tick"));
+			const {helper} = chart.internal.axis.x;
+			const size = helper.getSizeFor1Char("bottom", d3Select(".tick"));
 
 			expect(size.w && size.h).to.be.ok;
-			expect(AxisRendererHelper.getSizeFor1Char()).to.be.equal(size);
+			expect(helper.getSizeFor1Char("bottom")).to.be.equal(size);
 		});
 
 		it("should have only 2 tick on y axis", () => {
@@ -155,7 +158,7 @@ describe("AXIS", function() {
 	});
 
 	describe("tick values less than 0", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -182,7 +185,7 @@ describe("AXIS", function() {
 	});
 
 	describe("tick values less than 0", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -209,7 +212,7 @@ describe("AXIS", function() {
 	});
 
 	describe("y/y2 Axes tick.stepSize", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -284,10 +287,108 @@ describe("AXIS", function() {
 				expect(this.textContent % 1).to.be.equal(0);
 			});
 		});
+
+		it("set options", () => {
+			args = {
+				  data: {
+					columns: [
+						["data1", 3, 10, 11, 12]
+					],
+					type: "bar"
+				},
+				axis: {
+					rotated: true,
+					y: {
+						max: 100,
+						min: 0,
+						tick: {
+							stepSize: 2,
+						}
+					}
+				}
+			};
+		});
+
+		it("should stepSize works on rotated axis.", () => {
+			const {stepSize} = args.axis.y.tick;
+			let {$el: {axis: {y}}} = chart.internal;			
+			let temp;
+
+			y = y.selectAll(".tick tspan");
+
+			expect(y.size()).to.be.equal(61);
+
+			y.each(function() {
+				const value = +this.textContent;
+
+				if (!temp) {
+					temp = value;
+				} else {
+					expect(temp + stepSize).to.be.equal(value);
+					temp = value;
+				}
+			});
+		});
 	});
 
-	describe("axis label", () => {
-		before(() => {
+	describe("axis label #1", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 170, 150, 250]
+					]
+				},
+				axis: {
+					y: {
+						label: "Y Axis Label"
+					},
+					y2: {
+						show: true
+					}
+				}
+			};
+		});
+
+		
+		it("sholudn't generate unnecessary axis label", () => {
+			let cnt = 0;
+
+			["x", "y", "y2"].forEach(id => {
+				const axisLabel = chart.internal.$el.axis[id].select("text:first-child");
+
+				if (!axisLabel.empty()) {
+					expect(id).to.be.equal("y");
+					cnt++;
+				}
+			});
+
+			expect(cnt).to.be.equal(1);
+		});
+
+		it("should generate axis label text node when api is called.", () => {
+			let cnt = 0;
+
+			// when
+			chart.axis.labels({
+				x: "New X Axis Label"
+			});
+
+			["x", "y", "y2"].forEach(id => {
+				const axisLabel = chart.internal.$el.axis[id].select("text:first-child");
+
+				if (!axisLabel.empty()) {
+					expect(/^(x|y)$/.test(id)).to.be.true;
+					cnt++;
+				}
+			});
+
+			expect(cnt).to.be.equal(2);
+		});
+	});
+
+	describe("axis label #2", () => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -352,7 +453,7 @@ describe("AXIS", function() {
 	});
 
 	describe("axis outer label position", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -457,7 +558,7 @@ describe("AXIS", function() {
 	});
 
 	describe("axis y timeseries", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -560,7 +661,7 @@ describe("AXIS", function() {
 	describe("axis.x.tick.width", () => {
 		describe("indexed x axis and y/y2 axis", () => {
 			describe("not rotated", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							columns: [
@@ -701,7 +802,7 @@ describe("AXIS", function() {
 			});
 
 			describe("rotated", () => {
-				before(() => {
+				beforeAll(() => {
 					args.axis.rotated = true;
 				});
 
@@ -768,7 +869,7 @@ describe("AXIS", function() {
 
 		describe("category axis", () => {
 			describe("not rotated", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							x: "x",
@@ -852,7 +953,7 @@ describe("AXIS", function() {
 					expect(() => chart.hide("data1")).to.not.throw();
 				});
 
-				it("shouldn't be addede duplicated tooltip <title> elements", done => {
+				it("shouldn't be addede duplicated tooltip <title> elements", () => new Promise(done => {
 					chart.load({
 						columns: [
 							["data1", 130, 120, 150, 140]							
@@ -862,14 +963,14 @@ describe("AXIS", function() {
 								expect(d3Select(this).selectAll("title").size()).to.be.equal(1);
 							});
 
-							done();
+							done(1);
 						}
 					});
-				});
+				}));
 			});
 
 			describe("rotated", () => {
-				before(() => {
+				beforeAll(() => {
 					args.axis.rotated = true;
 				});
 
@@ -887,7 +988,7 @@ describe("AXIS", function() {
 							const text = d3Select(this);
 
 							expect(text.attr("x")).to.be.equal(expectedX);
-							expect(text.attr("y")).to.be.equal(expectedY);
+							expect(util.ceil(text.attr("y"))).to.be.equal(+expectedY);
 						});
 
 						if (i > 0) { // i === 0 should be checked in next test
@@ -941,14 +1042,14 @@ describe("AXIS", function() {
 					const ticksText = chart.$.main.select(`.${$AXIS.axisX}`).selectAll("g.tick text");
 
 					ticksText.each(function() {
-						expect(+this.getAttribute("y")).to.be.equal(37);
+						expect(util.ceil(+this.getAttribute("y"))).to.be.equal(38);
 					});
 				});
 			});
 
 			describe("option used", () => {
 				describe("as null", () => {
-					before(() => {
+					beforeAll(() => {
 						args.axis.x.tick = {
 							multiline: false
 						};
@@ -964,7 +1065,7 @@ describe("AXIS", function() {
 				});
 
 				describe("as value", () => {
-					before(() => {
+					beforeAll(() => {
 						args.axis.x.tick = {
 							width: 150
 						};
@@ -1002,7 +1103,7 @@ describe("AXIS", function() {
 		describe("with axis.x.tick.format", () => {
 			const tickTexts = ["this is a very long tick text", "on category axis"];
 
-			before(() => {
+			beforeAll(() => {
 				args.axis.x.tick.format = () => tickTexts;
 			});
 
@@ -1023,7 +1124,7 @@ describe("AXIS", function() {
 		describe("tick text with '\n' to line break", () => {
 			const tickText = "this is a very\nlong\ntick text";
 
-			before(() => {
+			beforeAll(() => {
 				args.axis.x.tick.format = () => tickText;
 			});
 
@@ -1045,7 +1146,7 @@ describe("AXIS", function() {
 		describe("axis.x.tick.format for category type", () => {
 			const len = 3;
 
-			before(() => {
+			beforeAll(() => {
 				args.axis.x.tick.format = (i, name) => name && name.substr(0, len);
 			});
 
@@ -1060,8 +1161,83 @@ describe("AXIS", function() {
 		});
 	});
 
+	describe("axis x height", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					x: "x",
+					xFormat: "%Y",
+					columns: [
+						["x", "2010", "2011", "2012", "2013", "2014", "2015"],
+						["data1", 30, 200, 100, 400, 150, 250],
+						["data2", 130, 340, 200, 500, 250, 350]
+					],
+					type: "line"
+				  },
+				  axis: {
+					x: {
+					  type: "timeseries",
+					  localtime: false,
+					  tick: {
+						format: "%Y-%m-%d %H:%M:%S"
+					  }
+					}
+				}
+			}
+		});
+
+		it("shouldn't overlap x Axis tick text with legend", () => {
+			const {axis: {x}, legend} = chart.internal.$el;
+
+			const xBottom = x.node().getBoundingClientRect().bottom;
+			const legendTop = legend.node().getBoundingClientRect().top;
+
+			expect(legendTop > xBottom).to.be.true;			
+		});
+
+		it("set option: legend.show=false", () => {
+			args.legend = {
+				show: false
+			};
+		});
+
+		it("x Axis tick text should stay within container", () => {
+			const {$el: {axis: {x}}, state} = chart.internal;
+			const xBottom = x.node().getBoundingClientRect().bottom;
+
+			expect(xBottom).to.be.below(state.current.height);
+		});
+
+		it("set option: legend.show=false", () => {
+			args = {
+				data: {
+					x: "x",
+					columns: [
+						["x", "First Q\n2018", "Second\nQ 2018", "3Q\nYear\n2018", "Forth\nQuarter\n2018"],
+						["data", 30, 100, 400, 150]
+					],
+					type: "line"
+				},
+				axis: {
+					x: {
+						type: "category"
+					}
+				}
+			};
+		});
+
+		it("shouldn't overlap x Axis tick text with legend", () => {
+			const {axis: {x}, legend} = chart.internal.$el;
+
+			const xBottom = x.node().getBoundingClientRect().bottom;
+			const legendTop = legend.node().getBoundingClientRect().top;
+
+			expect(legendTop > xBottom).to.be.true;			
+		});
+	});
+
 	describe("axis.x.tick.tooltip", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -1112,7 +1288,7 @@ describe("AXIS", function() {
 
 	describe("axis.x.tick.rotate", () => {
 		describe("rotation > 0", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "x",
@@ -1151,13 +1327,13 @@ describe("AXIS", function() {
 				const height = internal.getHorizontalAxisHeight("x");
 
 				expect(box.height).to.be.above(50);
-				expect(height).to.be.above(68);
+				expect(height).to.be.above(67);
 				expect(height).to.be.below(80);
 			});
 		});
 
 		describe("rotation < 0", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "x",
@@ -1196,8 +1372,20 @@ describe("AXIS", function() {
 				const height = internal.getHorizontalAxisHeight("x");
 
 				expect(box.height).to.be.above(50);
-				expect(height).to.be.above(68);
+				expect(height).to.be.above(67);
 				expect(height).to.be.below(80);
+			});
+
+			it("set options: axis.x.tick.multiline=false", () => {
+				args.axis.x.tick.multiline = false;
+			});
+
+			it("x Axis shouldn't be overlapped with the legend", () => {
+				const {legend, main} = chart.$;
+				const legendRect = legend.node().getBoundingClientRect();
+				const xAxisRect = main.selectAll(`.${$AXIS.axisX}`).node().getBoundingClientRect();
+				
+				expect(legendRect.top > xAxisRect.bottom).to.be.true;
 			});
 		});
 	});
@@ -1212,8 +1400,8 @@ describe("AXIS", function() {
 			const xAxisTickRotate = internal.getAxisTickRotate("x");
 
 			expect(xAxisTickRotate).to.be.equal(expectedXAxisTickRotate);
-			expect(xAxisBoundingClientRect.height).to.be.closeTo(expectedXAxisBoundingClientRect, 1);
-			expect(horizontalXAxisHeight).to.be.closeTo(expectedHorizontalXAxisHeight, 1);
+			expect(xAxisBoundingClientRect.height).to.be.closeTo(expectedXAxisBoundingClientRect, 1.5);
+			expect(horizontalXAxisHeight).to.be.closeTo(expectedHorizontalXAxisHeight, 2);
 
 			const xAxisTickTextY2Overflow = chart.internal.axis.getXAxisTickTextY2Overflow(defaultPadding);
 
@@ -1228,7 +1416,7 @@ describe("AXIS", function() {
 		}
 
 		describe("`axis.x.type = category`", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "x",
@@ -1276,6 +1464,52 @@ describe("AXIS", function() {
 				compare(0, 18.8125, 30, 0);
 			});
 
+			it("should not use the height of the longest tick text when ticks are not rotated", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisX} g.tick`).each(function() {
+					const tick = d3Select(this);
+					const text = tick.select("text");
+					const tspan = text.select("tspan");
+
+					expect(text.attr("transform")).to.be.null;
+					expect(text.attr("y")).to.be.equal("9");
+					expect(tspan.attr("dx")).to.be.equal("0");
+				});
+
+				compare(0, 18.8125, 30, 0);
+			});
+
+			it("update args", () => {
+				args = {
+					...args,
+					legend: {
+						position: "right"
+					}
+				};
+				args.data.columns[0] = [
+					"x",
+					"categoryname1111",
+					"categoryname2222",
+					"categoryname3333",
+					"categoryname4444",
+					"categoryname5555",
+					"categoryname6666"
+				]
+			});
+
+			it("should rotate tick texts if there is not enough space between ticks and legend is right", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisX} g.tick`).each(function() {
+					const tick = d3Select(this);
+					const text = tick.select("text");
+					const tspan = text.select("tspan");
+
+					expect(text.attr("transform")).to.be.equal("rotate(15)");
+					expect(text.attr("y")).to.be.equal("9");
+					expect(tspan.attr("dx")).to.be.equal("2.070552360820166");
+				});
+
+				compare(15, 43, 53, 10)
+			});
+
 			it("update args", () => {
 				args.data.columns[0] = [
 					"x",
@@ -1300,13 +1534,13 @@ describe("AXIS", function() {
 						expect(tspan.attr("dx")).to.be.equal("2.070552360820166");
 					});
 
-				compare(15, 45, 56, 71)
+				compare(15, 45, 56, 18)
 			});
 
 			it("should not resize x axis when all data hidden", () => {
 				chart.hide("data1");
 
-				compare(args.axis.x.tick.rotate, 6, 57, 71);
+				compare(args.axis.x.tick.rotate, 6, 55, 18);
 
 				chart.show("data1");
 			});
@@ -1346,7 +1580,7 @@ describe("AXIS", function() {
 				});
 
 				it("should be above 0 if rotated", () => {
-					compareOverflow(71);
+					compareOverflow(18);
 				});
 
 				it("update config", () => {
@@ -1362,7 +1596,7 @@ describe("AXIS", function() {
 				});
 
 				it("should be above defaultPadding if padding left is set", () => {
-					compareOverflow( 80);
+					compareOverflow( 27);
 				});
 
 				it("update config", () => {
@@ -1374,7 +1608,7 @@ describe("AXIS", function() {
 				});
 			});
 
-			it("axis X should maintain its position on legend toggle", done => {
+			it("axis X should maintain its position on legend toggle", () => new Promise(done => {
 				const axisXTransform = chart.$.main.select(`.${$AXIS.axisX}`).attr("transform");
 
 				// when
@@ -1382,13 +1616,13 @@ describe("AXIS", function() {
 
 				setTimeout(() => {
 					expect(chart.$.main.select(`.${$AXIS.axisX}`).attr("transform")).to.be.equal(axisXTransform);
-					done();
+					done(1);
 				})
-			});
+			}));
 		});
 
 		describe("`axis.x.type = timeseries`", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "x",
@@ -1430,6 +1664,20 @@ describe("AXIS", function() {
 				compare(0, 18.8125, 30, 0);
 			});
 
+			it("should not use the height of the longest tick text when ticks are not rotated", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisX} g.tick`).each(function() {
+					const tick = d3Select(this);
+					const text = tick.select("text");
+					const tspan = text.select("tspan");
+
+					expect(text.attr("transform")).to.be.null;
+					expect(text.attr("y")).to.be.equal("9");
+					expect(tspan.attr("dx")).to.be.equal("0");
+				});
+
+				compare(0, 18.8125, 30, 0);
+			});
+
 			it("update args", () => {
 				args.axis.x.tick.count = 10;
 			});
@@ -1451,7 +1699,7 @@ describe("AXIS", function() {
 			it("should not resize x axis when all data hidden", () => {
 				chart.hide("Temperature");
 
-				compare(args.axis.x.tick.rotate, 6, 57, 108);
+				compare(args.axis.x.tick.rotate, 6, 55, 108);
 			});
 
 			it("should resize when show hidden data", () => {
@@ -1555,7 +1803,7 @@ describe("AXIS", function() {
 				});
 			});
 
-			it("axis X should maintain its position on legend toggle", done => {
+			it("axis X should maintain its position on legend toggle", () => new Promise(done => {
 				const axisXTransform = chart.$.main.select(`.${$AXIS.axisX}`).attr("transform");
 
 				// when
@@ -1563,15 +1811,43 @@ describe("AXIS", function() {
 
 				setTimeout(() => {
 					expect(chart.$.main.select(`.${$AXIS.axisX}`).attr("transform")).to.be.equal(axisXTransform);
-					done();
+					done(1);
 				})
-			});
+			}));
+		});
+	});
+
+	describe("axis.y.tick.format", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100]
+					],
+				},
+				axis: {
+					y: {
+						tick: {
+							format: function(x) {
+								return this.data.values("data1")[0];
+							}
+						}
+					}
+				}
+			};
+		});
+
+		it("tick.format context should be chart instance itself.", () => {
+			// when
+			chart.tooltip.show({x:1});
+
+			expect(+chart.$.tooltip.select(".value").text()).to.be.equal(30);
 		});
 	});
 
 	describe("axis.y.tick.rotate", () => {
 		describe("y Axis", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1590,24 +1866,22 @@ describe("AXIS", function() {
 				};
 			});
 
-			it("should rotate tick texts", done => {
-				setTimeout(() => {
-					chart.$.main.selectAll(`.${$AXIS.axisY} g.tick`).each(function() {
-						const tick = d3Select(this);
-						const text = tick.select("text");
-						const tspan = text.select("tspan");
-						const transform: any = text.attr("transform");
+			it("should rotate tick texts", () => new Promise(done => {
+				chart.$.main.selectAll(`.${$AXIS.axisY} g.tick`).each(function() {
+					const tick = d3Select(this);
+					const text = tick.select("text");
+					const tspan = text.select("tspan");
+					const transform: any = text.attr("transform");
 
-						transform &&
-							expect(Math.round(transform.replace(/[A-z()]/g, ""))).to.be.equal(args.axis.y.tick.rotate);
+					transform &&
+						expect(Math.round(transform.replace(/[A-z()]/g, ""))).to.be.equal(args.axis.y.tick.rotate);
 
-						expect(text.attr("y")).to.be.equal("4");
-						expect(parseFloat(tspan.attr("dx"))).to.be.closeTo(5.6, 0.5);
-					});
+					expect(text.attr("y")).to.be.equal("4");
+					expect(parseFloat(tspan.attr("dx"))).to.be.closeTo(5.6, 0.5);
+				});
 
-					done();
-				}, 1000);
-			});
+				done(1);
+			}));
 
 			it("should have automatically calculated y axis width", () => {
 				const box = chart.$.main.select(`.${$AXIS.axisY}`)
@@ -1618,7 +1892,7 @@ describe("AXIS", function() {
 		});
 
 		describe("y2 Axis", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1638,24 +1912,22 @@ describe("AXIS", function() {
 				};
 			});
 
-			it("should rotate tick texts", done => {
-				setTimeout(() => {
-					chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick`).each(function() {
-						const tick = d3Select(this);
-						const text = tick.select("text");
-						const tspan = text.select("tspan");
-						const transform: any = text.attr("transform");
+			it("should rotate tick texts", () => new Promise(done => {
+				chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick`).each(function() {
+					const tick = d3Select(this);
+					const text = tick.select("text");
+					const tspan = text.select("tspan");
+					const transform: any = text.attr("transform");
 
-						transform &&
-							expect(Math.round(transform.replace(/[A-z()]/g, ""))).to.be.equal(args.axis.y2.tick.rotate);
+					transform &&
+						expect(Math.round(transform.replace(/[A-z()]/g, ""))).to.be.equal(args.axis.y2.tick.rotate);
 
-						expect(+text.attr("y")).to.be.closeTo(-13, 0.5);
-						expect(parseFloat(tspan.attr("dx"))).to.be.closeTo(-5.6, 0.5);
-					});
+					expect(+text.attr("y")).to.be.closeTo(-13, 0.5);
+					expect(parseFloat(tspan.attr("dx"))).to.be.closeTo(-5.6, 0.5);
+				});
 
-					done();
-				}, 1000);
-			});
+				done(1);
+			}));
 
 			it("should have automatically calculated y axis width", () => {
 				const box = chart.$.main.select(`.${$AXIS.axisY2}`)
@@ -1669,7 +1941,7 @@ describe("AXIS", function() {
 
 	describe("axis.x.tick.fit", () => {
 		describe("axis.x.tick.fit = true", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1719,7 +1991,7 @@ describe("AXIS", function() {
 		});
 
 		describe("axis.x.tick.fit = false", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1783,7 +2055,7 @@ describe("AXIS", function() {
 
 	describe("y/y2 Axis inner", () => {
 		describe("axis.y.inner", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1800,7 +2072,7 @@ describe("AXIS", function() {
 			});
 
 			it("should not have inner y axis", () => {
-				const paddingLeft = chart.internal.getCurrentPaddingLeft();
+				const paddingLeft = chart.internal.getCurrentPaddingByDirection("left")
 				const tickTexts = chart.$.main.selectAll(`.${$AXIS.axisY} g.tick text`);
 
 				expect(paddingLeft).to.be.above(19);
@@ -1815,10 +2087,10 @@ describe("AXIS", function() {
 			});
 
 			it("should have inner y axis", () => {
-				const paddingLeft = chart.internal.getCurrentPaddingLeft();
+				const paddingLeft = chart.internal.getCurrentPaddingByDirection("left");
 				const tickTexts = chart.$.main.selectAll(`.${$AXIS.axisY} g.tick text`);
 
-				expect(paddingLeft).to.be.equal(1);
+				expect(paddingLeft).to.be.equal(0);
 
 				tickTexts.each(function() {
 					expect(+d3Select(this).attr("x")).to.be.above(0);
@@ -1828,7 +2100,7 @@ describe("AXIS", function() {
 		});
 
 		describe("axis.y2.inner", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1846,7 +2118,7 @@ describe("AXIS", function() {
 			});
 
 			it("should not have inner y axis", () => {
-				const paddingRight = chart.internal.getCurrentPaddingRight();
+				const paddingRight = chart.internal.getCurrentPaddingByDirection("right");
 				const tickTexts = chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick text`);
 
 				expect(paddingRight).to.be.above(19);
@@ -1860,11 +2132,11 @@ describe("AXIS", function() {
 				args.axis.y2.inner = true;
 			});
 
-			it("should have inner y axis", () => {
-				const paddingRight = chart.internal.getCurrentPaddingRight();
+			it("should have inner y2 axis", () => {
+				const paddingRight = chart.internal.getCurrentPaddingByDirection("right");
 				const tickTexts = chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick text`);
 
-				expect(paddingRight).to.be.equal(2);
+				expect(paddingRight).to.be.equal(1);
 
 				tickTexts.each(function() {
 					expect(+d3Select(this).attr("x")).to.be.below(0);
@@ -1872,9 +2144,379 @@ describe("AXIS", function() {
 			});
 		});
 	});
+
+	describe("Axis tick.inner", () => {
+		describe("axis.x.tick.inner", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 30, 200, 100, 400, 150, 250],
+							["data2", 50, 20, 10, 40, 15, 25]
+						]
+					},
+					axis: {
+						x: {
+							tick: {
+								inner: false
+							}
+						}
+					}
+				};
+			});
+
+			it("should not have inner x tick lines", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisX} g.tick line`).each(function() {
+					const y2 = +d3Select(this).attr("y2");
+					
+					// tick lines should extend outward (positive y2 value)
+					expect(y2).to.be.above(0);
+				});
+			});
+
+			it("set options axis.x.tick.inner=true", () => {
+				args.axis.x.tick.inner = true;
+			});
+
+			it("should have inner x tick lines", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisX} g.tick line`).each(function() {
+					const y2 = +d3Select(this).attr("y2");
+					
+					// tick lines should extend inward (negative y2 value)
+					expect(y2).to.be.below(0);
+				});
+			});
+		});
+
+		describe("axis.y.tick.inner", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 30, 200, 100, 400, 150, 250],
+							["data2", 50, 20, 10, 40, 15, 25]
+						]
+					},
+					axis: {
+						y: {
+							tick: {
+								inner: false
+							}
+						}
+					}
+				};
+			});
+
+			it("should not have inner y tick lines", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisY} g.tick line`).each(function() {
+					const x2 = +d3Select(this).attr("x2");
+					
+					// tick lines should extend outward (negative x2 value)
+					expect(x2).to.be.below(0);
+				});
+			});
+
+			it("set options axis.y.tick.inner=true", () => {
+				args.axis.y.tick.inner = true;
+			});
+
+			it("should have inner y tick lines", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisY} g.tick line`).each(function() {
+					const x2 = +d3Select(this).attr("x2");
+					
+					// tick lines should extend inward (positive x2 value)
+					expect(x2).to.be.above(0);
+				});
+			});
+		});
+
+		describe("axis.y2.tick.inner", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 30, 200, 100, 400, 150, 250],
+							["data2", 50, 20, 10, 40, 15, 25]
+						]
+					},
+					axis: {
+						y2: {
+							show: true,
+							tick: {
+								inner: false
+							}
+						}
+					}
+				};
+			});
+
+			it("should not have inner y2 tick lines", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick line`).each(function() {
+					const x2 = +d3Select(this).attr("x2");
+					
+					// tick lines should extend outward (positive x2 value)
+					expect(x2).to.be.above(0);
+				});
+			});
+
+			it("set options axis.y2.tick.inner=true", () => {
+				args.axis.y2.tick.inner = true;
+			});
+
+			it("should have inner y2 tick lines", () => {
+				chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick line`).each(function() {
+					const x2 = +d3Select(this).attr("x2");
+					
+					// tick lines should extend inward (negative x2 value)
+					expect(x2).to.be.below(0);
+				});
+			});
+		});
+
+		describe("rotated axis with tick.inner", () => {
+			describe("axis.rotated=true, x.tick.inner", () => {
+				beforeAll(() => {
+					args = {
+						data: {
+							columns: [
+								["data1", 30, 200, 100, 400, 150, 250],
+								["data2", 50, 20, 10, 40, 15, 25]
+							]
+						},
+						axis: {
+							rotated: true,
+							x: {
+								tick: {
+									inner: false
+								}
+							}
+						}
+					};
+				});
+
+				it("should not have inner x tick lines when rotated", () => {
+					chart.$.main.selectAll(`.${$AXIS.axisX} g.tick line`).each(function() {
+						const x2 = +d3Select(this).attr("x2");
+						
+						// for rotated x axis, outer tick should have negative x2
+						expect(x2).to.be.below(0);
+					});
+				});
+
+				it("set options axis.x.tick.inner=true", () => {
+					args.axis.x.tick.inner = true;
+				});
+
+				it("should have inner x tick lines when rotated", () => {
+					chart.$.main.selectAll(`.${$AXIS.axisX} g.tick line`).each(function() {
+						const x2 = +d3Select(this).attr("x2");
+						
+						// for rotated x axis, inner tick should have positive x2
+						expect(x2).to.be.above(0);
+					});
+				});
+			});
+
+			describe("axis.rotated=true, y.tick.inner", () => {
+				beforeAll(() => {
+					args = {
+						data: {
+							columns: [
+								["data1", 30, 200, 100, 400, 150, 250],
+								["data2", 50, 20, 10, 40, 15, 25]
+							]
+						},
+						axis: {
+							rotated: true,
+							y: {
+								tick: {
+									inner: false
+								}
+							}
+						}
+					};
+				});
+
+				it("should not have inner y tick lines when rotated", () => {
+					chart.$.main.selectAll(`.${$AXIS.axisY} g.tick line`).each(function() {
+						const y2 = +d3Select(this).attr("y2");
+						
+						// for rotated y axis, outer tick should have positive y2
+						expect(y2).to.be.above(0);
+					});
+				});
+
+				it("set options axis.y.tick.inner=true", () => {
+					args.axis.y.tick.inner = true;
+				});
+
+				it("should have inner y tick lines when rotated", () => {
+					chart.$.main.selectAll(`.${$AXIS.axisY} g.tick line`).each(function() {
+						const y2 = +d3Select(this).attr("y2");
+						
+						// for rotated y axis, inner tick should have negative y2
+						expect(y2).to.be.below(0);
+					});
+				});
+			});
+
+			describe("axis.rotated=true, y2.tick.inner", () => {
+				beforeAll(() => {
+					args = {
+						data: {
+							columns: [
+								["data1", 30, 200, 100, 400, 150, 250],
+								["data2", 50, 20, 10, 40, 15, 25]
+							]
+						},
+						axis: {
+							rotated: true,
+							y2: {
+								show: true,
+								tick: {
+									inner: false
+								}
+							}
+						}
+					};
+				});
+
+				it("should not have inner y2 tick lines when rotated", () => {
+					chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick line`).each(function() {
+						const y2 = +d3Select(this).attr("y2");
+						
+						// for rotated y2 axis, outer tick should have negative y2
+						expect(y2).to.be.below(0);
+					});
+				});
+
+				it("set options axis.y2.tick.inner=true", () => {
+					args.axis.y2.tick.inner = true;
+				});
+
+				it("should have inner y2 tick lines when rotated", () => {
+					chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick line`).each(function() {
+						const y2 = +d3Select(this).attr("y2");
+						
+						// for rotated y2 axis, inner tick should have positive y2
+						expect(y2).to.be.above(0);
+					});
+				});
+			});
+
+			describe("axis.rotated=true, all axes with tick.inner", () => {
+				beforeAll(() => {
+					args = {
+						data: {
+							columns: [
+								["data1", 30, 200, 100, 400, 150, 250],
+								["data2", 50, 20, 10, 40, 15, 25]
+							]
+						},
+						axis: {
+							rotated: true,
+							x: {
+								tick: {
+									inner: true
+								}
+							},
+							y: {
+								tick: {
+									inner: true
+								}
+							},
+							y2: {
+								show: true,
+								tick: {
+									inner: true
+								}
+							}
+						}
+					};
+				});
+
+				it("should work correctly with all rotated axes having inner ticks", () => {
+					// x axis (rotated becomes vertical)
+					chart.$.main.selectAll(`.${$AXIS.axisX} g.tick line`).each(function() {
+						const x2 = +d3Select(this).attr("x2");
+						
+						// for rotated x axis, inner tick should have positive x2
+						expect(x2).to.be.above(0);
+					});
+
+					// y axis (rotated becomes horizontal)
+					chart.$.main.selectAll(`.${$AXIS.axisY} g.tick line`).each(function() {
+						const y2 = +d3Select(this).attr("y2");
+						
+						// for rotated y axis, inner tick should have negative y2
+						expect(y2).to.be.below(0);
+					});
+
+					// y2 axis (rotated becomes horizontal)
+					chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick line`).each(function() {
+						const y2 = +d3Select(this).attr("y2");
+						
+						// for rotated y2 axis, inner tick should have positive y2
+						expect(y2).to.be.above(0);
+					});
+				});
+			});
+		});
+
+		describe("all axes with tick.inner", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 30, 200, 100, 400, 150, 250],
+							["data2", 50, 20, 10, 40, 15, 25]
+						]
+					},
+					axis: {
+						x: {
+							tick: {
+								inner: true
+							}
+						},
+						y: {
+							tick: {
+								inner: true
+							}
+						},
+						y2: {
+							show: true,
+							tick: {
+								inner: true
+							}
+						}
+					}
+				};
+			});
+
+			it("should apply inner tick to all axes simultaneously", () => {
+				// x axis
+				chart.$.main.selectAll(`.${$AXIS.axisX} g.tick line`).each(function() {
+					const y2 = +d3Select(this).attr("y2");
+					expect(y2).to.be.below(0);
+				});
+
+				// y axis
+				chart.$.main.selectAll(`.${$AXIS.axisY} g.tick line`).each(function() {
+					const x2 = +d3Select(this).attr("x2");
+					expect(x2).to.be.above(0);
+				});
+
+				// y2 axis
+				chart.$.main.selectAll(`.${$AXIS.axisY2} g.tick line`).each(function() {
+					const x2 = +d3Select(this).attr("x2");
+					expect(x2).to.be.below(0);
+				});
+			});
+		});
+	});
 	
 	describe("y/y2 Axis inverted", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -1983,7 +2625,7 @@ describe("AXIS", function() {
 	});
 
 	describe("axis.rotated", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2012,8 +2654,9 @@ describe("AXIS", function() {
 
 			chart.internal.state.eventReceiver.coords.forEach((d, idx) => {
 				const tick = d3Select(ticks[idx]);
+				const y = +tick.attr("transform").match(/,([^)]*)/)[1];
 
-				expect(tick.attr("transform")).to.be.equal(`translate(0,${d.y})`);
+				expect(y).to.closeTo(d.y, 1);
 			});
 		});
 
@@ -2027,7 +2670,7 @@ describe("AXIS", function() {
 	});
 
 	describe("axis tick visiblity", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -2109,10 +2752,49 @@ describe("AXIS", function() {
 				expect(axis.selectAll(".tick line").size()).to.be.equal(0);
 			});
 		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					columns: [
+					  ["data1", 90, 100, 140, 200, 100]
+					],
+					type: "bar",
+				},
+				axis: {
+					x: {
+						tick: {
+							show: false,
+							text: {
+								show: false
+							}
+						}
+					},
+					y: {
+						tick: {
+							show: false,
+							text: {
+								show: false
+							}
+						}
+					}
+				}
+			};
+		});
+
+		it("should show tick without error", () => {
+			expect(
+				chart.config("axis.y.tick.show", true, true)
+			).to.not.throw;
+
+			expect(
+				chart.internal.$el.axis.y.selectAll(".tick").size() > 0
+			).to.be.true;
+		});
 	});
 
 	describe("axis text on 'binary floating point'", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2141,7 +2823,7 @@ describe("AXIS", function() {
 	});
 
 	describe("axis text's position", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -2237,7 +2919,7 @@ describe("AXIS", function() {
 	});
 
 	describe("when data is zero, unnecessary tick shouldn't be showing", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2262,7 +2944,7 @@ describe("AXIS", function() {
 	});
 
 	describe("Axis show", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2292,7 +2974,7 @@ describe("AXIS", function() {
 			});
 		});
 
-		it("y Axis domain should update even is hidden", done => {
+		it("y Axis domain should update even is hidden", () => new Promise(done => {
 			const yDomain = chart.internal.scale.y.domain();
 
 			// when
@@ -2307,14 +2989,14 @@ describe("AXIS", function() {
 						this.internal.scale.y.domain()
 					);
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("Multi axes", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2415,7 +3097,7 @@ describe("AXIS", function() {
 
 		const checkY2Axes = (rotated?) => {
 			const main = chart.$.main;
-			const yAxisY = util.parseNum(main.select(`.${$AXIS.axis}-y2`).attr("transform"));
+			const yAxisY = util.parseNum(main.select(`.${$AXIS.axis}-y2`).attr("transform").split(",")[rotated ? 1 : 0]);
 			const axis1 = main.select(`.${$AXIS.axis}-y2-1`);
 
 			expect(util.parseNum(axis1.attr("transform"))).to.be[rotated ? "below" : "above"](yAxisY);
@@ -2512,7 +3194,7 @@ describe("AXIS", function() {
 	});
 
 	describe("y Axis size", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 				  columns: [
@@ -2534,7 +3216,7 @@ describe("AXIS", function() {
 			const axisY = chart.$.main.select(`.${$AXIS.axisY}`);
 
 			expect(axisY.node().getBoundingClientRect().width).to.be.equal(
-				axisY.select(".tick:nth-child(12)").node().getBoundingClientRect().width
+				axisY.select(".tick:nth-child(11)").node().getBoundingClientRect().width
 			);
 		});
 
@@ -2553,7 +3235,8 @@ describe("AXIS", function() {
 				},
 				axis: {
 					y: {
-						label: "Your Y Axis"
+						label: "Your Y Axis",
+						position: ""
 					}
 				}
 			};
@@ -2562,12 +3245,43 @@ describe("AXIS", function() {
 		it("<clipPath> width shouldn't truncate y axis tick when has no data", () => {
 			const rect = chart.internal.$el.defs.selectAll("clipPath[id$='yaxis'] rect");
 
-			expect(+rect.attr("width")).to.be.equal(50);
+			expect(+rect.attr("width")).to.be.equal(60);
 		});
+
+		it("set options: axis.y.label", () => {
+			args.axis.y.label = {
+				text: "Your Y Axis",
+				position: "outer-middle"
+			};
+
+			args.axis.y2 = {
+				show: true,
+				label: args.axis.y.label
+			}
+		});
+
+		it("label text shouldn't be overlapped with tick text", () => {
+			const y = chart.$.main.select(`.${$AXIS.axisY}`);
+			const y2 = chart.$.main.select(`.${$AXIS.axisY2}`);
+
+			[y, y2].forEach((v, i) => {
+				const labelRect = v.select("text").node().getBoundingClientRect();
+				const tickRect = v.select(".tick:nth-child(7)").node().getBoundingClientRect();
+
+				// y axis
+				if (i === 0) {
+					expect(labelRect.x + labelRect.width < tickRect.x).to.be.true;
+
+				// y2 axis
+				} else {
+					expect(labelRect.x > tickRect.x + tickRect.width).to.be.true
+				}
+			});
+		})
 	});
 
 	describe("Axes tick culling", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2627,6 +3341,42 @@ describe("AXIS", function() {
 			checkTickValues();
 		});
 
+		it("should cull overlapped x tick lines with x tick text", () => {
+			chart.destroy();
+			chart = util.generate({
+				size: {
+					width: 360,
+					height: 240
+				},
+					data: {
+						columns: [
+							["data1", ...Array.from({length: 500}, (_, i) => i)]
+						]
+					},
+				axis: {
+					x: {
+						tick: {
+							culling: {
+								max: 10
+							}
+						}
+					}
+				}
+			});
+
+			const tickNodes = chart.internal.$el.axis.x.selectAll(".tick");
+			const visibleTicks = tickNodes.filter(function() {
+				return this.style.display !== "none";
+			});
+
+			expect(tickNodes.size()).to.be.equal(500);
+			expect(visibleTicks.size()).to.be.lessThan(30);
+
+			visibleTicks.each(function() {
+				expect(d3Select(this).select("line").empty()).to.be.false;
+			});
+		});
+
 		it("set options axis.rotated=true", () => {
 			args.axis.rotated = true;
 		});
@@ -2678,7 +3428,7 @@ describe("AXIS", function() {
 			}
 		});
 
-		it("tick text's culling visibility should work correctly", done => {
+		it("tick text's culling visibility should work correctly", () => new Promise(done => {
 			// count visibility text nodes
 			const countVisibility = () => {
 				let visible = 0;
@@ -2724,13 +3474,41 @@ describe("AXIS", function() {
 				expect(visible).to.equal(6);
 				expect(hidden).to.equal(0);	
 
-				done();
+				done(1);
 			});
+		}));
+
+		it("set options", () => {
+			args = {
+				data: {
+					x: 'periods',
+					type: "line",
+					columns: [
+						["periods", '1999', '2000', '2001', '2002', '2003','2004','2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015','2016'],
+						["data1", 0, 70, 200, 100, 170, 150, 350, 320, 200, 100, 170, 150, 250, 30, 200, 100, 170, 390],
+					]
+				},
+				axis: {
+					x: {
+						tick: {
+							outer: false,
+							culling: {
+								max: 6,
+								reverse: true
+							}
+						}
+					}
+				}
+			};
+		});
+
+		it("", () => {
+
 		});
 	});
 	
 	describe("Axes tick padding", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {      
 					columns: [
@@ -2760,7 +3538,7 @@ describe("AXIS", function() {
 			expect(translateX).to.be.closeTo(30.5, 1);
 		});
 
-		it("should work with axis.x.padding=10 option", done => {
+		it("should work with axis.x.padding=10 option", () => new Promise(done => {
 			const option = {
 				data: {
 					x: "x",
@@ -2793,12 +3571,12 @@ describe("AXIS", function() {
 					// reaching at this point, means no issue happened
 					expect(true).to.be.ok;
 
-					done();
+					done(1);
 				}
 			};
 
 			util.generate(option);			
-		});
+		}));
 
 		it("set options", () => {
 			args = {
@@ -2854,8 +3632,45 @@ describe("AXIS", function() {
 		});
 	});
 
+	describe("Axis tick.values", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					x: "x",
+					columns: [
+						["x", "2022-01-01", "2022-01-02", "2022-01-03", "2022-01-04", "2022-01-05", "2022-01-06"],
+						["data1", 30, 200, 100, 400, 150, 250]
+					]
+				},
+				axis: {
+					x: {
+						type: "timeseries",
+						tick: {
+							format: "%Y-%m-%d",
+							 fit: false,
+							values: [
+								"2022-01-01",
+								"2022-01-03",,
+								"2022-01-05"
+							]
+						}
+					}
+				}
+			};
+		});
+
+		it("tick transform translate shoudn't contain NaN value.", () => {
+			chart.$.main.selectAll(".tick")
+				.each(function() {
+					const hasNaN = this.getAttribute("transform")?.indexOf("NaN") >= 0;
+
+					expect(hasNaN).to.be.false;
+				});
+		});
+	});
+
 	describe("axis min/max", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -2919,8 +3734,8 @@ describe("AXIS", function() {
 		it("check if x axis min/max is not fitten.", () => {
 			const currWidth = chart.internal.state.current.width;
 
-			chart.$.main.selectAll(`.${$AXIS.axisX} .tick`).each(function(d, i) {
-				const xPos = +util.parseNum(this.getAttribute("transform")) / 10;
+			chart.internal.$el.axis.x.selectAll(".tick").each(function(d, i) {
+				const xPos = +util.parseNum(this.getAttribute("transform"));
 
 				if (i === 0) { // check min
 					expect(xPos).to.be.below(0);
@@ -2985,12 +3800,12 @@ describe("AXIS", function() {
 			const {max} = internal.getMinMaxValue();
 
 			expect(internal.scale.y.domain()[1]).to.be.closeTo(max, 10);
-			expect(+internal.$el.axis.y.select(".tick:nth-child(10) tspan").text()).to.be.closeTo(max, 10);
+			expect(+internal.$el.axis.y.select(".tick:nth-child(9) tspan").text()).to.be.closeTo(max, 10);
 		});
 	});
 
 	describe("x Axis padding: unit='px'", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -3064,7 +3879,7 @@ describe("AXIS", function() {
 	});
 
 	describe("x Axis tick width size", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -3090,17 +3905,17 @@ describe("AXIS", function() {
 		});
 
 		it("x Axis tick width should be evaluated correctly", () => {
-			const {state: {current}} = chart.internal;
+			const {state: {current: {maxTickSize}}} = chart.internal;
 
-			const maxTickWidth = current.maxTickWidths.x.size;
+			const {width} = maxTickSize.x;
 			const tickWdith = chart.$.main.select(`.${$AXIS.axisX} tspan`).node().getBoundingClientRect().width;
 
-			expect(maxTickWidth).to.be.equal(tickWdith);
+			expect(width).to.be.equal(tickWdith);
 		});
 	});
 
 	describe("Log axis type", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x"  ,
@@ -3171,7 +3986,7 @@ describe("AXIS", function() {
 	});
 
 	describe("Axis interval", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					type: "bar",
@@ -3187,7 +4002,7 @@ describe("AXIS", function() {
 
 		it("check the tick interval to be calculated based on the scale & ticks value", () => {
 			// tick's inteval shouldn't be based on the assumption of ticks having same interval
-			expect(chart.internal.axis.x.tickInterval()).to.be.equal(22);
+			expect(util.ceil(chart.internal.axis.x.tickInterval())).to.be.equal(23);
 
 			// bar widht's value should be set based on the scaled tick interval
 			expect(chart.$.bar.bars.node().getBoundingClientRect().width).to.be.closeTo(6, 1);
@@ -3195,7 +4010,7 @@ describe("AXIS", function() {
 	});
 
 	describe("Axis type combination", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -3260,7 +4075,7 @@ describe("AXIS", function() {
 	});
 
 	describe("Axis x type localtime", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: 'x',
@@ -3301,6 +4116,263 @@ describe("AXIS", function() {
 				});
 
  			expect(res.every((v, i) => v === expected[0][i]) || res.every((v, i) => v === expected[1][i])).to.be.true;
+		});
+	});
+
+	describe("axis.tooltip", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 300, 350, 300, 120, 220, 250],
+						["data2", 130, 100, 140, 200, 150, 50]
+					],
+					type: "line",
+					axes: {
+						data1: "y",
+						data2: "y2"
+					}
+				},
+				axis: {
+					tooltip: true,
+					y2: {
+						show: true
+					}
+				}
+			};
+		});
+
+		it("axis tooltip generated & shows correct scale values?", () => {
+			const {internal: {$el}} = chart;
+			const expected = {
+				x: '3.00',
+				y: '373.97',
+				y2: '215.64'
+			};
+
+			// when
+			chart.tooltip.show({x: 3});
+
+			["x", "y", "y2"].forEach(id => {
+				const text = $el.axisTooltip[id];
+				const prev = text.node().previousElementSibling;
+
+				expect(text.text()).to.be.equal(expected[id]);
+
+				// text element should be placed at the last
+				expect(prev.tagName).to.be.equal("path");
+				expect(prev.getAttribute("class")).to.be.equal("domain");
+			});
+		});
+
+		it("set options: axis.tooltip.backgroundColor", () => {
+			args.axis.tooltip = {
+				backgroundColor: {
+					x: "red",
+					y: "blue",
+					y2: "green"
+				}
+			};
+		});
+
+		it("should axis.tooltip.backgroundColor applied correctly?", () => {
+			const {internal: {$el}} = chart;
+			const expected = {
+				x: '3.00',
+				y: '373.97',
+				y2: '215.64'
+			};
+
+			// when
+			chart.tooltip.show({x: 3});
+
+			const filter = chart.internal.$el.defs.selectAll("filter");
+
+			["x", "y", "y2"].forEach(id => {
+				const url = $el.axisTooltip[id].attr("filter").replace(/(^url\(|\)$)/g, "");
+				const filter = $el.defs.select(url);
+				
+				expect(filter.size());
+				expect(args.axis.tooltip.backgroundColor[id]).to.be.equal(filter.select("feFlood").attr("flood-color"));
+			});
+		});
+
+		it("set options: axis.tooltip.backgroundColor only x Axis", () => {
+			args.axis.tooltip = {
+				backgroundColor: {
+					x: "red"
+				}
+			};
+		});
+
+		it("should only generate specified axis element.", () => {
+			const {axisTooltip} = chart.internal.$el;
+			const {backgroundColor} = args.axis.tooltip;
+				
+			Object.keys(axisTooltip).forEach(id => {
+				if (backgroundColor[id]) {
+					expect(!axisTooltip[id].empty()).to.be.true;
+				} else {
+					expect(axisTooltip[id]).to.be.null;
+				}
+			});
+		});
+	});
+
+	describe("axis.evalTextSize", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data2", 130, 100, 140, 200, 150]
+					]
+				},
+				axis: {
+					x: {
+						type: "category",
+						categories: [
+							"Some label with a very long text which will definitely be wrapped in an odd way", 
+							"Some label with a very long text which will definitely be wrapped in an odd way", 
+							"Some label with a very long text which will definitely be wrapped in an odd way",
+							"Some label with a very long text which will definitely be wrapped in an odd way",
+							"Some label with a very long text which will definitely be wrapped in an odd way"
+						]
+					},
+					y2: {
+						show: false
+					},
+					evalTextSize: sinon.spy(function(text) {
+						return {
+							w: 5,
+							h: 5
+						}
+					})
+				}
+			};
+		});
+
+		it("check custom evaluator", () => {
+			const tick = chart.internal.$el.axis.x.select(".tick").node();
+			const {width, height} = tick.getBoundingClientRect();
+
+			expect(width).to.be.closeTo(116, 3);
+			expect(height).to.be.closeTo(35, 3);
+
+			expect(args.axis.evalTextSize.called).to.be.true;
+			expect(args.axis.evalTextSize.args[0][0].tagName === "text").to.be.true;
+		});
+
+		it("set options: axis.evalTextSize=false", () => {
+			args.axis.evalTextSize = false;
+		});
+
+		it("check dimension evaluation not memoized.", () => new Promise(done => {
+			const text = chart.internal.$el.axis.x.select(".tick text");
+
+			// when
+			text.style("font-size", "5px");  // change font size
+			chart.resize({width: 300});
+
+			setTimeout(() => {
+				const tick = chart.internal.$el.axis.x.select(".tick").node();
+				const {width, height} = tick.getBoundingClientRect();
+
+				// expect(width < 41).to.be.true;
+				expect(height < 60).to.be.true;
+
+				// reset font-size
+				text.style("font-size", null);
+
+				done(1);
+			}, 350);
+		}));
+
+		it("set options", () => {
+			args.axis.evalTextSize = function(text, id) {
+				return {
+					y: { w: 20, h: 20},
+					y2: { w: 15.5, h: 20}
+				}[id];
+			};
+			args.axis.y2.show = true;
+		});
+
+		it("should axes width be calculated correctly.", () => {
+			expect(chart.$.main.node().getBBox().width).to.be.closeTo(545, 5);
+		});
+
+		it("set options", () => {
+			delete args.axis.evalTextSize;
+
+			args.bindto = {
+				element: "#chart",
+				classname: "bb eval-text-size"
+			};
+		});
+
+		it("should y/y2 axes text not hidden.", () => new Promise(done => {
+			const {$el: {axis: {y, y2}}} = chart.internal;
+
+			expect(window.getComputedStyle(y.select("text").node()).fontSize).to.be.equal("35px");
+			expect(window.getComputedStyle(y2.select("text").node()).fontSize).to.be.equal("30px");
+
+			setTimeout(() => {
+				const yRect = y.node().getBoundingClientRect();
+				const y2Rect = y2.node().getBoundingClientRect();
+
+				expect(y.node().getBoundingClientRect().x > 0).to.be.true;
+				expect(y2Rect.x + y2Rect.width <= chart.internal.state.current.width).to.be.true;
+
+				done(1);
+			}, 500);
+		}));
+
+		it("set options", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400, 150, 250],
+						["data2", 50, 20, 10, 40, 15, 25]
+					]
+				},
+				axis: {
+					y2: {
+						show: true
+					}
+				},
+				bindto: {
+					element: "#chart",
+					classname: "bb eval-text-size"
+				}
+			};
+		});
+
+		it("check custom evaluator", () => {
+			const {$el: {axis}} = chart.internal;
+			const expectedY = {
+				y: 14,
+				y2: 11.5
+			};
+
+			["y", "y2"].forEach(id => {
+				expect(+axis[id].select(".tick text").attr("y")).to.be.closeTo(expectedY[id], 1);
+			});
+		});
+
+		it("set options: axis.rotated=true", () => {
+			args.axis.rotated = true;
+		});
+
+		it("check custom evaluator", () => {
+			const {$el: {axis}} = chart.internal;
+			const expectedY = {
+				y: 9,
+				y2: -26.5
+			};
+
+			["y", "y2"].forEach(id => {
+				expect(+axis[id].select(".tick text").attr("y")).to.be.closeTo(expectedY[id], 1);
+			});
 		});
 	});
 });

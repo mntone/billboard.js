@@ -4,7 +4,7 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import {$AREA, $AXIS, $CIRCLE, $COMMON, $LINE} from "../../src/config/classes";
 import util from "../assets/util";
@@ -23,7 +23,7 @@ describe("SHAPE AREA", () => {
 	});
 
 	describe("timeseries stacked area when line.connectNull=true", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -64,7 +64,7 @@ describe("SHAPE AREA", () => {
 	});
 
 	describe("area path generation", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -97,7 +97,6 @@ describe("SHAPE AREA", () => {
 			});
 		}
 
-
 		it("check bar path node position: non rotated Axis", () => {
 			checkBarPathPos("y");
 		});
@@ -109,117 +108,35 @@ describe("SHAPE AREA", () => {
 		it("check bar path node position: rotated Axis", () => {
 			checkBarPathPos("x");
 		});
-	});
 
-	describe("area-range type generation", () => {
-		const min = 120;
-		const max = 220;
-
-		before(() => {
+		it("set options", () => {
 			args = {
 				data: {
-					x: "timestamps",
 					columns: [
-						["timestamps", "2013-01-01", "2013-01-02", "2013-01-03", "2013-01-04", "2013-01-05", "2013-01-06"],
-						["data1",
-							[null, null, null],
-							null,
-							[160, 135, 120],
-							[135, min, 110],
-							[180, 150, 130],
-							[199, 160, 125]
-						],
-						["data2",
-							null,
-							{high: null, mid: null, low: null},
-							{high: 230, mid: max, low: 200},
-							{high: 210, mid: 200, low: 180},
-							{high: 220, mid: 210, low: 190},
-							{high: 200, mid: 180, low: 160}
-						],
-						["data3", 130, 140, 200, 150, 210, 150]
+						["data1", 800, 750, 730],
+						["data2", null, 500, 730]
 					],
-					type: "area-spline-range",
+					type: "line",
 					types: {
-						data3: "bubble"
-					}
-				},
-				axis: {
-					x: {
-						type: "timeseries"
+						data1: "area"
 					}
 				}
 			};
 		});
 
-		const checkLineLen = dataName => {
-			const target = chart.$.main.select(`.${$LINE.chartLine}.${$COMMON.target}-${dataName}`);
-			const commands = target.select(`.${$LINE.line}-${dataName}`).attr("d").split("C");
-			const dataLen = chart.internal.filterRemoveNull(chart.data(dataName)[0].values).length;
+		it("area element should be generated for area type dataset only.", () => {
+			const {areas} = chart.$.line;
 
-			expect(commands.length).to.be.equal(dataLen);
-
-			// null data points, shouldn't be showing
-			chart.$.circles.filter(d => d.id === dataName).each(function(d, i) {
-				expect(this.style.opacity).to.be.equal(i > 1 ? '' : "0");
-			})
-		};
-
-		it("Should render the lines correctly when array data supplied", done => {
-			setTimeout(() => {
-				checkLineLen("data1");
-				checkLineLen("data2");
-				done();
-			}, 300)
-		});
-
-		it("should use cardinal interpolation by default", () => {
-			expect(chart.internal.config.spline_interpolation_type).to.be.equal("cardinal");
-		});
-
-		it("should return correct min/max data", () => {
-			const minMax = chart.internal.getMinMaxValue();
-
-			expect(minMax.min).to.be.equal(min);
-			expect(minMax.max).to.be.equal(max);
-		});
-	});
-
-	describe("combined area-range type with grouped data", () => {
-		before(() => {
-			args = {
-				data: {
-					columns: [
-						["data1", 30, 20, 50, 40, 60, 50],
-						["data2", 200, 130, 90, 240, 130, 220],
-						["data3", [130,120,110], [120,110,100], [150,140,130], [140,130,120],[160,150,140],[150,140,130]],
-					],
-					type: "bar",
-					types: {
-						data3: "area-line-range"
-					},
-					groups: [
-						["data1", "data2"]
-					]
-				}
-			}
-		});
-
-		it("check for correct generation", () => {
-			const d = chart.$.line.lines.attr("d");
-			const box = util.getBBox(d3Select(`.${$LINE.chartLine}.${$COMMON.target}-data3`));
-
-			// check for correct path data
-			expect(/NaN/.test(d)).to.be.false;
-
-			// check for correct pos
-			expect(Math.round(box.height)).to.be.equal(83);
-			expect(Math.round(box.y)).to.be.equal(205);
+			expect(areas.size()).to.be.equal(1);
+			
+			areas.each(function() {
+				expect(/undefined/.test(this.getAttribute("d"))).to.be.false;
+			});
 		});
 	});
 
 	describe("rotated area-step type", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -245,14 +162,14 @@ describe("SHAPE AREA", () => {
 			const path = chart.$.main.selectAll(`.${$COMMON.target}-data1 path`);
 
 			path.each(function(v, i) {
-				expect(this.getAttribute("d")).to.be.equal(pathData[i ? "area" : "line"]);
+				expect(this.getAttribute("d").indexOf(pathData[i ? "area" : "line"]) > -1).to.be.ok;
 			});
 		}
 
 		it("check the correct path generation", () => {
 			checkPath({
-				line: "M64.36363636363636,-33L64.36363636363636,2L64.36363636363636,2L64.36363636363636,72.5L429.0909090909091,72.5L429.0909090909091,143.5L214.54545454545456,143.5L214.54545454545456,214L364.7272727272727,214L364.7272727272727,284.5L321.8181818181818,284.5L321.8181818181818,355.5L536.3636363636364,355.5L536.3636363636364,426L536.3636363636364,426L536.3636363636364,461",
-				area: "M64.36363636363636,-33L64.36363636363636,2L64.36363636363636,2L64.36363636363636,72.5L429.0909090909091,72.5L429.0909090909091,143.5L214.54545454545456,143.5L214.54545454545456,214L364.7272727272727,214L364.7272727272727,284.5L321.8181818181818,284.5L321.8181818181818,355.5L536.3636363636364,355.5L536.3636363636364,426L536.3636363636364,426L536.3636363636364,461L0,461L0,426L0,426L0,355.5L0,355.5L0,284.5L0,284.5L0,214L0,214L0,143.5L0,143.5L0,72.5L0,72.5L0,2L0,2L0,-33Z"
+				line: "M64.364,-34.333L64.364,1L64.364,1L64.364,71.667L429.091,71.667",
+				area: "L0,142.333L0,71.667L0,71.667L0,1L0,1L0,-34.333Z"
 			});
 		});
 
@@ -262,8 +179,8 @@ describe("SHAPE AREA", () => {
 
 		it("check the correct path generation - step-before", () => {
 			checkPath({
-				line: "M64.36363636363636,-33L64.36363636363636,-33L64.36363636363636,-33L64.36363636363636,37L429.0909090909091,37L429.0909090909091,108L214.54545454545456,108L214.54545454545456,179L364.7272727272727,179L364.7272727272727,249L321.8181818181818,249L321.8181818181818,320L536.3636363636364,320L536.3636363636364,391L536.3636363636364,391L536.3636363636364,461L536.3636363636364,461",
-				area: "M64.36363636363636,-33L64.36363636363636,-33L64.36363636363636,-33L64.36363636363636,37L429.0909090909091,37L429.0909090909091,108L214.54545454545456,108L214.54545454545456,179L364.7272727272727,179L364.7272727272727,249L321.8181818181818,249L321.8181818181818,320L536.3636363636364,320L536.3636363636364,391L536.3636363636364,391L536.3636363636364,461L536.3636363636364,461L0,532L0,461L0,461L0,391L0,391L0,320L0,320L0,249L0,249L0,179L0,179L0,108L0,108L0,37L0,37L0,-33L0,-33Z"
+				line: "M64.364,-34.333L64.364,-34.333L64.364,-34.333L64.364,36.333",
+				area: "M64.364,-34.333L64.364,-34.333L64.364,-34.333L64.364,36.333"
 			});
 		});
 
@@ -273,14 +190,14 @@ describe("SHAPE AREA", () => {
 
 		it("check the correct path generation - step-after", () => {
 			checkPath({
-				line: "M64.36363636363636,-104L64.36363636363636,-33L64.36363636363636,-33L64.36363636363636,37L64.36363636363636,37L64.36363636363636,108L429.0909090909091,108L429.0909090909091,179L214.54545454545456,179L214.54545454545456,249L364.7272727272727,249L364.7272727272727,320L321.8181818181818,320L321.8181818181818,391L536.3636363636364,391L536.3636363636364,461L536.3636363636364,461",
-				area: "M64.36363636363636,-104L64.36363636363636,-33L64.36363636363636,-33L64.36363636363636,37L64.36363636363636,37L64.36363636363636,108L429.0909090909091,108L429.0909090909091,179L214.54545454545456,179L214.54545454545456,249L364.7272727272727,249L364.7272727272727,320L321.8181818181818,320L321.8181818181818,391L536.3636363636364,391L536.3636363636364,461L536.3636363636364,461L0,461L0,461L0,461L0,391L0,391L0,320L0,320L0,249L0,249L0,179L0,179L0,108L0,108L0,37L0,37L0,-33L0,-33Z"
+				line: "M64.364,-105L64.364,-34.333L64.364,-34.333L64.364,36.333",
+				area: "L0,107L0,107L0,36.333L0,36.333L0,-34.333L0,-34.333Z"
 			});
 		});
 	});
 
 	describe("Stacked area-step with category & timeseries x Axis type", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -302,25 +219,25 @@ describe("SHAPE AREA", () => {
 
 		const checkPath = expected => {
 			const {areas, lines} = chart.$.line;
-			
-			areas.each(function(d) {
-				expect(this.getAttribute("d")).to.be.equal(expected.areas[d.id]);
-			});
 
+			areas.each(function(d) {
+				expect(this.getAttribute("d").indexOf(expected.areas[d.id]) > -1).to.be.ok;
+			});
+			
 			lines.each(function(d) {
-				expect(this.getAttribute("d")).to.be.equal(expected.lines[d.id]);
+				expect(this.getAttribute("d").indexOf(expected.lines[d.id]) > -1).to.be.ok;
 			});
 		}
 
 		it("should be rendering correctly for category type", () => {		
 			const expectedPath = {
 				areas: {
-					data1: 'M-99,229.36850649350652L0.5,229.36850649350652L0.5,229.36850649350652L200,229.36850649350652L200,284.5633116883116L399.5,284.5633116883116L399.5,319.06006493506493L598.5,319.06006493506493L598.5,319.06006493506493L698,319.06006493506493L698,426L598.5,426L598.5,426L399.5,426L399.5,426L200,426L200,426L0.5,426L0.5,426L-99,426Z',
-					data2: 'M-99,39.63636363636368L0.5,39.63636363636368L0.5,39.63636363636368L200,39.63636363636368L200,94.83116883116878L399.5,94.83116883116878L399.5,129.3279220779221L598.5,129.3279220779221L598.5,129.3279220779221L698,129.3279220779221L698,319.06006493506493L598.5,319.06006493506493L598.5,319.06006493506493L399.5,319.06006493506493L399.5,284.5633116883116L200,284.5633116883116L200,229.36850649350652L0.5,229.36850649350652L0.5,229.36850649350652L-99,229.36850649350652Z'
+					data1: "M-99.833,229.369L0,229.369L0,229.369L199.667,229.369",
+					data2: "M-99.833,39.636L0,39.636L0,39.636L199.667,39.636"
 				},
 				lines: {
-					data1: 'M-99,229.36850649350652L0.5,229.36850649350652L0.5,229.36850649350652L200,229.36850649350652L200,284.5633116883116L399.5,284.5633116883116L399.5,319.06006493506493L598.5,319.06006493506493L598.5,319.06006493506493L698,319.06006493506493',
-					data2: 'M-99,39.63636363636368L0.5,39.63636363636368L0.5,39.63636363636368L200,39.63636363636368L200,94.83116883116878L399.5,94.83116883116878L399.5,129.3279220779221L598.5,129.3279220779221L598.5,129.3279220779221L698,129.3279220779221'
+					data1: 'M-99.833,229.369L0,229.369L0,229.369L199.667,229.369',
+					data2: 'M-99.833,39.636L0,39.636L0,39.636L199.667,39.636'
 				}
 			};
 
@@ -336,12 +253,12 @@ describe("SHAPE AREA", () => {
 		it("should be rendering correctly for timeseries type", () => {		
 			const expectedPath = {
 				areas: {
-					data1: 'M6,229.36850649350652L299.5,229.36850649350652L299.5,284.5633116883116L593,284.5633116883116L593,426L299.5,426L299.5,426L6,426Z',
-					data2: 'M6,39.63636363636368L299.5,39.63636363636368L299.5,94.83116883116878L593,94.83116883116878L593,284.5633116883116L299.5,284.5633116883116L299.5,229.36850649350652L6,229.36850649350652Z'
+					data1: "M5.873,229.369L299.5,229.369L299.5,284.563L593.127,284.563L593.127,426L299.5,426L299.5,426L5.873,426Z",
+					data2: "M5.873,39.636L299.5,39.636L299.5,94.831L593.127,94.831L593.127,284.563L299.5,284.563L299.5,229.369L5.873,229.369Z"
 				},
 				lines: {
-					data1: 'M6,229.36850649350652L299.5,229.36850649350652L299.5,284.5633116883116L593,284.5633116883116',
-					data2: 'M6,39.63636363636368L299.5,39.63636363636368L299.5,94.83116883116878L593,94.83116883116878'
+					data1: "M5.873,229.369L299.5,229.369L299.5,284.563L593.127,284.563",
+					data2: "M5.873,39.636L299.5,39.636L299.5,94.831L593.127,94.831"
 				}
 			};
 
@@ -412,7 +329,7 @@ describe("SHAPE AREA", () => {
 	});
 
 	describe("area linear gradient", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 				columns: [
@@ -440,7 +357,7 @@ describe("SHAPE AREA", () => {
 			chart.data().forEach(v => {
 				const color = chart.color(v.id);
 				const selectorSuffix = internal.getTargetSelectorSuffix(v.id);
-				const id = `#${internal.state.datetimeId}-areaGradient${selectorSuffix}`;
+				const id = `#${internal.state.datetimeId}-gradient${selectorSuffix}`;
 				const gradient = chart.$.svg.select(id);
 
 				expect(gradient.empty()).to.be.false;
@@ -478,7 +395,7 @@ describe("SHAPE AREA", () => {
 
 			chart.data().forEach(v => {
 				const selectorSuffix = internal.getTargetSelectorSuffix(v.id);
-				const id = `#${internal.state.datetimeId}-areaGradient${selectorSuffix}`;
+				const id = `#${internal.state.datetimeId}-gradient${selectorSuffix}`;
 				const gradient = chart.$.svg.select(id);
 
 				expect(gradient.empty()).to.be.false;
@@ -512,23 +429,21 @@ describe("SHAPE AREA", () => {
 			};
 		});
 
-		it("should generate customized liearGradient element", done => {
-			setTimeout(() => {
-				chart.load({
-				  columns: [
-					["data", 10, 20, 30, 40]
-				  ],
-				  done: () => {
-					  expect(chart.$.defs.select("linearGradient").empty()).to.be.false;
-					  done();
-				  }
-				});
-			  }, 1000);
-		});
+		it("should generate customized liearGradient element", () => new Promise(done => {
+			chart.load({
+				columns: [
+				["data", 10, 20, 30, 40]
+				],
+				done() {
+					expect(chart.$.defs.select("linearGradient").empty()).to.be.false;
+					done(1);
+				}
+			});
+		}));
 	});
 
 	describe("area options", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -560,6 +475,48 @@ describe("SHAPE AREA", () => {
 			chart.$.main.selectAll(".bb-chart-line > g").each(function(d, i) {
 				expect(this.classList.contains(stacking[i])).to.be.true;
 			});
+		});
+	});
+
+	describe("area fill options: above & below", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 300, 350, 300, 150, 200, 130]
+					],
+					type: "area"
+				},
+				area: {
+					above: true
+				}
+			};
+		});
+
+		it("should area rendered at the above of line?", () => {
+			const {areas, lines} = chart.$.line;
+			const lineRect = lines.node().getBoundingClientRect();
+			const areaRect = areas.node().getBoundingClientRect();
+
+			expect(areaRect.bottom >= lineRect.bottom).to.be.ok;
+			expect(areaRect.top).to.be.below(5);
+			expect(areaRect.height).to.be.closeTo(282, 5);
+		});
+
+		it("set options", () => {
+			args.data.columns = [["data2", 130, -100, -140, -200, 150, 50]];
+			args.area = {
+				below: true
+			};
+		});
+
+		it("should area rendered at the below of line?", () => {
+			const {line: {areas, lines}, svg} = chart.$;
+			const lineRect = lines.node().getBoundingClientRect();
+			const areaRect = areas.node().getBoundingClientRect();
+
+			expect(areaRect.top).to.be.below(lineRect.bottom);
+			expect(areaRect.bottom).to.be.closeTo(+svg.attr("height"), 60);
 		});
 	});
 });

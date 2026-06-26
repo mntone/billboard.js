@@ -3,22 +3,34 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, afterEach, afterAll, describe, expect, it, vi} from "vitest";
 import sinon from "sinon";
+
 import bb from "../../src";
+import {convertInputType, extend} from "../assets/module/util";
 import util from "../assets/util";
 import {$AXIS, $COMMON} from "../../src/config/classes";
 import Chart from "../../src/Chart/Chart";
-import {convertInputType, extend} from "../../src/module/util";
 
 describe("Interface & initialization", () => {
-	let chart;
+	function getWrapper(id) {
+		let container = document.getElementById(id);
+
+		if (!container) {
+			container = document.createElement("div");
+			container.id = id;
+			document.body.appendChild(container);
+		}
+
+		return container;
+	}
 
 	describe("Initialization", () => {
+		let instChart;
 		const checkElements = $ => {
 			const isD3Node = v => v && "node" in v || false;
 
-			Object.values($).forEach(v1 => {
+			Object.values($).forEach((v1: any) => {
 				const isNode = isD3Node(v1);
 
 				if (isNode) {
@@ -38,7 +50,7 @@ describe("Interface & initialization", () => {
 		});
 
 		it("Check for initialization", () => {
-			chart = util.generate({
+			instChart = util.generate({
 				title: {
 					text: "test"
 				},
@@ -55,13 +67,13 @@ describe("Interface & initialization", () => {
 					checkElements(this.$);
 				}
 			});
-			const internal = chart.internal;
+			const internal = instChart.internal;
 
-			expect(chart).not.to.be.null;
-			expect(chart.$.chart.classed("bb")).to.be.true;
+			expect(instChart).not.to.be.null;
+			expect(instChart.$.chart.classed("bb")).to.be.true;
 			expect(internal.$el.svg.node().tagName).to.be.equal("svg");
 			expect(convertInputType(true, false)).to.be.equal(internal.state.inputType);
-			expect(chart).to.be.equal(bb.instance[bb.instance.length - 1]);
+			expect(instChart).to.be.equal(bb.instance[bb.instance.length - 1]);
 		});
 
 		it("should return version string", () => {
@@ -69,11 +81,11 @@ describe("Interface & initialization", () => {
 		});
 
 		it("should be accessing node elements", () => {
-			checkElements(chart.$);
+			checkElements(instChart.$);
 		});
 
 		it("instantiate with non-existing element", () => {
-			chart = util.generate({
+			instChart = util.generate({
 				bindto: "#no-exist-element",
 				data: {
 					columns: [
@@ -82,7 +94,7 @@ describe("Interface & initialization", () => {
 				}
 			});
 
-			expect(chart.$.chart.classed("bb")).to.be.true;
+			expect(instChart.$.chart.classed("bb")).to.be.true;
 		});
 
 		it("instantiate with empty data", () => {
@@ -99,7 +111,7 @@ describe("Interface & initialization", () => {
 
 		it("instantiate with different classname on wrapper element", () => {
 			const bindtoClassName = "billboard-js";
-			chart = bb.generate({
+			instChart = bb.generate({
 				bindto: {
 					element: "#chart",
 					classname: bindtoClassName
@@ -112,7 +124,7 @@ describe("Interface & initialization", () => {
 				}
 			});
 
-			expect(chart.$.chart.classed(bindtoClassName)).to.be.true;
+			expect(instChart.$.chart.classed(bindtoClassName)).to.be.true;
 		});
 
 		it("should bind correctly with nullish properties", () => {
@@ -140,26 +152,26 @@ describe("Interface & initialization", () => {
 	});
 
 	describe("auto resize", () => {
+		let chart;
+		const containerName = "container";
 		let container;
 
 		beforeEach(() => {
-			container = document.getElementById("container");
+			container = document.getElementById(containerName);
 
 			if (!container) {
 				container = document.createElement("div");
-				container.id = "container";
+				container.id = containerName;
 				document.body.appendChild(container);
 			}
 		});
 
-		after(() => {
+		afterAll(() => {
 			//document.body.removeAttribute("style");
 		});
 
-		it("should resize correctly in flex container", function(done) {
+		it("should resize correctly in flex container", () => new Promise(done => {
 			const innerHTML = document.body.innerHTML;
-
-			this.timeout(5000);
 
 			// set flex container
 			const div = document.createElement("div");
@@ -191,15 +203,15 @@ describe("Interface & initialization", () => {
 			setTimeout(() => {
 				expect(+chart.internal.$el.svg.attr("width")).to.be.equal(chartWidth - diff);
 
-				div.parentNode.removeChild(div);
+				div.parentNode?.removeChild(div);
 				//document.body.innerHTML = innerHTML;
 
-				done();
+				done(1);
 			}, 200);
-		});
+		}));
 
-		it("height shouldn't be increased on resize event", function(done) {
-			before(() => {
+		it("height shouldn't be increased on resize event", () => new Promise(done => {
+			beforeAll(() => {
 				return new Promise((resolve) => {
 					chart = util.generate({
 						bindto: "#chartResize",
@@ -213,8 +225,6 @@ describe("Interface & initialization", () => {
 					});
 				});
 			});
-
-			this.timeout(5000);
 
 			container.innerHTML = '<div id="chartResize"></div>';
 
@@ -234,40 +244,48 @@ describe("Interface & initialization", () => {
 
 			setTimeout(() => {
 				expect(+chart.internal.$el.svg.attr("height")).to.be.equal(chartHeight);
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("should be resizing all generated chart elements", function(done) {
-			this.timeout(5000);
-			container.innerHTML = '<div id="chartResize1"></div><div id="chartResize2"></div>';
-
+		it("should be resizing all generated chart elements", () => new Promise(done => {
 			const width = 300;
-			const args = {
-				data: {
-					columns: [
-						["data1", 30]
-					]
-				},
-				bindto: "#chartResize1"
-			};
+			const inst: any[] = [];
 
-			const chart1 = util.generate(args);
-			const chart2 = util.generate((args.bindto = "#chartResize2") && args);
+			beforeAll(() => {
+				container.innerHTML = '<div id="chartResize1"></div><div id="chartResize2"></div>';
+	
+				const args = {
+					data: {
+						columns: [
+							["data1", 30]
+						]
+					},
+					transition: {
+						duration: 0
+					},
+					bindto: "#chartResize1"
+				};
+	
+				inst.push(util.generate(args));
+				inst.push(util.generate((args.bindto = "#chartResize2") && args));
+			});
 
 			container.style.width = width + "px";
 
 			// run the resize handler
-			chart.internal.charts.forEach(c => {
+			inst.forEach(c => {
 				c.internal.resizeFunction();
 			});
 
 			setTimeout(() => {
-				expect(+chart1.internal.$el.svg.attr("width")).to.be.equal(width);
-				expect(+chart2.internal.$el.svg.attr("width")).to.be.equal(width);
-				done();
-			}, 200);
-		});
+				inst.forEach(c => {
+					expect(+c.internal.$el.svg.attr("width")).to.be.equal(width);
+				});
+
+				done(1);
+			}, 350);
+		}));
 
 		it("should set correct height value", () => {
 			const height = 450;
@@ -285,9 +303,94 @@ describe("Interface & initialization", () => {
 
 			expect(chart.$.chart.node().getBoundingClientRect().height).to.be.equal(height);
 		});
+
+		it("check if viewBox attribute set", () => {
+			chart = util.generate({
+				resize: {
+					auto: "viewBox"
+				},
+				data: {
+					columns: [
+						["data1", 300, 350, 300, 120, 100, 200],
+					],
+					type: "bar"
+				}
+			});
+
+			const {svg} = chart.$;
+
+			expect(svg.attr("viewBox")).to.be.equal("0 0 640 480");
+		});
+
+		it("check 'parent' resize", () => new Promise(done => {
+			let width = 300;
+
+			container.style.width = `${width}px`;
+			container.innerHTML = '<div id="chartResize"></div>';
+
+			const args = {
+				data: {
+					columns: [
+						["data1", 30]
+					]
+				},
+				transition: {
+					duration: 0
+				},
+				resize: {
+					auto: "parent"
+				},
+				bindto: "#chartResize"
+			};
+
+			const chart = util.generate(args);
+			
+			expect(+chart.$.svg.attr("width")).to.be.equal(width);
+
+			// when
+			container.style.width = `${width = 500}px`;
+
+			// should resize on parent element
+			setTimeout(() => {
+				expect(+chart.$.svg.attr("width")).to.be.equal(width);
+				done(1);
+			}, 350);
+		}));
+
+		it("does not throw for parent resize when ResizeObserver is unavailable", () => {
+			const ResizeObserver = (window as any).ResizeObserver;
+			const warn = vi.spyOn(window.console, "warn").mockImplementation(() => {});
+
+			container.innerHTML = '<div id="chartResize"></div>';
+			(window as any).ResizeObserver = undefined;
+
+			try {
+				expect(() => {
+					chart = util.generate({
+						data: {
+							columns: [
+								["data1", 30]
+							]
+						},
+						resize: {
+							auto: "parent"
+						},
+						bindto: "#chartResize"
+					});
+				}).not.to.throw();
+				expect(warn).toHaveBeenCalledWith(
+					"[billboard.js] resize.auto='parent' requires ResizeObserver; falling back to window resize."
+				);
+			} finally {
+				warn.mockRestore();
+				(window as any).ResizeObserver = ResizeObserver;
+			}
+		});
+
 	});
 
 	describe("set defaults options", () => {
+		let chart;
 		let tickPrefix = "-A-";
 		let args: any = {
 			data: {
@@ -305,11 +408,11 @@ describe("Interface & initialization", () => {
 			}
 		};
 
-		before(() => {
+		beforeAll(() => {
 			bb.defaults(args);
 		});
 
-		after(() => {
+		afterAll(() => {
 			bb.defaults({});
 		})
 
@@ -369,7 +472,7 @@ describe("Interface & initialization", () => {
 		let chart;
 		const spy = sinon.spy();
 
-		before(() => {
+		beforeAll(() => {
 			const args = {
 				data: {
 					columns: [
@@ -427,6 +530,7 @@ describe("Interface & initialization", () => {
 	});
 
 	describe("check for lazy rendering", () => {
+		let chart;
 		const spy: any = {};
 		const args: any = {
 			data: {
@@ -446,7 +550,7 @@ describe("Interface & initialization", () => {
 			}
 		});
 
-		it("check lazy rendering & mutation observer: style attribute", done => {
+		it("check lazy rendering & mutation observer: style attribute", () => new Promise(done => {
 			const el: any = document.body.querySelector("#chart");
 
 			// hide to lazy render
@@ -468,36 +572,37 @@ describe("Interface & initialization", () => {
 
 				expect(spy.afterinit.called).to.be.true;
 				expect(spy.rendered.called).to.be.true;
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("check lazy rendering & mutation observer: class attribute", done => {
+		it("check lazy rendering & mutation observer: class attribute", () => new Promise(done => {
 			const el = document.body.querySelector("#chart");
 
 			// hide to lazy render
-			el.classList.add("hide");
+			el?.classList.add("hide");
 
 			chart = util.generate(args);
 
-			expect(el.innerHTML).to.be.empty;
+			expect(el?.innerHTML).to.be.empty;
 
 			for (let x in spy) {
 				expect(spy[x].called).to.be.false;
 			}
 
-			el.classList.remove("hide");
+			el?.classList.remove("hide");
 
 			setTimeout(() => {
-				expect(el.innerHTML).to.be.not.empty;
+				expect(el?.innerHTML).to.be.not.empty;
 				expect(spy.afterinit.called).to.be.true;
 				expect(spy.rendered.called).to.be.true;
-				done();
-			}, 500);
-		});
+				
+				done(1);
+			}, 350);
+		}));
 
-		it("check lazy rendering on callbacks", done => {
-			const el: any = document.body.querySelector("#chart");
+		it("check lazy rendering on callbacks", () => new Promise(done => {
+			const el = document.body.querySelector("#chart") as HTMLDivElement;
 
 			// hide to lazy render
 			el.style.display = "none";
@@ -507,7 +612,9 @@ describe("Interface & initialization", () => {
 			expect(el.innerHTML).to.be.empty;
 
 			// onresize, resized shouldn't be called on resize
-			chart.resize({width: 500});
+			expect(
+				chart.resize({width: 500})
+			).to.throw;
 
 			for (let x in spy) {
 				expect(spy[x].called).to.be.false;
@@ -527,12 +634,13 @@ describe("Interface & initialization", () => {
 				setTimeout(() => {
 					expect(spy.resize.called).to.be.true;
 					expect(spy.resized.called).to.be.true;
-					done();
-				}, 300);				
-			}, 500);
-		});
+					
+					done(1);
+				}, 350);	
+			}, 350);
+		}), 4000);
 
-		it("check lazy rendering via option", done => {
+		it("check lazy rendering via option", () => new Promise(done => {
 			const el = document.body.querySelector("#chart");
 
 			args.render = {
@@ -543,7 +651,7 @@ describe("Interface & initialization", () => {
 			chart = util.generate(args);
 
 			// chart shouldn't be rendered
-			expect(el.innerHTML).to.be.empty;
+			expect(el?.innerHTML).to.be.empty;
 
 			for (let x in spy) {
 				expect(spy[x].called).to.be.false;
@@ -553,15 +661,41 @@ describe("Interface & initialization", () => {
 			chart.flush();
 
 			setTimeout(() => {
-				expect(el.innerHTML).to.be.not.empty;
+				expect(el?.innerHTML).to.be.not.empty;
 				expect(spy.afterinit.called).to.be.true;
 				expect(spy.rendered.called).to.be.true;
-				done();
-			}, 500);
+		
+				done(1);
+			}, 350);
+		}));
+
+		it("should forcely linitialize even chart element visibility is hidden.", () =>{
+			const el = <HTMLDivElement>document.body.querySelector("#chart");
+
+			// hide to lazy render
+			el.style.display = "none";
+
+			chart = util.generate({
+				data: {
+					columns: [
+						["data1", 300, 350, 300, 0, 0, 0],
+						["data2", 130, 100, 140, 200, 150, 50]
+					],
+					type: "line"
+				},
+				render: {
+					lazy: false
+				}
+			});
+
+			expect(chart.$.svg.node().innerHTML).to.be.not.empty;
+
+			el.style.display = "";
 		});
 	});
 
 	describe("check for background", () => {
+		let chart;
 		const args: any = {
 			data: {
 				columns: [
@@ -619,5 +753,89 @@ describe("Interface & initialization", () => {
 
 			expect(element.node().nextSibling.getAttribute("class")).to.be.equal($COMMON.chart);
 		});
+	});
+
+	describe("resize options", () => {
+		const containerName = "container2";
+		const spy = sinon.spy();
+		let container;
+
+		beforeEach(() => {
+			container = getWrapper(containerName);
+		});
+
+		it("check for the resize timer using requestIdleCallback()", () => new Promise(done => {
+			const width = 300;
+			const chart = util.generate({
+				bindto: `#${containerName}`,
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400],
+						["data2", 500, 800, 500, 2000]
+					]
+				},
+				resize: {
+					timer: false
+				},
+				onresize: function() {
+					expect(this).to.be.deep.equal(chart);
+				},
+				onresized: function() {
+					expect(this).to.be.deep.equal(chart);
+					expect(chart.$.chart.style("width")).to.be.equal(`${width}px`);
+			
+					done(1);
+				}
+			});
+
+			// resize chart holder
+			chart.$.chart.style("width", `${width}px`);
+
+			// trigger resize eventize 
+			window.dispatchEvent(new Event("resize"));
+		}));
+	});
+
+	describe("resize legend", () => {
+		const containerName = "containerForLegend";
+		let container;
+
+		beforeAll(() => {
+			container = getWrapper(containerName);
+		});
+
+		it("should legend resized correctly?", () => new Promise(function(done) {
+			container.innerHTML = `<div id="${containerName}"></div>`;
+
+			const chart = util.generate({
+				bindto: `#${containerName}`,
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400],
+						["data2", 500, 800, 500, 2000]
+					]
+				},
+				resize: {
+					timer: 100
+				},
+				transition: {
+					duration: 0
+				},
+				onresized: function() {
+					const {$: {legend}, internal} = chart;
+					const rect = legend.node().getBoundingClientRect();
+
+					expect(
+						util.parseNum(legend.attr("transform")) + rect.height
+					).to.be.below(internal.state.current.height);
+
+					done(``);
+				}
+			});
+
+			// resize chart holder
+			chart.$.chart.style("width", "100px");
+			window.dispatchEvent(new Event("resize"));
+		}));
 	});
 });

@@ -2,38 +2,80 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import type {RegionOptions} from "../../../types/options";
 import {$REGION} from "../../config/classes";
-import {getOption, extend} from "../../module/util";
+import {extend, getOption, isTabVisible} from "../../module/util";
 
-type RegionsParam = {axis?: string, class?: string, start?: number, end?: number}[];
+type RegionsParam = RegionOptions[];
+type RegionsAddParam = RegionOptions | RegionOptions[];
+type RegionsRemoveParam = {classes?: string[]};
+
+/**
+ * Redraw canvas after region API mutation.
+ * @param {object} $$ ChartInternal instance
+ * @private
+ */
+function redrawCanvasRegions($$): void {
+	$$.state.canvasShape = null;
+	$$.renderCanvasFrame?.(undefined, null, false);
+}
+
+/**
+ * Region add/update function
+ * @param {Array} regions Regions will be replaced with this argument. The format of this argument is the same as regions.
+ * @param {boolean} isAdd If true, add new regions, otherwise update regions
+ * @returns {Array} regions
+ * @private
+ */
+function regionsFn(regions: RegionsParam | RegionsAddParam, isAdd = false): RegionsParam {
+	const $$ = this.internal;
+	const {config} = $$;
+	const withTransition = config.transition_duration && isTabVisible();
+
+	if (!regions) {
+		return config.regions;
+	}
+
+	config.regions = isAdd ? config.regions.concat(regions) : regions as RegionsParam;
+
+	if ($$.state.isCanvasMode) {
+		redrawCanvasRegions($$);
+
+		return config.regions;
+	}
+
+	$$.updateRegion();
+	$$.redrawRegion(withTransition);
+
+	return config.regions;
+}
 
 /**
  * Update regions.
  * @function regions
  * @instance
  * @memberof Chart
- * @param {Array} regions Regions will be replaced with this argument. The format of this argument is the same as regions.
+ * @param {Array} regions Regions will be replaced with this argument. The format of this argument is the same as [regions](./Options.html#.regions) option.
  * @returns {Array} regions
  * @example
  * // Show 2 regions
  * chart.regions([
  *    {axis: "x", start: 5, class: "regionX"},
- *    {axis: "y", end: 50, class: "regionY"}
+ *    {
+ *      axis: "y", end: 50, class: "regionY",
+ *      label: {
+ *      	text: "Region Text",
+ *      	x: 5,  // position relative of the initial x coordinate
+ *      	y: 5,  // position relative of the initial y coordinate
+ *      	color: "red",  // color string
+ *      	rotated: true  // make text to show in vertical or horizontal
+ *      }
+ *    }
  * ]);
  */
-function regions(regions: RegionsParam): RegionsParam {
-	const $$ = this.internal;
-	const {config} = $$;
-
-	if (!regions) {
-		return config.regions;
-	}
-
-	config.regions = regions;
-	$$.redrawWithoutRescale();
-
-	return regions;
-}
+const regions = function(regions: RegionsParam): RegionsParam {
+	return regionsFn.bind(this)(regions);
+};
 
 extend(regions, {
 	/**
@@ -42,32 +84,37 @@ extend(regions, {
 	 * @function regions․add
 	 * @instance
 	 * @memberof Chart
-	 * @param {Array|object} regions New region will be added. The format of this argument is the same as regions and it's possible to give an Object if only one region will be added.
+	 * @param {Array|object} regions New region will be added. The format of this argument is the same as [regions](./Options.html#.regions) and it's possible to give an Object if only one region will be added.
 	 * @returns {Array} regions
 	 * @example
 	 * // Add a new region
 	 * chart.regions.add(
-	 *    {axis: "x", start: 5, class: "regionX"}
+	 *    {
+	 *      axis: "x", start: 5, class: "regionX",
+	 *      label: {
+	 *      	text: "Region Text",
+	 *      	color: "red"  // color string
+	 *      }
+	 *    }
 	 * );
 	 *
 	 * // Add new regions
 	 * chart.regions.add([
 	 *    {axis: "x", start: 5, class: "regionX"},
-	 *    {axis: "y", end: 50, class: "regionY"}
-	 *]);
+	 *    {
+	 *      axis: "y", end: 50, class: "regionY",
+	 *      label: {
+	 *      	text: "Region Text",
+	 *      	x: 5,  // position relative of the initial x coordinate
+	 *      	y: 5,  // position relative of the initial y coordinate
+	 *      	color: "red",  // color string
+	 *      	rotated: true  // make text to show in vertical or horizontal
+	 *      }
+	 *    }
+	 * ]);
 	 */
-	add: function(regions: RegionsParam): RegionsParam {
-		const $$ = this.internal;
-		const {config} = $$;
-
-		if (!regions) {
-			return config.regions;
-		}
-
-		config.regions = config.regions.concat(regions);
-		$$.redrawWithoutRescale();
-
-		return config.regions;
+	add: function(regions: RegionsAddParam): RegionsParam {
+		return regionsFn.bind(this)(regions, true);
 	},
 
 	/**
@@ -89,20 +136,48 @@ extend(regions, {
 	 * // all of regions will be removed.
 	 * chart.regions.remove();
 	 */
-	remove: function(optionsValue: RegionsParam): RegionsParam {
+	remove: function(optionsValue: RegionsRemoveParam): RegionsParam {
 		const $$ = this.internal;
 		const {config, $T} = $$;
 
 		const options = optionsValue || {};
 		const classes = getOption(options, "classes", [$REGION.region]);
-		let regions = $$.$el.main.select(`.${$REGION.regions}`)
+		let regions = config.regions;
+
+		if ($$.state.isCanvasMode) {
+			if (Object.keys(options).length) {
+				regions = regions.filter(region => {
+					let found = false;
+
+					if (!region.class) {
+						return true;
+					}
+
+					region.class.split(" ").forEach(c => {
+						if (classes.indexOf(c) >= 0) {
+							found = true;
+						}
+					});
+
+					return !found;
+				});
+
+				config.regions = regions;
+			} else {
+				config.regions = [];
+			}
+
+			redrawCanvasRegions($$);
+
+			return config.regions;
+		}
+
+		const regionNodes = $$.$el.main.select(`.${$REGION.regions}`)
 			.selectAll(classes.map(c => `.${c}`));
 
-		$T(regions)
+		$T(regionNodes)
 			.style("opacity", "0")
 			.remove();
-
-		regions = config.regions;
 
 		if (Object.keys(options).length) {
 			regions = regions.filter(region => {

@@ -3,14 +3,15 @@
  * billboard.js project is licensed under the MIT license
  * @ignore
  */
+import type {d3Selection} from "../../../types/types";
+import {getBBox, isDefined, isValue} from "../../module/util";
 import {getScale} from "../internals/scale";
-import {isDefined, isNumber, isString} from "../../module/util";
-import {d3Selection} from "../../../types/types";
 
 export default class AxisRendererHelper {
 	private owner;
 	private config;
 	private scale;
+	private charSize = {};
 
 	constructor(owner) {
 		const scale = getScale();
@@ -30,34 +31,40 @@ export default class AxisRendererHelper {
 
 	/**
 	 * Compute a character dimension
-	 * @param {d3.selection} node <g class=tick> node
+	 * @param {string} orient Axis orientation
+	 * @param {d3.selection} text SVG text selection
+	 * @param {boolean} memoize memoize the calculated size
 	 * @returns {{w: number, h: number}}
 	 * @private
 	 */
-	static getSizeFor1Char(node?) {
+	getSizeFor1Char(orient: "top" | "bottom" | "left" | "right", text: d3Selection,
+		memoize = true): {w: number, h: number} {
 		// default size for one character
 		const size = {
 			w: 5.5,
 			h: 11.5
 		};
 
-		!node.empty() && node.select("text")
+		if (this.charSize[orient] && memoize) {
+			return this.charSize[orient];
+		}
+
+		!text.empty() && text
 			.text("0")
-			.call(el => {
+			.call((el: d3Selection) => {
 				try {
-					const {width, height} = el.node().getBBox();
+					const {width, height} = getBBox(el.node(), true);
 
 					if (width && height) {
 						size.w = width;
 						size.h = height;
 					}
-				} catch (e) {
 				} finally {
 					el.text("");
 				}
 			});
 
-		this.getSizeFor1Char = () => size;
+		this.charSize[orient] = size;
 
 		return size;
 	}
@@ -65,7 +72,7 @@ export default class AxisRendererHelper {
 	/**
 	 * Get tick transform setter function
 	 * @param {string} id Axis id
-	 * @returns {Function} transfrom setter function
+	 * @returns {(selection: d3Selection, scale) => void} transfrom setter function
 	 * @private
 	 */
 	getTickTransformSetter(id: string): (selection: d3Selection, scale) => void {
@@ -75,7 +82,11 @@ export default class AxisRendererHelper {
 			value => `translate(0,${value})`;
 
 		return (selection, scale) => {
-			selection.attr("transform", d => fn(Math.ceil(scale(d))));
+			selection.attr("transform", d => {
+				const x = scale(d);
+
+				return isValue(d) ? fn(x) : null;
+			});
 		};
 	}
 
@@ -122,23 +133,6 @@ export default class AxisRendererHelper {
 				ticks = scale
 					.ticks(...(this.config.tickArguments || []));
 			}
-
-			ticks = ticks
-				.map(v => {
-					// round the tick value if is number
-					const r = (isString(v) && isNumber(v) && !isNaN(v) &&
-						Math.round(v * 10) / 10) || v;
-
-					return r;
-				});
-		} else {
-			for (let i = Math.ceil(start); i < end; i++) {
-				ticks.push(i);
-			}
-
-			if (ticks.length > 0 && ticks[0] > 0) {
-				ticks.unshift(ticks[0] - (ticks[1] - ticks[0]));
-			}
 		}
 
 		return ticks;
@@ -179,7 +173,7 @@ export default class AxisRendererHelper {
 			// https://github.com/naver/billboard.js/issues/2140
 			try {
 				transitionSelection = selection.transition(config.transition);
-			} catch (e) {}
+			} catch {}
 		}
 
 		return transitionSelection;

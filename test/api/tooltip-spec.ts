@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {timeFormat as d3TimeFormat} from "d3-time-format";
 import util from "../assets/util";
 import {$TOOLTIP} from "../../src/config/classes";
@@ -98,7 +98,7 @@ describe("API tooltip", () => {
 		const spy1 = sinon.spy();
 		const spy2 = sinon.spy();
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					xs: {
@@ -144,13 +144,95 @@ describe("API tooltip", () => {
 			expect(spy2.called).to.be.true;
 			expect(+chart.$.tooltip.select(".value").text()).to.be.equal(value);
 		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					type: "line",
+					xs: {
+					  "data0": "data0X",
+					  "data1": "data1X",
+					  "data2": "data2X"
+					},
+					columns: [
+						  ["data0X", 1641362431000, 1641362451000],
+						  ["data1X", 1641362431000, 1641362432000],
+						  ["data2X", 1641362432000, 1641362538000],
+						  ["data0", 2, 2],
+						  ["data1", 0, 0],
+						  ["data2", 1, 1]
+					  ]
+				},
+				zoom: {
+					enabled: true,
+					type: "drag"
+				},
+				grid: {
+					x: {
+						show: false
+					},
+					y: {
+						show: true,
+						ticks: 6
+					}
+				},
+				legend: {
+					show: false
+				},
+				axis: {
+				x: {
+					type: "timeseries",
+					tick: {
+						fit: false,
+						format: "%Y-%m-%d %H:%M:%S"
+					}
+				},
+				y: {
+					min: 0,
+					padding: 10
+				}
+				},
+				tooltip: {
+					grouped: false
+				},
+				line: {
+					point: false
+				},
+				point: {
+					show: false,
+					sensitivity: 2
+				},
+				transition: {
+					duration: 0
+				}
+			};
+		});
+
+		it("tooltip.show() should work when zoom in", () => {
+			const {tooltip} = chart.$;
+
+			// when
+			chart.zoom([1641362431000, 1641362451000]);
+
+			chart.tooltip.show({
+				data: {
+					x: 1641362432000,
+					id: "data2",
+					value: 1
+				}
+			});
+
+			expect(tooltip.style("display")).to.be.equal("block");
+			expect(tooltip.select(".name").text()).to.be.equal("data2");
+			expect(+tooltip.select(".value").text()).to.be.equal(1);
+		});
 	});
 
 	describe("for tooltip.grouped=false", () => {
 		const spy1 = sinon.spy();
 		const spy2 = sinon.spy();
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -196,7 +278,7 @@ describe("API tooltip", () => {
 	});
 
 	describe("when tooltip.show=false option is set", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [['rating', 70]],
@@ -220,7 +302,7 @@ describe("API tooltip", () => {
 	});
 
 	describe("tooltip.show() for arc types", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -230,11 +312,14 @@ describe("API tooltip", () => {
 						["data4", 20]
 					],
 					type: "pie",
+				},
+				transition: {
+					duration: 0
 				}
 			};
 		});
 
-		it("should show tooltip correctly", done => {
+		it("should show tooltip correctly using 'index'?", () => new Promise(done => {
 			setTimeout(() => {
 				const {tooltip} = chart.$;
 
@@ -244,9 +329,23 @@ describe("API tooltip", () => {
 				expect(tooltip.select(".name").text()).to.be.equal("data3");
 				expect(tooltip.select(".value").text()).to.be.equal("19.2%");
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
+
+		it("should show tooltip correctly using 'id'?", () => new Promise(done => {
+			setTimeout(() => {
+				const {tooltip} = chart.$;
+
+				// when
+				chart.tooltip.show({data: {id: "data3"}});
+
+				expect(tooltip.select(".name").text()).to.be.equal("data3");
+				expect(tooltip.select(".value").text()).to.be.equal("19.2%");
+
+				done(1);
+			}, 350);
+		}));
 
 		it("set options tooltip.init", () => {
 			args.tooltip = {
@@ -262,6 +361,78 @@ describe("API tooltip", () => {
 
 			expect(tooltip.select(".name").text()).to.be.equal("data2");
 			expect(tooltip.select(".value").text()).to.be.equal("34.6%");
+		});
+	});
+
+	describe("on rotated axis", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 150, 140, 110, 100, 300],
+						["data1", 30, 200, 100, 400, 150],
+						["data2", 130, 340, 200, 500, 250]
+					],
+					type: "line"
+				},
+				axis: {
+					rotated: true
+				}
+			};
+		});
+
+		function checkTooltip(x, categoryName?) {
+			const type = chart.config("axis.x.type");
+			let value = x;
+
+			// when
+			chart.tooltip.show({x});
+
+			let th = chart.$.tooltip.select("th").text();
+
+			if (type === "timeseries") {
+				value = chart.internal.format.xAxisTick(x);
+			}
+
+			expect(isNaN(th) ? th : +th).to.be.equal(categoryName ?? value);
+		}
+
+		it("check for indexed x axis type", () => {
+			chart.xs().data1.forEach(v => {
+				checkTooltip(v);
+			});
+		});
+
+		it("set options", () => {
+			args.data.x = "x";
+			args.data.columns.unshift(
+				["x", "2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05"]
+			);
+			args.axis.x = {
+				type: "timeseries",
+				tick: {
+					format: "%Y-%m-%d"
+				}
+			};
+		});
+
+		it("check for timeseries x axis type", () => {
+			chart.xs().data1.forEach(v => {
+				checkTooltip(+v);
+			});
+		});
+
+		it("set options", () => {
+			args.data.columns[0] = ["x", "a", "b", "c", "d", "e"];
+			args.axis.x = {
+				type: "category"
+			};
+		});
+
+		it("check for category x axis type", () => {
+			chart.categories().forEach((v, i) => {
+				checkTooltip(i, v);
+			});
 		});
 	});
 });

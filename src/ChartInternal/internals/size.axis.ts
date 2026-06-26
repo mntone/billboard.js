@@ -2,7 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {AxisType} from "../../../types/types";
+import type {AxisType} from "../../../types/types";
+import {isNumber} from "../../module/util";
 
 export default {
 	/**
@@ -24,12 +25,16 @@ export default {
 		const $$ = this;
 
 		if ($$.axis) {
-			const position = $$.axis?.getLabelPositionById(id);
-			const width = $$.axis.getMaxTickWidth(id, withoutRecompute);
+			const position = $$.axis?.getAxisLabelPosition(id);
+			const {width} = $$.axis.getMaxTickSize(id, withoutRecompute);
 			const gap = width === 0 ? 0.5 : 0;
 
 			return width + (
-				position.isInner ? (20 + gap) : 40
+				$$.config.padding?.mode === "fit" ?
+					position.isInner ? (10 + gap) : 10 :
+					position.isInner ?
+					(20 + gap) :
+					40
 			);
 		} else {
 			return 40;
@@ -39,52 +44,61 @@ export default {
 	getHorizontalAxisHeight(id: AxisType): number {
 		const $$ = this;
 		const {config, state} = $$;
-		const {current, rotatedPadding, isLegendRight, isLegendInset} = state;
+		const {rotatedPadding, isLegendRight, isLegendInset} = state;
 		const isRotated = config.axis_rotated;
-		let h = 30;
+		const isFitPadding = config.padding?.mode === "fit";
+		const isInner = config[`axis_${id}_inner`];
+		const hasLabelText = config[`axis_${id}_label`].text;
+		const defaultHeight = 13;
+		let h = config.padding?.mode === "fit" ?
+			(isInner && !hasLabelText ? (id === "y" ? 1 : 0) : 20) :
+			30;
 
 		if (id === "x" && !config.axis_x_show) {
 			return 8;
 		}
 
-		if (id === "x" && config.axis_x_height) {
+		if (id === "x" && isNumber(config.axis_x_height)) {
 			return config.axis_x_height;
 		}
 
 		if (id === "y" && !config.axis_y_show) {
 			return config.legend_show &&
-				!isLegendRight &&
-				!isLegendInset ? 10 : 1;
+					!isLegendRight &&
+					!isLegendInset ?
+				10 :
+				1;
 		}
 
 		if (id === "y2" && !config.axis_y2_show) {
-			return rotatedPadding.top;
+			return isFitPadding ? 0 : rotatedPadding.top;
 		}
 
-		const rotate = $$.getAxisTickRotate(id);
+		const maxtickSize = $$.axis.getMaxTickSize(id);
 
-		// Calculate x/y axis height when tick rotated
+		const isXAxisTickRotated = Math.abs(config.axis_x_tick_rotate) > 0 && (
+			!config.axis_x_tick_autorotate || $$.needToRotateXAxisTickTexts()
+		);
+
 		if (
-			((id === "x" && !isRotated) || (/y2?/.test(id) && isRotated)) && rotate
+			(config.axis_x_tick_multiline || isXAxisTickRotated) &&
+			maxtickSize.height > defaultHeight
 		) {
-			h = 30 +
-				$$.axis.getMaxTickWidth(id) *
-				Math.cos(Math.PI * (90 - Math.abs(rotate)) / 180);
-
-			if (!config.axis_x_tick_multiline && current.height) {
-				if (h > current.height / 2) {
-					h = current.height / 2;
-				}
-			}
+			h += maxtickSize.height - defaultHeight;
 		}
 
 		return h +
-			($$.axis.getLabelPositionById(id).isInner ? 0 : 10) +
+			($$.axis.getAxisLabelPosition(id).isInner ? 0 : 10) +
 			(id === "y2" && !isRotated ? -10 : 0);
 	},
 
 	getEventRectWidth(): number {
-		return Math.max(0, this.axis.x.tickInterval());
+		const $$ = this;
+		const {config, axis} = $$;
+		const isInverted = config.axis_x_inverted;
+		const tickInterval = axis.x.tickInterval();
+
+		return Math.max(0, isInverted ? Math.abs(tickInterval) : tickInterval);
 	},
 
 	/**
@@ -103,7 +117,7 @@ export default {
 
 			if (config.axis_x_tick_fit && allowedXAxisTypes) {
 				const xTickCount = config.axis_x_tick_count;
-				const currentXTicksLength = state.current.maxTickWidths.x.ticks.length;
+				const currentXTicksLength = state.current.maxTickSize.x.ticks.length;
 				let tickCount = 0;
 
 				if (xTickCount) {
@@ -124,15 +138,15 @@ export default {
 				state.axis.x.tickCount = tickCount;
 			}
 
-			if ($el.svg &&
+			if (
+				($el.svg || state.isCanvasMode) &&
+				config.axis_x_tick_autorotate &&
 				config.axis_x_tick_fit &&
 				!config.axis_x_tick_multiline &&
 				!config.axis_x_tick_culling &&
-				config.axis_x_tick_autorotate &&
 				allowedXAxisTypes
 			) {
-				rotate = $$.needToRotateXAxisTickTexts() ?
-					config.axis_x_tick_rotate : 0;
+				rotate = $$.needToRotateXAxisTickTexts() ? config.axis_x_tick_rotate : 0;
 			}
 		}
 
@@ -146,15 +160,16 @@ export default {
 	 */
 	needToRotateXAxisTickTexts(): boolean {
 		const $$ = this;
-		const {state: {axis, current}} = $$;
-		const xAxisLength = current.width -
-			$$.getCurrentPaddingLeft(false) - $$.getCurrentPaddingRight();
+		const {state: {axis, current, isLegendRight, legendItemWidth}} = $$;
+		const legendWidth = isLegendRight && legendItemWidth;
+		const xAxisLength = current.width - legendWidth -
+			$$.getCurrentPaddingByDirection("left") - $$.getCurrentPaddingByDirection("right");
 		const tickCountWithPadding = axis.x.tickCount +
 			axis.x.padding.left + axis.x.padding.right;
 
-		const maxTickWidth = $$.axis.getMaxTickWidth("x");
+		const {width} = $$.axis.getMaxTickSize("x");
 		const tickLength = tickCountWithPadding ? xAxisLength / tickCountWithPadding : 0;
 
-		return maxTickWidth > tickLength;
+		return width > tickLength;
 	}
 };

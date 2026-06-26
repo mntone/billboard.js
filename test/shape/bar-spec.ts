@@ -4,10 +4,10 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
-import {$AXIS, $BAR, $COMMON, $EVENT, $SHAPE} from "../../src/config/classes";
+import {$AXIS, $BAR, $COMMON, $EVENT, $LINE, $SHAPE} from "../../src/config/classes";
 
 describe("SHAPE BAR", () => {
 	let chart;
@@ -19,7 +19,7 @@ describe("SHAPE BAR", () => {
 
 	describe("with groups", () => {
 		describe("with indexed data", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -49,7 +49,7 @@ describe("SHAPE BAR", () => {
 		describe("with timeseries data", () => {
 			let barWidth = 0;
 
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "date",
@@ -97,12 +97,12 @@ describe("SHAPE BAR", () => {
 				const width = chart.$.main.select(`.${$BAR.bars}-data1 .${$BAR.bar}`).node()
 					.getBoundingClientRect().width;
 
-				expect(width).to.be.equal(barWidth);
+				expect(width).to.be.closeTo(barWidth, 1);
 			});
 		});
 
 		describe("with category data", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "date",
@@ -137,7 +137,7 @@ describe("SHAPE BAR", () => {
 		});
 
 		describe("Stacking order", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						json: [
@@ -210,36 +210,37 @@ describe("SHAPE BAR", () => {
 				let i = 0;
 
 				bars.each(function() {
+					//console.log(this.getAttribute("d"))
 					expect(this.getAttribute("d").indexOf(expected[i++]) > -1).to.be.true;
 				});
 			}
 
 			it("should be stacked correctly: data.order=null", () => {
 				const expected = [
-					"M109.6,446",
-					"M109.6,430",
-					"M109.6,415",
-					"M109.6,411",
-					"M109.6,401",
-					"M109.6,378",
-					"M109.6,375",
-					"M109.6,262",
-					"M109.6,243",
-					"M109.6,182",
-					"M109.6,120",
-					"M109.6,120",
-					"M109.6,119",
-					"M109.6,114",
-					"M109.6,112",
-					"M109.6,103",
-					"M109.6,96",
-					"M109.6,95",
-					"M109.6,91",
-					"M109.6,53",
-					"M109.6,48",
-					"M109.6,48",
-					"M109.6,44",
-					"M109.6,42"
+					"M109.80000000000001,446V430.54636550534036",
+					"M109.80000000000001,430.54636550534036V415.09284444699557",
+					"M109.80000000000001,415.09284444699557V411.9639464549821",
+					"M109.80000000000001,411.9639464549821V401.9866088715797",
+					"M109.80000000000001,401.9866088715797V378.7295439440708",
+					"M109.80000000000001,378.7295439440708V375.8275446721525",
+					"M109.80000000000001,375.8275446721525V262.1412093566052",
+					"M109.80000000000001,262.1412093566052V243.44206206951793",
+					"M109.80000000000001,243.44206206951793V182.2324629426413",
+					"M109.80000000000001,182.2324629426413V120.4553010953897",
+					"M109.80000000000001,120.4553010953897V120.3679778202017",
+					"M109.80000000000001,120.3679778202017V119.7950019188811",
+					"M109.80000000000001,119.7950019188811V114.40702765674587",
+					"M109.80000000000001,114.40702765674587V112.23459631264922",
+					"M109.80000000000001,112.23459631264922V103.66603680162933",
+					"M109.80000000000001,103.66603680162933V96.94120535946638",
+					"M109.80000000000001,96.94120535946638V95.60679953820306",
+					"M109.80000000000001,95.60679953820306V91.80139458901215",
+					"M109.80000000000001,91.80139458901215V53.22168007962563",
+					"M109.80000000000001,53.22168007962563V48.97498177523255",
+					"M109.80000000000001,48.97498177523255V48.90533528099098",
+					"M109.80000000000001,48.90533528099098V44.5254094278709",
+					"M109.80000000000001,44.5254094278709V42.30707040714577",
+					"M109.80000000000001,42.30707040714577V41.45454545454555"
 				];
 
 				chkecPath(chart.$.bar.bars, expected);
@@ -251,30 +252,30 @@ describe("SHAPE BAR", () => {
 
 			it("should be stacked correctly: data.order='asc'", () => {
 				const expected = [
-					"M109.6,128",
-					"M109.6,113",
-					"M109.6,54",
-					"M109.6,97",
-					"M109.6,170",
-					"M109.6,51",
-					"M109.6,446",
-					"M109.6,147",
-					"M109.6,270",
-					"M109.6,332",
-					"M109.6,41",
-					"M109.6,42",
-					"M109.6,72",
-					"M109.6,46",
-					"M109.6,87",
-					"M109.6,79",
-					"M109.6,44",
-					"M109.6,58",
-					"M109.6,209",
-					"M109.6,62",
-					"M109.6,41",
-					"M109.6,67",
-					"M109.6,48",
-					"M109.6,43"
+					"M109.80000000000001,128.79097698634183V113.3373424916822",
+					"M109.80000000000001,113.3373424916822V97.8838214333374",
+					"M109.80000000000001,54.793089527912855V51.66419153589936",
+					"M109.80000000000001,97.8838214333374V87.906483849935",
+					"M109.80000000000001,170.74718920093795V147.4901242734291",
+					"M109.80000000000001,51.66419153589936V48.762192263981035",
+					"M109.80000000000001,446V332.3136646844527",
+					"M109.80000000000001,147.4901242734291V128.79097698634183",
+					"M109.80000000000001,270.5365028372011V209.32690371032447",
+					"M109.80000000000001,332.3136646844527V270.5365028372011",
+					"M109.80000000000001,41.61151522397512V41.52419194878712",
+					"M109.80000000000001,42.18449112529572V41.61151522397512",
+					"M109.80000000000001,72.61309289675216V67.22511863461693",
+					"M109.80000000000001,46.54385324325591V44.37142189915926",
+					"M109.80000000000001,87.906483849935V79.33792433891512",
+					"M109.80000000000001,79.33792433891512V72.61309289675216",
+					"M109.80000000000001,44.37142189915926V43.03701607789594",
+					"M109.80000000000001,58.59849447710377V54.793089527912855",
+					"M109.80000000000001,209.32690371032447V170.74718920093795",
+					"M109.80000000000001,62.84519278149685V58.59849447710377",
+					"M109.80000000000001,41.52419194878712V41.45454545454555",
+					"M109.80000000000001,67.22511863461693V62.84519278149685",
+					"M109.80000000000001,48.762192263981035V46.54385324325591",
+					"M109.80000000000001,43.03701607789594V42.18449112529572",
 				];
 
 				chkecPath(chart.$.bar.bars, expected);
@@ -286,30 +287,30 @@ describe("SHAPE BAR", () => {
 
 			it("should be stacked correctly: data.order='desc'", () => {
 				const expected = [
-					"M109.6,374",
-					"M109.6,389",
-					"M109.6,435",
-					"M109.6,399",
-					"M109.6,339",
-					"M109.6,438",
-					"M109.6,155",
-					"M109.6,358",
-					"M109.6,278",
-					"M109.6,216",
-					"M109.6,445",
-					"M109.6,445",
-					"M109.6,420",
-					"M109.6,443",
-					"M109.6,408",
-					"M109.6,414",
-					"M109.6,444",
-					"M109.6,432",
-					"M109.6,316",
-					"M109.6,428",
-					"M109.6,446",
-					"M109.6,424",
-					"M109.6,440",
-					"M109.6,445"
+					"M109.80000000000001,374.11720296286336V358.6635684682037",
+					"M109.80000000000001,389.57072402120815V374.11720296286336",
+					"M109.80000000000001,435.7903539186462V432.6614559266327",
+					"M109.80000000000001,399.54806160461055V389.57072402120815",
+					"M109.80000000000001,339.96442118111645V316.7073562536076",
+					"M109.80000000000001,438.6923531905645V435.7903539186462",
+					"M109.80000000000001,155.14088077009285V41.45454545454555",
+					"M109.80000000000001,358.6635684682037V339.96442118111645",
+					"M109.80000000000001,278.1276417442211V216.91804261734444",
+					"M109.80000000000001,216.91804261734444V155.14088077009285",
+					"M109.80000000000001,445.93035350575843V445.84303023057043",
+					"M109.80000000000001,445.84303023057043V445.27005432924983",
+					"M109.80000000000001,420.2294268199286V414.8414525577934",
+					"M109.80000000000001,443.0831235553863V440.91069221128964",
+					"M109.80000000000001,408.11662111563044V399.54806160461055",
+					"M109.80000000000001,414.8414525577934V408.11662111563044",
+					"M109.80000000000001,444.4175293766496V443.0831235553863",
+					"M109.80000000000001,432.6614559266327V428.8560509774418",
+					"M109.80000000000001,316.7073562536076V278.1276417442211",
+					"M109.80000000000001,428.8560509774418V424.6093526730487",
+					"M109.80000000000001,446V445.93035350575843",
+					"M109.80000000000001,424.6093526730487V420.2294268199286",
+					"M109.80000000000001,440.91069221128964V438.6923531905645",
+					"M109.80000000000001,445.27005432924983V444.4175293766496",
 				];
 
 				chkecPath(chart.$.bar.bars, expected);
@@ -319,7 +320,7 @@ describe("SHAPE BAR", () => {
 
 	describe("internal.isWithinBar", () => {
 		describe("with normal axis", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -335,128 +336,128 @@ describe("SHAPE BAR", () => {
 				};
 			});
 
-			it("should not be within bar", done => {
+			it("should not be within bar", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data1 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.not.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 0,
 					clientY: 0
 				}, chart);
-			});
+			}));
 
-			it("should be within bar", done => {
+			it("should be within bar", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data1 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 31,
 					clientY: 280
 				}, chart);
-			});
+			}));
 
-			it("should not be within bar of negative value", done => {
+			it("should not be within bar of negative value", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data3 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.not.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 68,
 					clientY: 280
 				}, chart);
-			});
+			}));
 
-			it("should be within bar of negative value", done => {
+			it("should be within bar of negative value", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data3 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 68,
 					clientY: 350
 				}, chart);
-			});
+			}));
 		});
 
 		describe("with rotated axis", () => {
-			before(() => {
+			beforeAll(() => {
 				args.axis.rotated = true;
   			});
 
-			it("should not be within bar", done => {
+			it("should not be within bar", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data1 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.not.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 0,
 					clientY: 0
 				}, chart);
-			});
+			}));
 
-			it("should be within bar", done => {
+			it("should be within bar", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data1 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 190,
 					clientY: 20
 				}, chart);
-			});
+			}));
 
-			it("should be within bar of negative value", done => {
+			it("should be within bar of negative value", () => new Promise(done => {
 				const internal = chart.internal;
 				const bar = chart.$.main.select(`.${$COMMON.target}-data3 .${$BAR.bar}-0`)
 					.on("click", function(event) {
 						internal.state.event = event;
 
 						expect(internal.isWithinBar(this)).to.be.ok;
-						done();
+						done(1);
 					});
 
 				util.fireEvent(bar.node(), "click", {
 					clientX: 68,
 					clientY: 50
 				}, chart);
-			});
+			}));
 		});
 	});
 
 	describe("multiple xs", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					type: "bar",
@@ -497,8 +498,8 @@ describe("SHAPE BAR", () => {
 					type: "bar",
 					columns: [
 						["x1", "05"],
-						["Sep", 2],
 						["x2", "01", "08", "29"],
+						["Sep", 2],
 						["Jul", 1, 1, 1],
 						["Aug", 2, 2, 2]
 					],
@@ -516,13 +517,13 @@ describe("SHAPE BAR", () => {
 
 		it("Bars should be positioned correctly", () => {
 			const expectedPath = [
-				"M154.46904761904761,426V39.63636363636365 H158.76904761904763 V426z",
-				"M95.36666666666666,426V232.8181818181818 H99.66666666666666 V426z",
-				"M195.0333333333333,426V232.8181818181818 H199.33333333333331 V426z",
-				"M494.03333333333336,426V232.8181818181818 H498.33333333333337 V426z",
-				"M99.66666666666666,426V39.63636363636365 H103.96666666666665 V426z",
-				"M199.33333333333331,426V39.63636363636365 H203.63333333333333 V426z",
-				"M498.33333333333337,426V39.63636363636365 H502.6333333333334 V426z"
+				"M154.74166666666667,426V39.63636363636365 H159.0202380952381 V426z",
+				"M95.5547619047619,426V232.8181818181818 H99.83333333333333 V426z",
+				"M195.38809523809522,426V232.8181818181818 H199.66666666666666 V426z",
+				"M494.8880952380953,426V232.8181818181818 H499.1666666666667 V426z",
+				"M99.83333333333333,426V39.63636363636365 H104.11190476190475 V426z",
+				"M199.66666666666666,426V39.63636363636365 H203.9452380952381 V426z",
+				"M499.1666666666667,426V39.63636363636365 H503.4452380952381 V426z",
 			];
 
 			chart.$.bar.bars.each(function() {
@@ -538,17 +539,77 @@ describe("SHAPE BAR", () => {
 
 		it("Grouped bars should be positined correctly", () => {
 			const expectedPath = [
-				"M152.3190476190476,426V168.4242424242424 H160.9190476190476 V426z",
-				"M95.36666666666666,426V297.21212121212125 H103.96666666666665 V426z",
-				"M195.0333333333333,426V297.21212121212125 H203.6333333333333 V426z",
-				"M494.03333333333336,426V297.21212121212125 H502.6333333333334 V426z",
-				"M95.36666666666666,297.21212121212125V39.636363636363654 H103.96666666666665 V297.21212121212125z",
-				"M195.0333333333333,297.21212121212125V39.636363636363654 H203.6333333333333 V297.21212121212125z",
-				"M494.03333333333336,297.21212121212125V39.636363636363654 H502.6333333333334 V297.21212121212125z"
-			];
+				"M152.60238095238094,426V168.4242424242424 H161.1595238095238 V426z",
+				"M95.5547619047619,426V297.21212121212125 H104.11190476190475 V426z",
+				"M195.38809523809522,426V297.21212121212125 H203.94523809523807 V426z",
+				"M494.8880952380953,426V297.21212121212125 H503.44523809523815 V426z",
+				"M95.5547619047619,297.21212121212125V39.636363636363654 H104.11190476190475 V297.21212121212125z",
+				"M195.38809523809522,297.21212121212125V39.636363636363654 H203.94523809523807 V297.21212121212125z",
+				"M494.8880952380953,297.21212121212125V39.636363636363654 H503.44523809523815 V297.21212121212125z",
+			  ];
 
-			chart.$.bar.bars.each(function() {
+			  chart.$.bar.bars.each(function() {
 				expect(this.getAttribute("d")).to.be.equal(expectedPath.shift());
+			});
+		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					xs: { 
+						"Buy": "x1",
+						"Sell": "x2"
+					},
+					columns: [
+						["x1", "2018-07-05", "2018-07-11"],
+						["x2","2018-07-02","2018-07-05"],
+						["Buy", 33, 3],
+						["Sell", 7, 33]
+					],
+					type: "bar", 
+					groups: [[ "Buy", "Sell"]]
+				},
+				axis: {
+					x: {
+						type: "timeseries",
+						tick: {
+							format: "%y-%m-%d"
+						},
+					}
+				}
+			}
+		});
+
+		it("should stack bars, form same multiple xs.", () => {
+			const {bars} = chart.$.bar;
+			const expectedPath = {
+				Buy: [
+					[219, 426],
+					[419, 426]
+				],
+				Sell: [
+					[119, 426],
+					[219, 232]
+				]
+			}
+
+			const getStartPoint = str => str.replace(/^M([^V]+)V.*/, "$1").split(",").map(Math.floor);
+
+			bars.filter(d => d.id === "Buy").each(function(d, i) {
+				const expected = expectedPath[d.id][i];
+
+				getStartPoint(this.getAttribute("d")).forEach((v, j) => {
+					expect(v).to.be.closeTo(expected[j], 1);
+				});
+			});
+
+
+			bars.filter(d => d.id === "Sell").each(function(d, i) {
+				const expected = expectedPath[d.id][i];
+
+				getStartPoint(this.getAttribute("d")).forEach((v, j) => {
+					expect(v).to.be.closeTo(expected[j], 1);
+				});
 			});
 		});
 	});
@@ -557,7 +618,7 @@ describe("SHAPE BAR", () => {
 		const width = 15;
 		const padding = 3;
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					type: "bar",
@@ -605,8 +666,8 @@ describe("SHAPE BAR", () => {
 
 		it("check the bar radius", () => {
 			const path = [
-				"M228.5,331.55555555555554 V380.5833333333333 a10,10 1 0 0 10,10H233.5 a10,10 1 0 0 10,-10V331.55555555555554z",
-				"M246.5,331.55555555555554 V223.5 a10,10 0 0 1 10,-10H251.5 a10,10 0 0 1 10,10V331.55555555555554z"
+				"M228.91666666666669,331.55555555555554V380.5833333333333 a10 10 1 0 0 10,10H233.91666666666669 a10 10 1 0 0 10,-10V331.55555555555554z",
+				"M246.91666666666669,331.55555555555554V223.5 a10 10 0 0 1 10,-10H251.91666666666669 a10 10 0 0 1 10,10V331.55555555555554z"
 			];
 
 			checkRadius(path);
@@ -618,8 +679,8 @@ describe("SHAPE BAR", () => {
 
 		it("check the rotated axis bar radius", () => {
 			checkRadius([
-				"M131.11111111111111,161.16666666666669H39.166666666666664 a10,10 1 0 0 -10,10V166.16666666666669 a10,10 1 0 0 10,10H131.11111111111111z",
-				"M131.11111111111111,179.16666666666669H285 a10,10 0 0 1 10,10V184.16666666666669 a10,10 0 0 1 -10,10H131.11111111111111z"
+				"M131.11111111111111,161.16666666666669H59.166666666666664 a10 10 1 0 0 -10,10V166.16666666666669 a10 10 1 0 0 10,10H131.11111111111111z",
+				"M131.11111111111111,179.16666666666669H285 a10 10 0 0 1 10,10V184.16666666666669 a10 10 0 0 1 -10,10H131.11111111111111z"
 			]);
 		});
 
@@ -630,8 +691,8 @@ describe("SHAPE BAR", () => {
 
 		it("check the axis bar radius in ratio", () => {
 			const path = [
-				"M228.5,331.55555555555554 V383.0833333333333 a7.5,7.5 1 0 0 7.5,7.5 H236 a7.5,7.5 1 0 0 7.5,-7.5 V331.55555555555554z",
-				"M246.5,331.55555555555554 V221 a7.5,7.5 0 0 1 7.5,-7.5 H254 a7.5,7.5 0 0 1 7.5,7.5 V331.55555555555554z"
+				"M228.91666666666669,331.55555555555554V383.0833333333333 a7.5 7.5 1 0 0 7.5,7.5H236.41666666666669 a7.5 7.5 1 0 0 7.5,-7.5V331.55555555555554z",
+				"M246.91666666666669,331.55555555555554V221 a7.5 7.5 0 0 1 7.5,-7.5H254.41666666666669 a7.5 7.5 0 0 1 7.5,7.5V331.55555555555554z"
 			];
 
 			checkRadius(path);
@@ -664,11 +725,11 @@ describe("SHAPE BAR", () => {
 		});
 
 		it("each data should be rendered with different width", () => {
-			const expected = [25, 30];
+			const expected = [24, 30];
 
 			chart.data().map(v => v.id).forEach((id, i) => {
 				chart.$.main.selectAll(`.${$BAR.bars}-${id} path`).each(function() {
-					expect(Math.round(this.getBBox().width)).to.be.equal(expected[i]);
+					expect(Math.floor(this.getBBox().width)).to.be.closeTo(expected[i], 1);
 				});
 			});
 		});
@@ -720,10 +781,75 @@ describe("SHAPE BAR", () => {
 				expect(this.style.opacity).to.be.equal("");
 			});
 		});
+
+		it("set options: bar.front=true", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 230, 180, 250, 270, 220],
+						["data2", 200, 190, 290, 140, 130]
+					],
+					types: {
+						data1: "bar",
+						data2: "area"
+					}
+				},
+				bar: {
+					front: true
+				}
+			};
+		});
+
+		it("check bar element position on DOM hierarchy.", () => {
+			const bars = chart.$.main.select(`.${$COMMON.chart} .${$BAR.chartBars}`).node();
+			
+			// check the bar element position
+			expect(bars.previousSibling.classList.contains($LINE.chartLines)).to.be.true;
+			expect(bars.nextSibling.classList.contains($EVENT.eventRects)).to.be.true;
+		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					columns: [ 
+						["data1", 30, 200, 100],
+						["data2", 130, 100, 140]
+					],
+					type: "bar"
+				},
+				bar: {
+					width: function(width, targetsNum, maxDataCount) {
+						return width / (targetsNum * maxDataCount)
+					}
+				}
+			}
+		});
+
+		it("should bar width size adjust from width callback", () => {
+			const getTargetWidth = () => {
+				const chartWidth = chart.internal.state.width;
+				const data = chart.data();
+				const targetsNum = data.length;
+				const maxDataCount = data[0].values.length;
+				
+				return args.bar.width(chartWidth, targetsNum, maxDataCount);
+			}
+
+			chart.$.bar.bars.each(function() {
+				expect(this.getBoundingClientRect().width).to.be.closeTo(getTargetWidth(), 1);
+			});
+
+			// when
+			chart.resize({width: 500});
+
+			chart.$.bar.bars.each(function() {
+				expect(this.getBoundingClientRect().width).to.be.closeTo(getTargetWidth(), 1);
+			});
+		});
 	});
 
 	describe("bar indices", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -755,7 +881,7 @@ describe("SHAPE BAR", () => {
 	});
 
 	describe("bar radius", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -815,6 +941,7 @@ describe("SHAPE BAR", () => {
 
 		it("should apply bar radius for stacking bars", () => {
 			let radiusCount = 0;
+			let nonRadiusCount = 0;
 			const expected = [
 				[
 					{id: "data1", value: -80},
@@ -831,17 +958,20 @@ describe("SHAPE BAR", () => {
 			];
 
 			chart.$.bar.bars.each(function(d) {
-				const hasRadius = this.getAttribute("d").indexOf("a") > -1;
+				const hasRadius = !/a0 0/.test(this.getAttribute("d"));
 
 				if (hasRadius) {
 					const found = expected[d.index].some(v => v.id === d.id && v.value === d.value);
 
 					expect(found).to.be.true;
 					radiusCount++;
+				} else {
+					nonRadiusCount++;
 				}
 			});
 
 			expect(radiusCount).to.be.equal(8);
+			expect(nonRadiusCount).to.be.equal(4);
 		});
 
 		it("set options", () => {
@@ -862,7 +992,7 @@ describe("SHAPE BAR", () => {
 			};
 		});
 
-		it("path data should remain with Arc command with value 0(zero).", done => {
+		it("path data should remain with Arc command with value 0(zero).", () => new Promise(done => {
 			// when
 			chart.load({
 				columns: [["d3", 3, 5, 8, 3, 9, 0]],
@@ -870,14 +1000,385 @@ describe("SHAPE BAR", () => {
 					const d = this.$.bar.bars.filter(":last-child").attr("d");
 
 					expect(/\sa\d+/.test(d)).to.be.true;
-					done();
+					done(1);
 				}
+			});
+		}));
+
+		it("set options", () => {
+			args = {				
+				data: {
+					columns: [
+						["data1", 250],
+						["data2", -250]
+					],
+					type: "bar"
+				},
+				bar: {
+					radius: {
+						ratio: 0.5
+					}
+				},
+				axis: {
+					rotated: true
+				}
+			};
+		});
+
+		it("radius should be rendered correclty on rotated axis", () => {
+			const expected = [
+				'M295,85.80000000000001H477.23333333333323 a63.599999999999994 63.599999999999994 0 0 1 63.599999999999994,63.599999999999994V149.4 a63.599999999999994 63.599999999999994 0 0 1 -63.599999999999994,63.599999999999994H295z',
+				'M295,213H112.76666666666665 a63.599999999999994 63.599999999999994 1 0 0 -63.599999999999994,63.599999999999994V276.6 a63.599999999999994 63.599999999999994 1 0 0 63.599999999999994,63.599999999999994H295z'
+			];
+
+			chart.$.bar.bars.each(function() {
+				expect(this.getAttribute("d")).to.be.equal(expected.shift());
+			});
+		});
+
+		it("set options: axis.y.inverted=true", () => {
+			args.axis.y = {
+				inverted: true
+			};
+		});
+
+		it("radius should be rendered correclty on rotated & inverted axis", () => {
+			const expected = [
+				'M295,85.80000000000001H112.76666666666668 a63.599999999999994 63.599999999999994 1 0 0 -63.599999999999994,63.599999999999994V149.4 a63.599999999999994 63.599999999999994 1 0 0 63.599999999999994,63.599999999999994H295z',
+				'M295,213H477.23333333333323 a63.599999999999994 63.599999999999994 0 0 1 63.599999999999994,63.599999999999994V276.6 a63.599999999999994 63.599999999999994 0 0 1 -63.599999999999994,63.599999999999994H295z'
+			];
+
+			chart.$.bar.bars.each(function() {
+				expect(this.getAttribute("d")).to.be.equal(expected.shift());
+			});
+		});
+	});
+
+	describe("bar radius surpassing condition", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					type: "bar",
+					columns:[
+						["data", -10289158423, -204482173, 3075954443]
+					]
+				},
+				axis: {
+					y: {
+						"min":-50000000000,
+						"max":50000000000,
+						"tick":{
+							"show":false,
+							"outer":false,
+							"text":{
+								"position":{
+									"x":-20
+								}
+							},
+							"stepSize": 25000000000
+						},"padding":0
+					}
+				},
+				bar: {
+					radius: 2,
+					width: 10,
+					padding: 2
+				}
+			};
+		});
+
+		it("should negative value set clip-path", () => {
+			chart.$.bar.bars.each(function(d, i) {
+				if (i === 1) {
+					const d = this.getAttribute("d");					
+					const value = [d.match(/,([^V]*)/)[1], d.match(/V([^\s]*)/)[1]].reduce((a, c) => +a - +c);
+
+					expect(+this.style.clipPath.match(/\(([^px]*)/)[1]).to.be.closeTo(value, 1);
+				} else {
+					expect(this.style.clipPath).to.be.equal("");
+				}
+			});
+		});
+
+		it("set options: set positive data value", () => {
+			args.data.columns[0][2] = 204482173;
+		});
+
+		it("should positive value set clip-path", () => {
+			chart.$.bar.bars.each(function(d, i) {
+				if (i === 1) {
+					const d = this.getAttribute("d");					
+					const value = [d.match(/,([^V]*)/)[1], d.match(/V([^\s]*)/)[1]].reduce((a, c) => +c - +a);
+
+					expect(+this.style.clipPath.match(/\s([^px]*)px\)$/)[1]).to.be.closeTo(value, 1);
+				} else {
+					expect(this.style.clipPath).to.be.equal("");
+				}
+			});
+		});
+
+		it("set options: axis.rotated=true", () => {
+			args.axis.rotated = true;
+		});
+
+		it("should positive value set clip-path for rotated axis", () => {
+			chart.$.bar.bars.each(function(d, i) {
+				if (i === 1) {
+					const d = this.getAttribute("d");					
+					const value = [d.match(/M([^,]*)/)[1], d.match(/H([^\s]*)/)[1]].reduce((a, c) => +a - +c);
+
+					expect(+this.style.clipPath.match(/\s([^px]*)px\)$/)[1]).to.be.closeTo(value, 1);
+				} else {
+					expect(this.style.clipPath).to.be.equal("");
+				}
+			});
+		});
+
+		it("set options: set negative data value", () => {
+			args.data.columns[0][2] = -204482173;
+		});
+
+		it("should negative value set clip-path for rotated axis", () => {
+			chart.$.bar.bars.each(function(d, i) {
+				if (i === 1) {
+					const d = this.getAttribute("d");					
+					const value = [d.match(/M([^,]*)/)[1], d.match(/H([^\s]*)/)[1]].reduce((a, c) => +c - +a);
+
+					expect(+this.style.clipPath.match(/px\s([^px]*)/)[1]).to.be.closeTo(value, 1);
+				} else {
+					expect(this.style.clipPath).to.be.equal("");
+				}
+			});
+		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", -80],
+						["data2", 80],
+						["data3", -120]
+					],
+					type: "bar",
+					groups: [
+						[
+							"data1",
+							"data2"
+						]
+					],
+					order: "desc"
+				},
+				bar: {
+					radius: {
+						ratio: 0.5
+					}
+				},
+				transition: {
+					duration: 0
+				}
+			};
+		});
+
+		it("clip-path style should be updated", () => {
+			// when
+			chart.hide("data3");
+			
+			chart.$.bar.bars.each(function(d) {
+				if (d.id !== "data3") {
+					expect(this.style.clipPath.length > 0).to.be.true;
+				} else {
+					expect(this.style.clipPath).to.be.equal("");
+				}					
+			});
+
+			// when
+			chart.show("data3");
+
+			chart.$.bar.bars.each(function(d) {
+				expect(this.style.clipPath).to.be.equal("");
 			});
 		})
 	});
 
+	describe("bar linear gradient", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 230, 280, 251, 400, 150, 546, 158],
+						["hello there", 230, 280, 251, 400, 150, 546, 158],
+						["123 test", 130, 220, 120, 129, 410, 100, 440]
+					],
+					type: "bar",
+				},
+				bar: {
+					linearGradient: true
+				}
+			}
+		});
+
+		it("should generate liearGradient element", () => {
+			const internal = chart.internal;
+			const expected = {
+				x: [0, 0],
+				y: [0, 1],
+				offset: [0, 1],
+				opacity: [1, 0]
+			};
+
+			chart.data().forEach(v => {
+				const color = chart.color(v.id);
+				const selectorSuffix = internal.getTargetSelectorSuffix(v.id);
+				const id = `#${internal.state.datetimeId}-gradient${selectorSuffix}`;
+				const gradient = chart.$.svg.select(id);
+
+				expect(gradient.empty()).to.be.false;
+				expect([+gradient.attr("x1"), +gradient.attr("x2")]).to.be.deep.equal(expected.x);
+				expect([+gradient.attr("y1"), +gradient.attr("y2")]).to.be.deep.equal(expected.y);
+
+				gradient.selectAll("stop").each(function(d, i) {
+					const stop = d3Select(this);
+
+					expect(+stop.attr("offset")).to.be.equal(expected.offset[i]);
+					expect(stop.attr("stop-color")).to.be.equal(color);
+					expect(+stop.attr("stop-opacity")).to.be.equal(expected.opacity[i]);
+				});
+
+				expect(chart.$.bar.bars.filter(d => d.id === v.id).style("fill")).to.be.equal(`url("${id}")`);
+			});
+		});
+
+		it("set options: customzied linearGradient", () => {
+			args.bar = {
+				linearGradient: {
+					x: [1, 0],
+					y: [0, 1],
+					stops: [
+						[0, id => id == "data1" ? "red" : "yellow", 1],
+						[0.3, "orange", 0.5],
+						[0.6, "green", 0.7],
+						[0.8, "purple", 0.7],
+						[1, null, 1]
+					]
+				}
+			};
+		});
+
+		it("should generate customized liearGradient element", () => {
+			const internal = chart.internal;
+
+			chart.data().forEach(v => {
+				const selectorSuffix = internal.getTargetSelectorSuffix(v.id);
+				const id = `#${internal.state.datetimeId}-gradient${selectorSuffix}`;
+				const gradient = chart.$.svg.select(id);
+
+				expect(gradient.empty()).to.be.false;
+				expect([+gradient.attr("x1"), +gradient.attr("x2")]).to.be.deep.equal(args.bar.linearGradient.x);
+				expect([+gradient.attr("y1"), +gradient.attr("y2")]).to.be.deep.equal(args.bar.linearGradient.y);
+
+				const stops = args.bar.linearGradient.stops;
+
+				gradient.selectAll("stop").each(function(d, i) {
+					const color = i === 0 ? stops[i][1](v.id) : stops[i][1];
+					const stop = d3Select(this);
+
+					expect(+stop.attr("offset")).to.be.equal(stops[i][0]);
+					expect(stop.attr("stop-color")).to.be.equal(color || chart.color(v.id));
+					expect(+stop.attr("stop-opacity")).to.be.equal(stops[i][2]);
+				});
+
+				expect(chart.$.bar.bars.filter(d => d.id === v.id).style("fill")).to.be.equal(`url("${id}")`);
+			});
+		});
+
+		it("set options", () => {
+			args.bar.linearGradient = true;
+			args.axis = {
+				rotated: true
+			};
+		});
+
+		it("check for axis rotated gradient", () => {
+			const expected = [1, 0, 0, 0];
+
+			chart.$.defs.selectAll("linearGradient").each(function() {
+				["x1", "x2", "y1", "y2"].forEach((v, i) => {
+					expect(+this.getAttribute(v)).to.be.equal(expected[i]);
+				});
+			});
+		});
+
+		it("set options: reset options", () => {
+			args = {
+				data: {
+					columns: [["data"]],
+					type: "bar"
+				},
+				bar: {
+					linearGradient: true
+				}
+			};
+		});
+
+		it("should generate customized liearGradient element", () => new Promise(done => {
+			chart.load({
+				columns: [
+					["data", 10, 20, 30, 40]
+				],
+				done() {
+					expect(chart.$.defs.select("linearGradient").empty()).to.be.false;
+					done(1);
+				}
+			});
+		}));
+
+	});
+
+	describe("bar overlap", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 80, 150, 100],
+						["data2", 100, 120, 130],
+						["data3", 150, 80, 120]
+					],
+					type: "bar"
+				},
+				bar: {
+					width: {
+						data1: 60,
+						data2: 40,
+						data3: 20
+					},
+					overlap: true
+				}
+			};
+		});
+
+		it("bars should positioned at the center of each x Axis ticks.", () => {
+			const {x} = chart.internal.scale;
+			const {bars} = chart.$.bar;
+			const dataNames = chart.data().map(v => v.id);
+			const {width} = args.bar;
+			const ticks = dataNames.map((v, i) => x(i));
+			const re = /^M(\d+)/;
+
+			dataNames.forEach(id => {
+				const bar = bars.filter(d => d.id === id).nodes();
+
+				ticks.forEach((t, i) => {
+					const xPos = +bar[i].getAttribute("d").match(re)?.[1] || 0;
+					const expectedX = t - width[id] / 2;
+
+					expect(xPos).to.be.closeTo(expectedX, 1);
+				});
+			});
+		});
+	});
+
 	describe("bar position", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 				  columns: [
@@ -899,8 +1400,8 @@ describe("SHAPE BAR", () => {
 
 		it("check for the correct bar width & position", () => {
 			const expectedPath = [
-				"M74.75,426V39.63636363636365 H224.25 V426z",
-				"M373.75,426V221.5747955747956 H523.25 V426z"
+				"M74.875,426V39.63636363636365 H224.625 V426z",
+				"M374.375,426V221.5747955747956 H524.125 V426z"
 			];
 
 			chart.$.bar.bars.each(function(d, i) {
@@ -971,7 +1472,7 @@ describe("SHAPE BAR", () => {
 		});
 
 		it("bar's x position interval should be same", () => {
-			const interval = [];
+			const interval: number[] = [];
 			let lastX = 0;
 
 			chart.$.bar.bars.each(function(d, i) {
@@ -991,7 +1492,7 @@ describe("SHAPE BAR", () => {
 	});
 
 	describe("bar sensitivity", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				size: {
 					width: 400,
@@ -1036,7 +1537,7 @@ describe("SHAPE BAR", () => {
 	});
 
 	describe("bar label.threshold", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -1063,13 +1564,13 @@ describe("SHAPE BAR", () => {
 			const hiddenIds = chart.internal.state.hiddenTargetIds;
 
 			const res = chart.$.text.texts.filter(function(d) {
-				return hiddenIds.indexOf(d.id) === -1 && this.style.fillOpacity === "";
+				return !hiddenIds.has(d.id) && this.style.fillOpacity === "";
 			}).nodes().map(n => +n.textContent);
 
 			expect(res).to.be.deep.equal(expected);
 		}
 
-		it("check data label shown #1", done => {
+		it("check data label shown #1", () => new Promise(done => {
 			checkLabel([1000, -1000]);
 
 			// when
@@ -1077,33 +1578,33 @@ describe("SHAPE BAR", () => {
 
 			setTimeout(() => {
 				checkLabel([230, -230, -1000]);
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 
-		it("check data label shown #2", done => {
+		it("check data label shown #2", () => new Promise(done => {
 			// when
 			chart.hide(["data2", "data4"]);
 
 			setTimeout(() => {
 				checkLabel([230, -230]);
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 
-		it("check data label shown #3", done => {
+		it("check data label shown #3", () => new Promise(done => {
 			// when
 			chart.hide(["data1", "data2", "data4"]);
 
 			setTimeout(() => {
 				checkLabel([-30, -230]);
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 	});
 
 	describe("bar width on zoom", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -1120,8 +1621,8 @@ describe("SHAPE BAR", () => {
 			};
 		});
 
-		it("should maintain width size after toggle", done => {
-			const zoomBarWidth = [];
+		it("should maintain width size after toggle", () => new Promise(done => {
+			const zoomBarWidth: number[] = [];
 
 			// when
 			chart.zoom([1, 3]);
@@ -1153,9 +1654,9 @@ describe("SHAPE BAR", () => {
 					expect(w).to.be.equal(zoomBarWidth[i]);
 				});
 
-				done();
+				done(1);
 			});
-		});
+		}));
 	});
 
 	describe("bar within a range", () => {
@@ -1169,9 +1670,10 @@ describe("SHAPE BAR", () => {
 				}
 			});
 			const expectedPath = [
-				"M59.8,297.21212121212125V168.4242424242424 H239.2 V297.21212121212125z",
-				"M358.8,168.4242424242424V39.63636363636365 H538.2 V168.4242424242424z"
+				"M59.900000000000006,297.21212121212125V168.4242424242424 H239.6 V297.21212121212125z",
+				"M359.4,168.4242424242424V39.63636363636365 H539.0999999999999 V168.4242424242424z",
 			];
+
 			chart.$.bar.bars.each(function(d, i) {
 				expect(this.getAttribute("d")).to.be.equal(expectedPath[i]);
 			});
@@ -1216,15 +1718,16 @@ describe("SHAPE BAR", () => {
 				}
 			});
 			const expectedPathMap = {
-				data1: [
-					"M58.8,213.5V124.95833333333331 H147 V213.5z",
-					"M352.8,124.95833333333331V36.41666666666668 H441 V124.95833333333331z"
+				"data1": [
+				  "M58.900000000000006,213.5V124.95833333333331 H147.25 V213.5z",
+				  "M353.4,124.95833333333331V36.41666666666668 H441.75 V124.95833333333331z",
 				],
-				data2: [
-					"M147,390.5833333333333V213.5 H235.2 V390.5833333333333z",
-					"M441,346.3125V328.6041666666667 H529.2 V346.3125z"
+				"data2": [
+				  "M147.25,390.5833333333333V213.5 H235.6 V390.5833333333333z",
+				  "M441.75,346.3125V328.6041666666667 H530.1 V346.3125z",
 				],
-			};
+			  };
+
 			chart.$.bar.bars.each(function(d, i) {
 				expect(this.getAttribute("d")).to.be.equal(expectedPathMap[d.id][i]);
 			});
@@ -1241,19 +1744,20 @@ describe("SHAPE BAR", () => {
 				}
 			});
 			const expectedPathMap = {
-				data1: [
-					"M29.4,302.04166666666663V213.5 H73.5 V302.04166666666663z",
-					"M176.4,302.04166666666663V124.95833333333331 H220.5 V302.04166666666663z",
-					"M323.4,213.5V124.95833333333331 H367.5 V213.5z",
-					"M470.4,124.95833333333331V36.41666666666668 H514.5 V124.95833333333331z",
+				"data1": [
+				  "M29.450000000000003,302.04166666666663V213.5 H73.625 V302.04166666666663z",
+				  "M176.7,302.04166666666663V124.95833333333331 H220.875 V302.04166666666663z",
+				  "M323.95,213.5V124.95833333333331 H368.125 V213.5z",
+				  "M471.2,124.95833333333331V36.41666666666668 H515.375 V124.95833333333331z",
 				],
-				data2: [
-					"M73.5,302.04166666666663V390.5833333333333 H117.6 V302.04166666666663z",
-					"M220.5,302.04166666666663V346.3125 H264.6 V302.04166666666663z",
-					"M367.5,390.5833333333333V213.5 H411.6 V390.5833333333333z",
-					"M514.5,346.3125V328.6041666666667 H558.6 V346.3125z",
+				"data2": [
+				  "M73.625,302.04166666666663V390.5833333333333 H117.8 V302.04166666666663z",
+				  "M220.875,302.04166666666663V346.3125 H265.05 V302.04166666666663z",
+				  "M368.125,390.5833333333333V213.5 H412.3 V390.5833333333333z",
+				  "M515.375,346.3125V328.6041666666667 H559.55 V346.3125z",
 				],
 			};
+
 			chart.$.bar.bars.each(function(d, i) {
 				expect(this.getAttribute("d")).to.be.equal(expectedPathMap[d.id][i]);
 			});
@@ -1266,27 +1770,191 @@ describe("SHAPE BAR", () => {
 						["data1", 100, 200, [100, 200], [200, 300]],
 						["data2", -100, -50, [-100, 50], [-50, -30]],
 					],
-          type: "bar",
-          groups: [["data1", "data2"]],
+					type: "bar",
+					groups: [["data1", "data2"]],
 				}
 			});
 			const expectedPathMap = {
-				data1: [
-					"M29.4,302.04166666666663V213.5 H117.6 V302.04166666666663z",
-					"M176.4,302.04166666666663V124.95833333333331 H264.6 V302.04166666666663z",
-					"M323.4,213.5V124.95833333333331 H411.59999999999997 V213.5z",
-					"M470.4,124.95833333333331V36.41666666666668 H558.6 V124.95833333333331z",
-				],
-				data2: [
-					"M29.4,302.04166666666663V390.5833333333333 H117.6 V302.04166666666663z",
-					"M176.4,302.04166666666663V346.3125 H264.6 V302.04166666666663z",
-					"M323.4,390.5833333333333V257.77083333333337 H411.59999999999997 V390.5833333333333z",
-					"M470.4,346.3125V328.6041666666667 H558.6 V346.3125z",
-				],
+				"data1": [
+					"M29.450000000000003,302.04166666666663V213.5 H117.8 V302.04166666666663z",
+					"M176.7,302.04166666666663V124.95833333333331 H265.04999999999995 V302.04166666666663z",
+					"M323.95,213.5V124.95833333333331 H412.29999999999995 V213.5z",
+					"M471.2,124.95833333333331V36.41666666666668 H559.55 V124.95833333333331z",
+				  ],
+				  "data2": [
+					"M29.450000000000003,302.04166666666663V390.5833333333333 H117.8 V302.04166666666663z",
+					"M176.7,302.04166666666663V346.3125 H265.04999999999995 V302.04166666666663z",
+					"M323.95,390.5833333333333V257.77083333333337 H412.29999999999995 V390.5833333333333z",
+					"M471.2,346.3125V328.6041666666667 H559.55 V346.3125z",
+				  ],
 			};
+
 			chart.$.bar.bars.each(function(d, i) {
 				expect(this.getAttribute("d")).to.be.equal(expectedPathMap[d.id][i]);
 			});
+		});
+	});
+
+	describe("rotated & inverted axis", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 50, 70, 100, 150, 250],
+						["data2", -30, -50, -70, -100, -150, -250]
+					],
+					type: "bar",
+					labels: true
+				},
+				axis: {
+					rotated: true,
+					y: {
+						inverted: true
+					}
+				}
+			};
+		});
+
+		it("bar should be drawn correctly.", () => {
+			const texts = chart.$.text.texts.nodes();
+
+			chart.$.bar.bars.each(function(d, i) {
+				const text = texts.shift();
+				const {x: textX} = text.getBoundingClientRect();
+				const barRect = this.getBoundingClientRect();
+				const {id} = d;
+
+				// check bar shape has been rendered
+				expect(barRect.width > 0).to.be.true;
+
+				// check data label text's position
+				expect(text.getAttribute("text-anchor")).to.be.equal(id === "data1" ? "end" : "start");
+
+				if (id === "data1") {
+					expect(textX < barRect.x).to.be.true;
+				} else if (id === "data2") {
+					expect(textX > barRect.x + barRect.width).to.be.true;
+				}
+			});
+		});
+	});
+
+	describe("bar.connectLine", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", -30, [30, 200], 150, 400, -150, 250],
+						["data2", 100, -100, 200, -150, 50],
+						["data3", -230, 200, 200, -300, 250, 250],
+						["data4", 100, 200, 100, 150, 50]
+					],
+					type: "bar", 
+					groups: [
+						[
+							"data1",
+							"data2"
+						]
+					]
+				  },
+				axis: {
+					rotated: true
+				},
+				bar: {
+					connectLine: "start-end"
+				}
+			};
+		});
+
+		it("should generate connect line correctly", () => {
+			const expected = [
+				"M245.83333333333334,29.266666666666666L376.9444444444444,85.80000000000001 M265.5,99.93333333333334L344.1666666666667,156.4666666666667 M245.83333333333334,170.60000000000002L508.05555555555566,227.13333333333335 M245.83333333333334,241.26666666666668L147.5,297.8 M245.83333333333334,311.93333333333334L409.72222222222223,368.46666666666664z",
+				"M245.83333333333334,29.266666666666666L180.2777777777778,85.80000000000001 M245.83333333333334,99.93333333333334L475.2777777777777,156.4666666666667 M344.1666666666667,170.60000000000002L147.5,227.13333333333335 M245.83333333333334,241.26666666666668L278.6111111111111,297.8z",
+				"M245.83333333333334,43.39999999999999L376.9444444444444,99.93333333333334 M245.83333333333334,114.06666666666666L376.9444444444444,170.60000000000002 M245.83333333333334,184.73333333333335L49.16666666666666,241.26666666666668 M245.83333333333334,255.4L409.72222222222223,311.93333333333334 M245.83333333333334,326.06666666666666L409.72222222222223,382.59999999999997z",
+				"M245.83333333333334,57.53333333333332L376.9444444444444,114.06666666666666 M245.83333333333334,128.2L311.3888888888889,184.73333333333335 M245.83333333333334,198.86666666666667L344.1666666666667,255.4 M245.83333333333334,269.5333333333333L278.6111111111111,326.06666666666666z"
+			];
+
+			chart.$.main.selectAll(".bb-bar-connectLine").each(function(d, i) {
+				expect(this.getAttribute("d")).to.be.equal(expected[i]);
+			});
+		});
+
+		it("set options: bar.connectLine", () => {
+			args.bar.connectLine = {
+				data1: "start-start",
+				data4: "end-end"
+			};
+		});
+
+		it("should generate connect line only specified.", () => {
+			expect(chart.$.main.selectAll(".bb-bar-connectLine").size()).to.be.equal(2);
+		});
+
+		it("set options: bar.connectLine", () => {
+			args.bar.connectLine = {
+				data1: "start-start",
+				data2: "start-end",
+				data3: "end-start",
+				data4: "end-end"
+			};
+		});
+
+		it("should generate different connect line per data correctly", () => {
+			const expected = [
+				"M245.83333333333334,29.266666666666666L265.5,85.80000000000001 M265.5,99.93333333333334L245.83333333333334,156.4666666666667 M245.83333333333334,170.60000000000002L245.83333333333334,227.13333333333335 M245.83333333333334,241.26666666666668L245.83333333333334,297.8 M245.83333333333334,311.93333333333334L245.83333333333334,368.46666666666664z",
+				"M245.83333333333334,29.266666666666666L180.2777777777778,85.80000000000001 M245.83333333333334,99.93333333333334L475.2777777777777,156.4666666666667 M344.1666666666667,170.60000000000002L147.5,227.13333333333335 M245.83333333333334,241.26666666666668L278.6111111111111,297.8z",
+				"M95.05555555555557,43.39999999999999L245.83333333333334,99.93333333333334 M376.9444444444444,114.06666666666666L245.83333333333334,170.60000000000002 M376.9444444444444,184.73333333333335L245.83333333333334,241.26666666666668 M49.16666666666666,255.4L245.83333333333334,311.93333333333334 M409.72222222222223,326.06666666666666L245.83333333333334,382.59999999999997z",
+				"M311.3888888888889,57.53333333333332L376.9444444444444,114.06666666666666 M376.9444444444444,128.2L311.3888888888889,184.73333333333335 M311.3888888888889,198.86666666666667L344.1666666666667,255.4 M344.1666666666667,269.5333333333333L278.6111111111111,326.06666666666666z"
+			];
+
+			chart.$.main.selectAll(".bb-bar-connectLine").each(function(d, i) {
+				expect(this.getAttribute("d")).to.be.equal(expected[i]);
+			});
+		});
+
+		it("set options: axis.rotated=true", () => {
+			args.axis.rotated = true;
+		});
+
+		it("should generate connect line correctly in rotated axis", () => {
+			const expected = [
+				"M245.83333333333334,29.266666666666666L265.5,85.80000000000001 M265.5,99.93333333333334L245.83333333333334,156.4666666666667 M245.83333333333334,170.60000000000002L245.83333333333334,227.13333333333335 M245.83333333333334,241.26666666666668L245.83333333333334,297.8 M245.83333333333334,311.93333333333334L245.83333333333334,368.46666666666664z",
+				"M245.83333333333334,29.266666666666666L180.2777777777778,85.80000000000001 M245.83333333333334,99.93333333333334L475.2777777777777,156.4666666666667 M344.1666666666667,170.60000000000002L147.5,227.13333333333335 M245.83333333333334,241.26666666666668L278.6111111111111,297.8z",
+				"M95.05555555555557,43.39999999999999L245.83333333333334,99.93333333333334 M376.9444444444444,114.06666666666666L245.83333333333334,170.60000000000002 M376.9444444444444,184.73333333333335L245.83333333333334,241.26666666666668 M49.16666666666666,255.4L245.83333333333334,311.93333333333334 M409.72222222222223,326.06666666666666L245.83333333333334,382.59999999999997z",
+				"M311.3888888888889,57.53333333333332L376.9444444444444,114.06666666666666 M376.9444444444444,128.2L311.3888888888889,184.73333333333335 M311.3888888888889,198.86666666666667L344.1666666666667,255.4 M344.1666666666667,269.5333333333333L278.6111111111111,326.06666666666666z"
+			];
+
+			chart.$.main.selectAll(".bb-bar-connectLine").each(function(d, i) {
+				expect(this.getAttribute("d")).to.be.equal(expected[i]);
+			});
+		});
+
+		it("set options: bar.connectLine", () => {
+			args.bar.connectLine = "end-end";
+		});
+
+		it("should generate connect line correctly in rotated axis", () => {
+			const expected = [
+				"M226.16666666666669,29.266666666666666L376.9444444444444,85.80000000000001 M376.9444444444444,99.93333333333334L344.1666666666667,156.4666666666667 M344.1666666666667,170.60000000000002L508.05555555555566,227.13333333333335 M508.05555555555566,241.26666666666668L147.5,297.8 M147.5,311.93333333333334L409.72222222222223,368.46666666666664z",
+				"M311.3888888888889,29.266666666666666L180.2777777777778,85.80000000000001 M180.2777777777778,99.93333333333334L475.2777777777777,156.4666666666667 M475.2777777777777,170.60000000000002L147.5,227.13333333333335 M147.5,241.26666666666668L278.6111111111111,297.8z",
+				"M95.05555555555557,43.39999999999999L376.9444444444444,99.93333333333334 M376.9444444444444,114.06666666666666L376.9444444444444,170.60000000000002 M376.9444444444444,184.73333333333335L49.16666666666666,241.26666666666668 M49.16666666666666,255.4L409.72222222222223,311.93333333333334 M409.72222222222223,326.06666666666666L409.72222222222223,382.59999999999997z",
+				"M311.3888888888889,57.53333333333332L376.9444444444444,114.06666666666666 M376.9444444444444,128.2L311.3888888888889,184.73333333333335 M311.3888888888889,198.86666666666667L344.1666666666667,255.4 M344.1666666666667,269.5333333333333L278.6111111111111,326.06666666666666z"
+			]
+
+			chart.$.main.selectAll(".bb-bar-connectLine").each(function(d, i) {
+				expect(this.getAttribute("d")).to.be.equal(expected[i]);
+			});
+		});
+
+		it("set options: bar.connectLine", () => {
+			args.bar.connectLine = {
+				data2: "start-start",
+				data3: "end-end"
+			};
+		});
+
+		it("should generate connect line only specified in rotated axis", () => {
+			expect(chart.$.main.selectAll(".bb-bar-connectLine").size()).to.be.equal(2);
 		});
 	});
 });

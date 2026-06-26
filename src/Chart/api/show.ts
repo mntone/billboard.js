@@ -9,18 +9,44 @@ import {callFn, endall} from "../../module/util";
  * @param {boolean} show Show or hide
  * @param {Array} targetIdsValue Target id values
  * @param {object} options Options
+ * @param {boolean} [options.withLegend=false] whether or not display legend
+ * @param {boolean} [skipRedraw=false] whether or not skip redraw after show/hide
  * @private
  */
-function showHide(show: boolean, targetIdsValue: string[], options: any): void {
+function showHide(
+	show: boolean,
+	targetIdsValue: string[] | string | undefined,
+	options: any,
+	skipRedraw = false
+): void {
 	const $$ = this.internal;
 	const targetIds = $$.mapToTargetIds(targetIdsValue);
-	const hiddenIds = $$.state.hiddenTargetIds
-		.map(v => targetIds.indexOf(v) > -1 && v)
-		.filter(Boolean);
+	const targetIdSet = new Set(targetIds);
+	const hiddenIds = [...$$.state.hiddenTargetIds].filter(v => targetIdSet.has(v));
 
 	$$.state.toggling = true;
+	$$.state.dirty.visibility = true;
 
 	$$[`${show ? "remove" : "add"}HiddenTargetIds`](targetIds);
+
+	if ($$.state.isCanvasMode) {
+		if (show && hiddenIds.length) {
+			callFn($$.config.data_onshown, this, hiddenIds);
+		} else if (!show && hiddenIds.length === 0) {
+			callFn($$.config?.data_onhidden, this, targetIds);
+		}
+
+		if (!skipRedraw) {
+			$$.redraw({
+				withUpdateOrgXDomain: true,
+				withUpdateXDomain: true,
+				withLegend: true
+			});
+		}
+
+		$$.state.toggling = false;
+		return;
+	}
 
 	const targets = $$.$el.svg.selectAll($$.selectorTargets(targetIds));
 	const opacity = show ? null : "0";
@@ -36,7 +62,7 @@ function showHide(show: boolean, targetIdsValue: string[], options: any): void {
 			// https://github.com/naver/billboard.js/issues/1758
 			if (!show && hiddenIds.length === 0) {
 				targets.style("display", "none");
-				callFn($$.config.data_onhidden, this, targetIds);
+				callFn($$.config?.data_onhidden, this, targetIds);
 			}
 
 			targets.style("opacity", opacity);
@@ -44,11 +70,13 @@ function showHide(show: boolean, targetIdsValue: string[], options: any): void {
 
 	options.withLegend && $$[`${show ? "show" : "hide"}Legend`](targetIds);
 
-	$$.redraw({
-		withUpdateOrgXDomain: true,
-		withUpdateXDomain: true,
-		withLegend: true
-	});
+	if (!skipRedraw) {
+		$$.redraw({
+			withUpdateOrgXDomain: true,
+			withUpdateXDomain: true,
+			withLegend: true
+		});
+	}
 
 	$$.state.toggling = false;
 }
@@ -96,7 +124,7 @@ export default {
 	 * // hide 'data1' and 'data3'
 	 * chart.hide(["data1", "data3"]);
 	 */
-	hide(targetIdsValue?: string[], options = {}): void {
+	hide(targetIdsValue?: string[] | string, options = {}): void {
 		showHide.call(this, false, targetIdsValue, options);
 	},
 
@@ -119,18 +147,23 @@ export default {
 	 * // toggle 'data1' and 'data3'
 	 * chart.toggle(["data1", "data3"]);
 	 */
-	toggle(targetIds: string|string[], options = {}): void {
+	toggle(targetIds: string | string[], options = {}): void {
 		const $$ = this.internal;
-		const targets = {show: <string[]> [], hide: <string[]> []};
+		const targets = {show: <string[]>[], hide: <string[]>[]};
 
 		// sort show & hide target ids
 		$$.mapToTargetIds(targetIds)
 			.forEach((id: string) => targets[$$.isTargetToShow(id) ? "hide" : "show"].push(id));
 
-		// perform show & hide task separately
-		// https://github.com/naver/billboard.js/issues/454
-		targets.show.length && this.show(targets.show, options);
-		targets.hide.length && setTimeout(() => this.hide(targets.hide, options), 0);
+		if (targets.show.length && targets.hide.length) {
+			// Batch both operations with a single redraw
+			showHide.call(this, true, targets.show, options, true);
+			showHide.call(this, false, targets.hide, options);
+		} else {
+			// perform show & hide task separately
+			// https://github.com/naver/billboard.js/issues/454
+			targets.show.length && this.show(targets.show, options);
+			targets.hide.length && this.hide(targets.hide, options);
+		}
 	}
 };
-

@@ -4,7 +4,7 @@
  */
 import {$LEVEL} from "../../config/classes";
 import {getRange} from "../../module/util";
-import {IArcData, IData} from "../data/IData";
+import type {IArcData, IData} from "../data/IData";
 
 /**
  * Get data max value
@@ -41,7 +41,7 @@ export default {
 
 		// set level text background color
 		if (levelTextShow && levelTextBgColor) {
-			$$.generateDataLabelBackgroundColorFilter(levelTextBgColor);
+			$$.generateTextBGColorFilter(levelTextBgColor);
 		}
 	},
 
@@ -55,7 +55,7 @@ export default {
 	getPolarOuterRadius(d: IArcData, outerRadius: number): number {
 		const dataMax = getDataMax(this);
 
-		return (d?.data.values[0].value / dataMax) * outerRadius;
+		return ((d?.data.values[0].value ?? 0) / dataMax) * outerRadius;
 	},
 
 	/**
@@ -116,7 +116,9 @@ export default {
 
 		if (config.polar_level_text_show) {
 			const levelTextBackgroundColor = config.polar_level_text_backgroundColor;
-			const defsId = `#${state.datetimeId}-labels-bg${$$.getTargetSelectorSuffix(levelTextBackgroundColor)}`;
+			const defsId = `#${state.datetimeId}-labels-bg${
+				$$.getTargetSelectorSuffix(levelTextBackgroundColor)
+			}`;
 
 			levelEnter.append("text")
 				.style("text-anchor", "middle");

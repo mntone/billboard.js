@@ -3,12 +3,33 @@
  * billboard.js project is licensed under the MIT license
  */
 import {$LEGEND} from "../../config/classes";
+import {KEY} from "../../module/Cache";
 import {endall} from "../../module/util";
+
+/**
+ * Call done callback with resize after transition
+ * @param {function} fn Callback function
+ * @param {boolean} resizeAfter Weather to resize chart after the load
+ * @private
+ */
+export function callDone(fn, resizeAfter = false) {
+	const $$ = this;
+	const {api} = $$;
+
+	resizeAfter && $$.api.flush(true);
+	fn?.call(api);
+}
 
 export default {
 	load(rawTargets, args): void {
 		const $$ = this;
+		const {axis, data, org, scale} = $$;
 		const {append} = args;
+		const zoomState = {
+			domain: <any>null,
+			currentDomain: <any>null,
+			x: <any>null
+		};
 		let targets = rawTargets;
 
 		if (targets) {
@@ -26,24 +47,62 @@ export default {
 				});
 			}
 
-			// Update/Add data
-			$$.data.targets.forEach(d => {
-				for (let i = 0; i < targets.length; i++) {
-					if (d.id === targets[i].id) {
-						d.values = append ?
-							d.values.concat(targets[i].values) : targets[i].values;
+			// Update/Add data: index incoming targets by id to avoid O(n×m) scans
+			const incoming = new Map<string, any>(targets.map(t => [t.id, t]));
 
-						targets.splice(i, 1);
-						break;
+			data.targets.forEach(d => {
+				const t = incoming.get(d.id);
+
+				if (t) {
+					if (append) {
+						const values = t.values;
+
+						for (let j = 0; j < values.length; j++) {
+							d.values.push(values[j]);
+						}
+					} else {
+						d.values = t.values;
 					}
+
+					incoming.delete(d.id);
 				}
 			});
 
-			$$.data.targets = $$.data.targets.concat(targets); // add remained
+			// add remained
+			incoming.forEach(t => data.targets.push(t));
+		}
+
+		if ($$.state.isCanvasMode) {
+			$$.redraw({
+				withUpdateOrgXDomain: true,
+				withUpdateXDomain: true,
+				withLegend: true
+			});
+			$$.updateTypesElements();
+
+			callDone.call($$, args.done, args.resizeAfter);
+			return;
 		}
 
 		// Set targets
-		$$.updateTargets($$.data.targets);
+		$$.updateTargets(data.targets);
+
+		if (scale.zoom) {
+			zoomState.x = axis.isCategorized() ?
+				scale.x.orgScale() :
+				(org.xScale || scale.x).copy();
+			zoomState.domain = $$.getXDomain(data.targets); // get updated xDomain
+
+			zoomState.x.domain(zoomState.domain);
+			zoomState.currentDomain = $$.zoom.getDomain(); // current zoomed domain
+
+			// reset zoom state when new data loaded is out of range
+			if (!$$.withinRange(zoomState.currentDomain, undefined, zoomState.domain)) {
+				scale.x.domain(zoomState.domain);
+				scale.zoom = null;
+				$$.$el.eventRect.property("__zoom", null);
+			}
+		}
 
 		// Redraw with new targets
 		$$.redraw({
@@ -52,10 +111,30 @@ export default {
 			withLegend: true
 		});
 
+		// when load happens on zoom state
+		if (scale.zoom) {
+			// const x = (axis.isCategorized() ? scale.x.orgScale() : (org.xScale || scale.x)).copy();
+
+			org.xDomain = zoomState.domain;
+			org.xScale = zoomState.x;
+
+			if (axis.isCategorized()) {
+				zoomState.currentDomain = $$.getZoomDomainValue(zoomState.currentDomain);
+				org.xDomain = $$.getZoomDomainValue(org.xDomain);
+				org.xScale = zoomState.x.domain(org.xDomain);
+			}
+
+			$$.updateCurrentZoomTransform(zoomState.x, zoomState.currentDomain);
+
+			// https://github.com/naver/billboard.js/issues/3878
+		} else if (org.xScale) {
+			org.xScale.domain(org.xDomain);
+		}
+
 		// Update current state chart type and elements list after redraw
 		$$.updateTypesElements();
 
-		args.done?.call($$.api);
+		callDone.call($$, args.done, args.resizeAfter);
 	},
 
 	loadFromArgs(args): void {
@@ -66,24 +145,39 @@ export default {
 			return;
 		}
 
-		// reset internally cached data
-		$$.cache.reset();
+		// Reset non-generation-based caches only.
+		// Generation-based caches ($filteredTargets, $maxDataCountTarget, $valuesXIndexMap,
+		// $maxTickSize_*) are invalidated automatically by dataGeneration/redrawGeneration
+		// increments at the start of the next redraw — no need to delete them eagerly.
+		$$.cache.reset(false, [
+			KEY.filteredTargets,
+			KEY.maxDataCountTarget,
+			KEY.valuesXIndexMap,
+			KEY.maxTickSize
+		]);
 
-		const data = args.data || $$.convertData(args, d => $$.load($$.convertDataToTargets(d), args));
+		$$.convertData(args, d => {
+			const data = args.data || d;
 
-		args.append && (data.__append__ = true);
-
-		data && $$.load($$.convertDataToTargets(data), args);
+			args.append && (data.__append__ = true);
+			data && $$.load($$.convertDataToTargets.call($$, data), args);
+		});
 	},
 
 	unload(rawTargetIds, customDoneCb): void {
 		const $$ = this;
 		const {state, $el, $T} = $$;
+		const hasLegendDefsPoint = !!$$.hasLegendDefsPoint?.();
 		let done = customDoneCb;
 		let targetIds = rawTargetIds;
 
-		// reset internally cached data
-		$$.cache.reset();
+		// Reset non-generation-based caches only (same rationale as loadFromArgs)
+		$$.cache.reset(false, [
+			KEY.filteredTargets,
+			KEY.maxDataCountTarget,
+			KEY.valuesXIndexMap,
+			KEY.maxTickSize
+		]);
 
 		if (!done) {
 			done = () => {};
@@ -93,10 +187,54 @@ export default {
 		targetIds = targetIds.filter(id => $$.hasTarget($$.data.targets, id));
 
 		// If no target, call done and return
-		if (!targetIds || targetIds.length === 0) {
+		if (targetIds.length === 0) {
 			done();
 			return;
 		}
+
+		// remove in a single pass instead of re-filtering per id
+		const unloadIds = new Set(targetIds);
+
+		if (state.isCanvasMode) {
+			targetIds.forEach(id => {
+				state.withoutFadeIn[id] = false;
+			});
+
+			$$.data.targets = $$.data.targets.filter(t => !unloadIds.has(t.id));
+			$$.removeHiddenTargetIds(targetIds);
+			$$.removeHiddenLegendIds(targetIds);
+			$$.updateTypesElements();
+
+			done();
+			return;
+		}
+
+		targetIds.forEach(id => {
+			const suffixId = $$.getTargetSelectorSuffix(id);
+
+			// Reset fadein for future load
+			state.withoutFadeIn[id] = false;
+
+			// Remove target's elements
+			if ($el.legend) {
+				$el.legend.selectAll(`.${$LEGEND.legendItem}${suffixId}`).remove();
+			}
+
+			// Remove custom point def element
+			hasLegendDefsPoint && $el.defs?.select(`#${$$.getDefsPointId(suffixId)}`).remove();
+		});
+
+		// Remove targets
+		$$.data.targets = $$.data.targets.filter(t => !unloadIds.has(t.id));
+
+		// since treemap uses different data types, it needs to be transformed
+		state.hasFunnel && $$.updateFunnel($$.data.targets);
+
+		// since treemap uses different data types, it needs to be transformed
+		state.hasTreemap && $$.updateTargetsForTreemap($$.data.targets);
+
+		// Update current state chart type and elements list after redraw
+		$$.updateTypesElements();
 
 		const targets = $el.svg.selectAll(targetIds.map(id => $$.selectorTarget(id)));
 
@@ -104,21 +242,5 @@ export default {
 			.style("opacity", "0")
 			.remove()
 			.call(endall, done);
-
-		targetIds.forEach(id => {
-			// Reset fadein for future load
-			state.withoutFadeIn[id] = false;
-
-			// Remove target's elements
-			if ($el.legend) {
-				$el.legend.selectAll(`.${$LEGEND.legendItem}${$$.getTargetSelectorSuffix(id)}`).remove();
-			}
-
-			// Remove target
-			$$.data.targets = $$.data.targets.filter(t => t.id !== id);
-		});
-
-		// Update current state chart type and elements list after redraw
-		$$.updateTypesElements();
 	}
 };

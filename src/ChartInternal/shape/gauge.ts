@@ -10,11 +10,12 @@ export default {
 	initGauge(): void {
 		const $$ = this;
 		const {config, $el: {arcs}} = $$;
-		const appendText = className => {
+		const appendText = (className = <null | string>null, value = "") => {
 			arcs.append("text")
 				.attr("class", className)
 				.style("text-anchor", "middle")
-				.style("pointer-events", "none");
+				.style("pointer-events", "none")
+				.text(value);
 		};
 
 		if ($$.hasType("gauge")) {
@@ -26,6 +27,7 @@ export default {
 
 			config.gauge_units && appendText($GAUGE.chartArcsGaugeUnit);
 
+			// append min/max value text
 			if (config.gauge_label_show) {
 				appendText($GAUGE.chartArcsGaugeMin);
 				!config.gauge_fullCircle && appendText($GAUGE.chartArcsGaugeMax);
@@ -40,15 +42,20 @@ export default {
 
 		// to prevent excluding total data sum during the init(when data.hide option is used), use $$.rendered state value
 		const max = hasMultiGauge ?
-			$$.getMinMaxData().max[0].value : $$.getTotalDataSum(state.rendered);
+			$$.getMinMaxData().max[0].value :
+			$$.getTotalDataSum(state.rendered);
 
 		// if gauge_max less than max, make max to max value
-		if (max + config.gauge_min * (config.gauge_min > 0 ? -1 : 1) > config.gauge_max) {
+		if (
+			!config.gauge_enforceMinMax && (
+				max + config.gauge_min * (config.gauge_min > 0 ? -1 : 1) > config.gauge_max
+			)
+		) {
 			config.gauge_max = max - config.gauge_min;
 		}
 	},
 
-	redrawMultiArcGauge(): void {
+	redrawArcGaugeLine(): void {
 		const $$ = this;
 		const {config, state, $el} = $$;
 		const {hiddenTargetIds} = $$.state;
@@ -59,11 +66,13 @@ export default {
 
 		const mainArcLabelLine = arcLabelLines.enter()
 			.append("rect")
-			.attr("class", d => `${$ARC.arcLabelLine} ${$COMMON.target} ${$COMMON.target}-${d.data.id}`)
+			.attr("class",
+				d => `${$ARC.arcLabelLine} ${$COMMON.target} ${$COMMON.target}-${d.data.id}`)
 			.merge(arcLabelLines);
 
 		mainArcLabelLine
-			.style("fill", d => ($$.levelColor ? $$.levelColor(d.data.values[0].value) : $$.color(d.data)))
+			.style("fill",
+				d => ($$.levelColor ? $$.levelColor(d.data.values[0].value) : $$.color(d.data)))
 			.style("display", config.gauge_label_show ? null : "none")
 			.each(function(d) {
 				let lineLength = 0;
@@ -72,13 +81,15 @@ export default {
 				let y = 0;
 				let transform = "";
 
-				if (hiddenTargetIds.indexOf(d.data.id) < 0) {
+				if (!hiddenTargetIds.has(d.data.id)) {
 					const updated = $$.updateAngle(d);
-					const innerLineLength = state.gaugeArcWidth / $$.filterTargetsToShow($$.data.targets).length *
+					const innerLineLength = state.gaugeArcWidth /
+						$$.getTargetsToShow().length *
 						(updated.index + 1);
 					const lineAngle = updated.endAngle - Math.PI / 2;
 					const arcInnerRadius = state.radius - innerLineLength;
-					const linePositioningAngle = lineAngle - (arcInnerRadius === 0 ? 0 : (1 / arcInnerRadius));
+					const linePositioningAngle = lineAngle -
+						(arcInnerRadius === 0 ? 0 : (1 / arcInnerRadius));
 
 					lineLength = state.radiusExpanded - state.radius + innerLineLength;
 					x = Math.cos(linePositioningAngle) * arcInnerRadius;
@@ -111,8 +122,6 @@ export default {
 	},
 
 	getPaddingBottomForGauge() {
-		const $$ = this;
-
-		return $$.getGaugeLabelHeight() * ($$.config.gauge_label_show ? 2 : 2.5);
+		return this.getGaugeLabelHeight() * 2;
 	}
 };

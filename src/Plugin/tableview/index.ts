@@ -2,11 +2,10 @@
  * Copyright (c) 2021 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import Plugin from "../Plugin";
-import Options from "./Options";
-import {defaultStyle, tpl} from "./const";
-import {loadConfig} from "../../config/config";
 import {isNumber, tplProcess} from "../../module/util";
+import Plugin from "../Plugin";
+import {defaultStyle, tpl} from "./const";
+import Options from "./Options";
 
 /**
  * Table view plugin.<br>
@@ -36,7 +35,8 @@ import {isNumber, tplProcess} from "../../module/util";
  *          class: "my-class-name",
  *          style: true,
  *          title: "My Data List",
- *          updateOnToggle: false
+ *          updateOnToggle: false,
+ *          nullString: "N/A"
  *        }),
  *     ]
  *  });
@@ -52,7 +52,6 @@ import {isNumber, tplProcess} from "../../module/util";
  * })
  */
 export default class TableView extends Plugin {
-	private config;
 	private element;
 
 	constructor(options) {
@@ -63,7 +62,7 @@ export default class TableView extends Plugin {
 	}
 
 	$beforeInit(): void {
-		loadConfig.call(this, this.options);
+		this.loadConfig();
 	}
 
 	$init(): void {
@@ -114,7 +113,7 @@ export default class TableView extends Plugin {
 			title: dataToShow.length ? this.config.categoryTitle : ""
 		});
 		let tbody = "";
-		const rows: (number|string)[][] = [];
+		const rows: (number | string)[][] = [];
 
 		dataToShow.forEach(v => {
 			thead += tplProcess(tpl.thead, {title: v.id});
@@ -131,23 +130,22 @@ export default class TableView extends Plugin {
 
 		rows.forEach(v => {
 			tbody += `<tr>${
-				v.map((d, i) => tplProcess(i ? tpl.tbody : tpl.tbodyHeader, {
-					value: i === 0 ?
-						config.categoryFormat.bind(this)(d) :
-						(isNumber(d) ? d.toLocaleString() : "")
-				})).join("")
+				v.map((d, i) =>
+					tplProcess(i ? tpl.tbody : tpl.tbodyHeader, {
+						value: i === 0 ?
+							config.categoryFormat.bind(this)(d) :
+							(isNumber(d) ? config.numberFormat.bind(this)(d) : config.nullString)
+					})
+				).join("")
 			}</tr>`;
 		});
 
-		const rx = /<[^>]+><\/[^>]+>/g;
-		const r = tplProcess(tpl.body, {
+		element.innerHTML = tplProcess(tpl.body, {
 			...config,
 			title: config.title || $$.config.title_text || "",
 			thead,
 			tbody
-		}).replace(rx, "");
-
-		element.innerHTML = r;
+		});
 	}
 
 	$redraw(): void {
@@ -158,7 +156,7 @@ export default class TableView extends Plugin {
 	}
 
 	$willDestroy(): void {
-		this.element.parentNode.removeChild(this.element);
+		this.element.parentNode?.removeChild(this.element);
 
 		// remove default css style when left one chart instance
 		if (this.$$.charts.length === 1) {

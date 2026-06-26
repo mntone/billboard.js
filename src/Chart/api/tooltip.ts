@@ -2,7 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {isValue, isDefined} from "../../module/util";
+import {$SHAPE} from "../../config/classes";
+import {isDefined} from "../../module/util";
 
 /**
  * Define tooltip
@@ -25,7 +26,7 @@ const tooltip = {
 	 *
 	 * @example
 	 *  // show the 2nd x Axis coordinate tooltip
-	 *  // for Arc(gauge, donut & pie) and radar type, approch showing tooltip by using "index" number.
+	 *  // for Arc(gauge, donut & pie) and radar type, approach showing tooltip by using "index" number.
 	 *  chart.tooltip.show({
 	 *    index: 1
 	 *  });
@@ -40,6 +41,17 @@ const tooltip = {
 	 *  chart.tooltip.show({
 	 *    x: new Date("2018-01-02 00:00")
 	 *  });
+	 *
+	 *  // treemap type can be shown by using "id" only.
+	 *  chart.tooltip.show({
+	 *    data: {
+	 *        id: "data1"  // data id
+	 *    }
+	 *  });
+	 *
+	 *  // for Arc types, specify 'id' or 'index'
+	 *  chart.tooltip.show({ data: { id: "data2" }});
+	 *  chart.tooltip.show({ data: { index: 2 }});
 	 *
 	 *  // when data.xs is used
 	 *  chart.tooltip.show({
@@ -61,7 +73,7 @@ const tooltip = {
 	 */
 	show: function(args): void {
 		const $$ = this.internal;
-		const {config, state: {inputType}} = $$;
+		const {$el, config, state: {eventReceiver, hasFunnel, hasTreemap, inputType}} = $$;
 		let index;
 		let mouse;
 
@@ -73,17 +85,25 @@ const tooltip = {
 		// determine focus data
 		if (args.data) {
 			const {data} = args;
-			const y = $$.getYScaleById(data.id)(data.value);
+			const y = $$.getYScaleById(data.id)?.(data.value);
 
-			if ($$.isMultipleX()) {
+			if ((hasFunnel || hasTreemap) && data.id) {
+				const selector = $$.selectorTarget(data.id, undefined, `.${$SHAPE.shape}`);
+
+				eventReceiver.rect = $el.main.select(selector);
+			} else if ($$.isMultipleX()) {
 				// if multiple xs, target point will be determined by mouse
-				mouse = [$$.scale.x(data.x), y];
+				mouse = [$$.xx(data), y];
 			} else {
 				if (!config.tooltip_grouped) {
 					mouse = [0, y];
 				}
 
-				index = isValue(data.index) ? data.index : $$.getIndexByX(data.x);
+				index = data.index ?? (
+					$$.hasArcType() && data.id ?
+						$$.getArcElementByIdOrIndex(data.id)?.datum().index :
+						$$.getIndexByX(data.x)
+				);
 			}
 		} else if (isDefined(args.x)) {
 			index = $$.getIndexByX(args.x);
@@ -91,9 +111,41 @@ const tooltip = {
 			index = args.index;
 		}
 
-		(inputType === "mouse" ?
-			["mouseover", "mousemove"] : ["touchstart"]
-		).forEach(eventName => {
+		if ($$.state.isCanvasMode) {
+			const targets = $$.filterTargetsToShow?.() || $$.data.targets;
+			const selectedData = args.data?.id && !config.tooltip_grouped ?
+				targets
+					.filter(target => target.id === args.data.id)
+					.map(target => target.values[index ?? args.data.index])
+					.filter(Boolean) :
+				targets
+					.map(target => target.values[index])
+					.filter(Boolean);
+			const canvas = $el.canvas?.node?.();
+			const shape = $$.state.canvasShape || $$.getDrawShape?.();
+			const first = selectedData[0];
+			const point = mouse || (
+				first && shape?.pos?.cx && shape?.pos?.cy ?
+					[
+						$$.state.margin.left + shape.pos.cx(first),
+						$$.state.margin.top + shape.pos.cy(first)
+					] :
+					undefined
+			);
+
+			if (!selectedData.length || !canvas) {
+				return;
+			}
+
+			$$.state.canvasFocusKey = selectedData
+				.map(v => `${v.id}:${v.index}`)
+				.join("|");
+			$$.renderCanvasFocus?.(selectedData, point);
+			$$.showTooltip?.(selectedData, canvas);
+			return;
+		}
+
+		(inputType === "mouse" ? ["mouseover", "mousemove"] : ["touchstart"]).forEach(eventName => {
 			$$.dispatchEvent(eventName, index, mouse);
 		});
 	},
@@ -106,16 +158,21 @@ const tooltip = {
 	 */
 	hide: function(): void {
 		const $$ = this.internal;
-		const {state: {inputType}, $el: {tooltip}} = $$;
+		const {state: {inputType, isCanvasMode}, $el: {tooltip}} = $$;
 		const data = tooltip?.datum();
 
-		if (data) {
-			const {index} = JSON.parse(data.current)[0];
+		if (isCanvasMode) {
+			$$.state.canvasFocusKey = null;
+			$$.hideTooltip(true);
+			$$.clearCanvasFocus?.();
+			return;
+		}
+
+		if (data?.data?.[0]) {
+			const {index} = data.data[0];
 
 			// make to finalize, possible pending event flow set from '.tooltip.show()' call
-			(inputType === "mouse" ?
-				["mouseout"] : ["touchend"]
-			).forEach(eventName => {
+			(inputType === "mouse" ? ["mouseout"] : ["touchend"]).forEach(eventName => {
 				$$.dispatchEvent(eventName, index);
 			});
 		}
@@ -124,10 +181,10 @@ const tooltip = {
 		inputType === "touch" && $$.callOverOutForTouch();
 
 		$$.hideTooltip(true);
-		$$.hideGridFocus();
+		$$.hideGridFocus?.();
 
 		$$.unexpandCircles?.();
-		$$.expandBarTypeShapes(false);
+		$$.expandBarTypeShapes?.(false);
 	}
 };
 

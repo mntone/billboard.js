@@ -3,58 +3,289 @@
  * billboard.js project is licensed under the MIT license
  */
 import {TYPE, TYPE_BY_CATEGORY} from "../../config/const";
-import {IData} from "../data/IData";
-import {brushEmpty, getBrushSelection, getMinMax, isDefined, notEmpty, isValue, isObject, isNumber, diffDomain, parseDate, sortValue} from "../../module/util";
+import {KEY} from "../../module/Cache";
+import {
+	brushEmpty,
+	diffDomain,
+	getBrushSelection,
+	getMinMax,
+	isDefined,
+	isNumber,
+	isObject,
+	isValue,
+	notEmpty,
+	parseDate,
+	sortValue,
+	toSet
+} from "../../module/util";
+import type {IData, TDomainRange} from "../data/IData";
+
+type DomainMinMax = [number | Date | undefined, number | Date | undefined];
+type MinMaxAccumulator = {min: any, max: any};
+
+/**
+ * Build a compact cache key for target-domain scans.
+ * @param {object} $$ ChartInternal instance
+ * @param {Array} targets Data targets
+ * @returns {string} Cache key
+ * @private
+ */
+function getTargetDomainCacheKey($$, targets: IData[]): string {
+	return targets.map(target => {
+		const {values} = target;
+		const first = values[0];
+		const last = values[values.length - 1];
+		const firstX = first ? $$.getXCacheKey?.(first.x) ?? first.x : "";
+		const lastX = last ? $$.getXCacheKey?.(last.x) ?? last.x : "";
+
+		return `${target.id}:${values.length}:${firstX}:${lastX}`;
+	}).join("|");
+}
+
+/**
+ * Check whether domain result can be cached without accumulating zoom-window entries.
+ * @param {object} $$ ChartInternal instance
+ * @param {Array} targets Data targets
+ * @returns {boolean} Whether the targets use original value arrays
+ * @private
+ */
+function canCacheTargetDomain($$, targets: IData[]): boolean {
+	const sourceTargets = $$.data?.targets;
+
+	if (!sourceTargets) {
+		return false;
+	}
+
+	for (let i = 0; i < targets.length; i++) {
+		const target = targets[i];
+		const source = sourceTargets.find(v => v.id === target.id);
+
+		if (!source || source.values !== target.values) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Update a min/max accumulator with a scalar domain value.
+ * @param {object} minMax Min/max accumulator
+ * @param {number|Date|null|undefined} value Domain value
+ * @private
+ */
+function updateMinMax(minMax: MinMaxAccumulator, value): void {
+	if (!notEmpty(value)) {
+		return;
+	}
+
+	if (minMax.min === undefined || value < minMax.min) {
+		minMax.min = value;
+	}
+
+	if (minMax.max === undefined || value > minMax.max) {
+		minMax.max = value;
+	}
+}
+
+/**
+ * Update a min/max accumulator from an array-like value.
+ * @param {object} minMax Min/max accumulator
+ * @param {Array} values Domain values
+ * @private
+ */
+function updateMinMaxFromValues(minMax: MinMaxAccumulator, values): void {
+	for (let i = 0; i < values.length; i++) {
+		updateMinMax(minMax, values[i]);
+	}
+}
+
+/**
+ * Compute target value min/max without allocating intermediate value arrays.
+ * @param {object} $$ ChartInternal instance
+ * @param {Array} targets Data targets
+ * @returns {Array} Min/max tuple
+ * @private
+ */
+function getTargetValueMinMax($$, targets: IData[]): DomainMinMax {
+	const minMax = {min: undefined, max: undefined};
+	const hasAxis = $$.state.hasAxis;
+
+	for (let i = 0; i < targets.length; i++) {
+		const target = targets[i];
+		const isCandlestick = $$.isCandlestickType?.(target);
+		const {values} = target;
+
+		for (let j = 0; j < values.length; j++) {
+			const row = values[j];
+			let value: any = row.value;
+
+			if (!(isValue(value) || value === null)) {
+				continue;
+			}
+
+			if (value !== null && isCandlestick) {
+				value = Array.isArray(value) ?
+					value.slice(0, 4) :
+					[value.open, value.high, value.low, value.close];
+			}
+
+			if (Array.isArray(value)) {
+				updateMinMaxFromValues(minMax, value);
+			} else if (isObject(value) && "high" in value) {
+				updateMinMaxFromValues(minMax, Object.values(value));
+			} else if ($$.isBubbleZType?.(row)) {
+				updateMinMax(minMax, hasAxis && $$.getBubbleZData(value, "y"));
+			} else {
+				updateMinMax(minMax, value);
+			}
+		}
+	}
+
+	return [minMax.min, minMax.max];
+}
+
+/**
+ * Compute x-domain min or max without allocating intermediate x arrays.
+ * @param {Array} targets Data targets
+ * @param {string} type Min/max type
+ * @returns {number|Date|undefined} Domain value
+ * @private
+ */
+function getTargetXMinMax(targets: IData[], type: "min" | "max") {
+	let result;
+
+	for (let i = 0; i < targets.length; i++) {
+		const {values} = targets[i];
+
+		for (let j = 0; j < values.length; j++) {
+			const {x} = values[j];
+
+			if (
+				notEmpty(x) &&
+				(result === undefined || (type === "min" ? x < result : x > result))
+			) {
+				result = x;
+			}
+		}
+	}
+
+	return result;
+}
 
 export default {
-	getYDomainMinMax(targets, type: "min" | "max"): number | Date | undefined {
+	/**
+	 * Get both min and max Y domain values in a single pass.
+	 * Avoids calling getValuesAsIdKeyed twice.
+	 * @param {Array} targets Target data
+	 * @returns {[number|Date|undefined, number|Date|undefined]} [min, max]
+	 * @private
+	 */
+	getYDomainMinMaxBoth(targets): [number | Date | undefined, number | Date | undefined] {
 		const $$ = this;
-		const {axis, config} = $$;
-		const isMin = type === "min";
+		const {axis, cache, config, state} = $$;
+		const canCache = canCacheTargetDomain($$, targets);
+		const cacheKey = canCache ?
+			`${KEY.domainMinMax}_y_${getTargetDomainCacheKey($$, targets)}` :
+			null;
+		const cached = cacheKey && cache.get(cacheKey);
+
+		if (cached && cached.generation === state.dataGeneration) {
+			return cached.value;
+		}
 
 		const dataGroups = config.data_groups;
 		const ids = $$.mapToIds(targets);
-		const ys = $$.getValuesAsIdKeyed(targets);
+		const idsSet = toSet(ids);
+		let result: DomainMinMax;
 
 		if (dataGroups.length > 0) {
-			const hasValue = $$[`has${isMin ? "Negative" : "Positive"}ValueInTargets`](targets);
+			const rawYs = $$.getValuesAsIdKeyed(targets);
+			const hasNegative = targets.some(t => t.values.some(v => v.value < 0));
+			const hasPositive = targets.some(t => t.values.some(v => v.value > 0));
+			const axisIdMap = new Map(ids.map(id => [id, axis.getId(id)]));
+
+			// Clone ys into separate min/max copies since grouped calculation mutates values
+			const ysMin = {};
+			const ysMax = {};
+
+			for (const key in rawYs) {
+				ysMin[key] = rawYs[key].slice();
+				ysMax[key] = rawYs[key].slice();
+			}
 
 			dataGroups.forEach(groupIds => {
-				// Determine baseId
-				const idsInGroup = groupIds
-					.filter(v => ids.indexOf(v) >= 0);
+				const idsInGroup = groupIds.filter(v => idsSet.has(v));
 
 				if (idsInGroup.length) {
 					const baseId = idsInGroup[0];
-					const baseAxisId = axis.getId(baseId);
+					const baseAxisId = axisIdMap.get(baseId);
 
-					// Initialize base value. Set to 0 if not match with the condition
-					if (hasValue && ys[baseId]) {
-						ys[baseId] = ys[baseId]
-							.map(v => ((isMin ? v < 0 : v > 0) ? v : 0));
+					// Initialize base values for min (negative) and max (positive)
+					if (ysMin[baseId] && hasNegative) {
+						ysMin[baseId] = ysMin[baseId].map(v => (v < 0 ? v : 0));
+					}
+
+					if (ysMax[baseId] && hasPositive) {
+						ysMax[baseId] = ysMax[baseId].map(v => (v > 0 ? v : 0));
 					}
 
 					idsInGroup
 						.filter((v, i) => i > 0)
 						.forEach(id => {
-							if (ys[id]) {
-								const axisId = axis.getId(id);
+							if (ysMin[id]) {
+								const axisId = axisIdMap.get(id);
 
-								ys[id].forEach((v, i) => {
+								ysMin[id].forEach((v, i) => {
 									const val = +v;
-									const meetCondition = isMin ? val > 0 : val < 0;
 
-									if (axisId === baseAxisId && !(hasValue && meetCondition)) {
-										ys[baseId][i] += val;
+									// min pass: skip positive values when hasNegative
+									if (axisId === baseAxisId && !(hasNegative && val > 0)) {
+										ysMin[baseId][i] += val;
+									}
+								});
+							}
+
+							if (ysMax[id]) {
+								const axisId = axisIdMap.get(id);
+
+								ysMax[id].forEach((v, i) => {
+									const val = +v;
+
+									// max pass: skip negative values when hasPositive
+									if (axisId === baseAxisId && !(hasPositive && val < 0)) {
+										ysMax[baseId][i] += val;
 									}
 								});
 							}
 						});
 				}
 			});
+
+			const minVals: number[] = [];
+			const maxVals: number[] = [];
+
+			for (const key in ysMin) {
+				minVals.push(getMinMax("min", ysMin[key]));
+				maxVals.push(getMinMax("max", ysMax[key]));
+			}
+
+			result = [
+				getMinMax("min", minVals),
+				getMinMax("max", maxVals)
+			];
+		} else {
+			result = getTargetValueMinMax($$, targets);
 		}
 
-		return getMinMax(type, Object.keys(ys).map(key => getMinMax(type, ys[key])));
+		if (cacheKey) {
+			cache.add(cacheKey, {
+				generation: state.dataGeneration,
+				value: result
+			});
+		}
+
+		return result;
 	},
 
 	/**
@@ -66,17 +297,32 @@ export default {
 	isHiddenTargetWithYDomain(id): boolean {
 		const $$ = this;
 
-		return $$.state.hiddenTargetIds
-			.some(v => $$.axis.getId(v) === id);
+		for (const v of $$.state.hiddenTargetIds) {
+			if ($$.axis.getId(v) === id) return true;
+		}
+
+		return false;
 	},
 
-	getYDomain(targets, axisId: string, xDomain) {
+	getYDomain(targets: IData[], axisId: "y" | "y2", xDomain: TDomainRange) {
 		const $$ = this;
 		const {axis, config, scale} = $$;
 		const pfx = `axis_${axisId}`;
 
+		// Check if stack normalization should be applied for this axis
 		if ($$.isStackNormalized()) {
-			return [0, 100];
+			// Get all data IDs that belong to this axis
+			const axisDataIds = targets
+				.filter(t => axis.getId(t.id) === axisId)
+				.map(t => t.id);
+
+			// Check if any of the axis data IDs are in groups
+			const hasGroupedData = axisDataIds.some(id => $$.isGrouped(id));
+
+			// Apply normalization only if this axis has grouped data
+			if (hasGroupedData) {
+				return [0, 100];
+			}
 		}
 
 		const isLog = scale?.[axisId] && scale[axisId].type === "log";
@@ -88,8 +334,7 @@ export default {
 				return scale[axisId].domain();
 			} else {
 				return axisId === "y2" ?
-					scale.y.domain() :
-					// When all data bounds to y2, y Axis domain is called prior y2.
+					scale.y.domain() : // When all data bounds to y2, y Axis domain is called prior y2.
 					// So, it needs to call to get y2 domain here
 					$$.getYDomain(targets, "y2", xDomain);
 			}
@@ -102,8 +347,9 @@ export default {
 		const showHorizontalDataLabel = $$.hasDataLabel() && config.axis_rotated;
 		const showVerticalDataLabel = $$.hasDataLabel() && !config.axis_rotated;
 
-		let yDomainMin = $$.getYDomainMinMax(yTargets, "min");
-		let yDomainMax = $$.getYDomainMinMax(yTargets, "max");
+		const [yDomainMinVal, yDomainMaxVal] = $$.getYDomainMinMaxBoth(yTargets);
+		let yDomainMin = yDomainMinVal;
+		let yDomainMax = yDomainMaxVal;
 
 		let isZeroBased = [TYPE.BAR, TYPE.BUBBLE, TYPE.SCATTER, ...TYPE_BY_CATEGORY.Line]
 			.some(v => {
@@ -113,10 +359,21 @@ export default {
 			});
 
 		// MEMO: avoid inverting domain unexpectedly
-		yDomainMin = isValue(yMin) ? yMin :
-			(isValue(yMax) ? (yDomainMin < yMax ? yDomainMin : yMax - 10) : yDomainMin);
-		yDomainMax = isValue(yMax) ? yMax :
-			(isValue(yMin) ? (yMin < yDomainMax ? yDomainMax : yMin + 10) : yDomainMax);
+		yDomainMin = isValue(yMin) ? yMin : (
+			isValue(yMax) ?
+				(
+					yDomainMin <= yMax ? yDomainMin : yMax - 10
+				) :
+				yDomainMin
+		);
+
+		yDomainMax = isValue(yMax) ? yMax : (
+			isValue(yMin) ?
+				(
+					yMin <= yDomainMax ? yDomainMax : yMin + 10
+				) :
+				yDomainMax
+		);
 
 		if (isNaN(yDomainMin)) { // set minimum to zero when not number
 			yDomainMin = 0;
@@ -158,7 +415,11 @@ export default {
 		if (showHorizontalDataLabel) {
 			const diff = diffDomain(scale.y.range());
 			const ratio = $$.getDataLabelLength(yDomainMin, yDomainMax, "width")
-				.map(v => v / diff);
+				.map(v => {
+					const result = v / diff;
+
+					return isFinite(result) ? result : 0;
+				});
 
 			["bottom", "top"].forEach((v, i) => {
 				padding[v] += domainLength * (ratio[i] / (1 - ratio[0] - ratio[1]));
@@ -189,7 +450,8 @@ export default {
 			isAllNegative && (padding.top = -yDomainMax);
 		}
 
-		const domain = isLog ? [yDomainMin, yDomainMax].map(v => (v < 0 ? 0 : v)) :
+		const domain = isLog ?
+			[yDomainMin, yDomainMax].map(v => (v < 0 ? 0 : v)) :
 			[yDomainMin - padding.bottom, yDomainMax + padding.top];
 
 		return isInverted ? domain.reverse() : domain;
@@ -197,15 +459,32 @@ export default {
 
 	getXDomainMinMax(targets, type) {
 		const $$ = this;
+		const {cache, state} = $$;
 		const configValue = $$.config[`axis_x_${type}`];
-		const dataValue = getMinMax(type, targets.map(t => getMinMax(type, t.values.map(v => v.x))));
+		const canCache = canCacheTargetDomain($$, targets);
+		const cacheKey = canCache ?
+			`${KEY.domainMinMax}_x_${type}_${getTargetDomainCacheKey($$, targets)}` :
+			null;
+		const cached = cacheKey && cache.get(cacheKey);
+		let dataValue = cached?.generation === state.dataGeneration ? cached.value : undefined;
+
+		if (dataValue === undefined) {
+			dataValue = getTargetXMinMax(targets, type);
+			cacheKey && cache.add(cacheKey, {
+				generation: state.dataGeneration,
+				value: dataValue
+			});
+		}
+
 		let value = isObject(configValue) ? configValue.value : configValue;
 
 		value = isDefined(value) && $$.axis?.isTimeSeries() ? parseDate.bind(this)(value) : value;
 
-		if (isObject(configValue) && configValue.fit && (
-			(type === "min" && value < dataValue) || (type === "max" && value > dataValue)
-		)) {
+		if (
+			isObject(configValue) && configValue.fit && (
+				(type === "min" && value < dataValue) || (type === "max" && value > dataValue)
+			)
+		) {
 			value = undefined;
 		}
 
@@ -239,7 +518,8 @@ export default {
 		}
 
 		let {left = defaultValue, right = defaultValue} = isNumber(padding) ?
-			{left: padding, right: padding} : padding;
+			{left: padding, right: padding} :
+			padding;
 
 		// when the unit is pixel, convert pixels to axis scale value
 		if (padding.unit === "px") {
@@ -267,9 +547,10 @@ export default {
 	 * @returns {Array} x Axis domain
 	 * @private
 	 */
-	getXDomain(targets?: IData[]): (Date|number)[] {
+	getXDomain(targets: IData[]): (Date | number)[] {
 		const $$ = this;
-		const {axis, scale: {x}} = $$;
+		const {axis, config, scale: {x}} = $$;
+		const isInverted = config.axis_x_inverted;
 		const domain = [
 			$$.getXDomainMinMax(targets, "min"),
 			$$.getXDomainMinMax(targets, "max")
@@ -294,15 +575,19 @@ export default {
 			}
 
 			if (firstX || firstX === 0) {
-				min = isTimeSeries ? new Date(firstX.getTime() - padding.left) : firstX - padding.left;
+				min = isTimeSeries ?
+					new Date(firstX.getTime() - padding.left) :
+					firstX - padding.left;
 			}
 
 			if (lastX || lastX === 0) {
-				max = isTimeSeries ? new Date(lastX.getTime() + padding.right) : lastX + padding.right;
+				max = isTimeSeries ?
+					new Date(lastX.getTime() + padding.right) :
+					lastX + padding.right;
 			}
 		}
 
-		return [min, max];
+		return isInverted ? [max, min] : [min, max];
 	},
 
 	updateXDomain(targets, withUpdateXDomain, withUpdateOrgXDomain, withTrim, domain) {
@@ -311,10 +596,10 @@ export default {
 		const zoomEnabled = config.zoom_enabled;
 
 		if (withUpdateOrgXDomain) {
-			x.domain(domain || sortValue($$.getXDomain(targets)));
+			x.domain(domain || sortValue($$.getXDomain(targets), !config.axis_x_inverted));
 			org.xDomain = x.domain();
 
-			zoomEnabled && $$.zoom.updateScaleExtent();
+			// zoomEnabled && $$.zoom.updateScaleExtent();
 
 			subX.domain(x.domain());
 			$$.brush?.scale(subX);
@@ -322,9 +607,14 @@ export default {
 
 		if (withUpdateXDomain) {
 			const domainValue = domain || (!$$.brush || brushEmpty($$)) ?
-				org.xDomain : getBrushSelection($$).map(subX.invert);
+				org.xDomain :
+				getBrushSelection($$).map(subX.invert);
 
 			x.domain(domainValue);
+			// zoomEnabled && $$.zoom.updateScaleExtent();
+		}
+
+		if (withUpdateOrgXDomain || withUpdateXDomain) {
 			zoomEnabled && $$.zoom.updateScaleExtent();
 		}
 
@@ -334,16 +624,24 @@ export default {
 		return x.domain();
 	},
 
+	/**
+	 * Trim x domain when given domain surpasses the range
+	 * @param {Array} domain Domain value
+	 * @returns {Array} Trimed domain if given domain is out of range
+	 * @private
+	 */
 	trimXDomain(domain) {
-		const zoomDomain = this.getZoomDomain();
+		const $$ = this;
+		const isInverted = $$.config.axis_x_inverted;
+		const zoomDomain = $$.getZoomDomain();
 		const [min, max] = zoomDomain;
 
-		if (domain[0] <= min) {
+		if (isInverted ? domain[0] >= min : domain[0] <= min) {
 			domain[1] = +domain[1] + (min - domain[0]);
 			domain[0] = min;
 		}
 
-		if (max <= domain[1]) {
+		if (isInverted ? domain[1] <= max : domain[1] >= max) {
 			domain[0] = +domain[0] - (domain[1] - max);
 			domain[1] = max;
 		}
@@ -352,24 +650,53 @@ export default {
 	},
 
 	/**
-	 * Get zoom domain
+	 * Get subchart/zoom domain
+	 * @param {string} type "subX" or "zoom"
+	 * @param {boolean} getCurrent Get current domain if true
 	 * @returns {Array} zoom domain
 	 * @private
 	 */
-	getZoomDomain(): [number|Date, number|Date] {
+	getZoomDomain(type: "subX" | "zoom" = "zoom", getCurrent = false): TDomainRange {
 		const $$ = this;
-		const {config, org} = $$;
-		let [min, max] = org.xDomain;
+		const {config, scale, org} = $$;
+		let [min, max] = getCurrent && scale[type] ? scale[type].domain() : org.xDomain;
 
-		if (isDefined(config.zoom_x_min)) {
-			min = getMinMax("min", [min, config.zoom_x_min]);
-		}
+		if (type === "zoom") {
+			if (isDefined(config.zoom_x_min)) {
+				min = getMinMax("min", [min, config.zoom_x_min]);
+			}
 
-		if (isDefined(config.zoom_x_max)) {
-			max = getMinMax("max", [max, config.zoom_x_max]);
+			if (isDefined(config.zoom_x_max)) {
+				max = getMinMax("max", [max, config.zoom_x_max]);
+			}
 		}
 
 		return [min, max];
+	},
+
+	/**
+	 * Return zoom domain from given domain
+	 * - 'category' type need to add offset to original value
+	 * @param {Array} domainValue domain value
+	 * @returns {Array} Zoom domain
+	 * @private
+	 */
+	getZoomDomainValue<T = TDomainRange>(domainValue: T): T | undefined {
+		const $$ = this;
+		const {config, axis} = $$;
+
+		if (axis.isCategorized() && Array.isArray(domainValue)) {
+			const isInverted = config.axis_x_inverted;
+
+			// need to add offset to original value for 'category' type
+			const domain = domainValue.map((v, i) =>
+				Number(v) + (i === 0 ? +isInverted : +!isInverted)
+			);
+
+			return domain as T;
+		}
+
+		return domainValue;
 	},
 
 	/**
@@ -380,7 +707,7 @@ export default {
 	 * @returns {number}
 	 * @private
 	 */
-	convertPixelToScale(type: "x"|"y", pixels: number, domainLength: number): number {
+	convertPixelToScale(type: "x" | "y", pixels: number, domainLength: number): number {
 		const $$ = this;
 		const {config, state} = $$;
 		const isRotated = config.axis_rotated;
@@ -393,5 +720,40 @@ export default {
 		}
 
 		return domainLength * (pixels / state[length]);
+	},
+
+	/**
+	 * Check if the given domain is within subchart/zoom range
+	 * @param {Array} domain Target domain value
+	 * @param {Array} current Current subchart/zoom domain value
+	 * @param {Array} range subchart/zoom range value
+	 * @returns {boolean}
+	 * @private
+	 */
+	withinRange<T = TDomainRange>(domain: T, current = [0, 0], range: T): boolean {
+		const $$ = this;
+		const isInverted = $$.config.axis_x_inverted;
+		const [min, max] = range as number[];
+
+		if (Array.isArray(domain)) {
+			const lo = isInverted ? domain[1] : domain[0];
+			const hi = isInverted ? domain[0] : domain[1];
+
+			if (lo < hi) {
+				return domain.every((v, i) =>
+					(
+						i === 0 ?
+							(
+								isInverted ? +v <= min : +v >= min
+							) :
+							(
+								isInverted ? +v >= max : +v <= max
+							)
+					) && !(domain.every((v, i) => v === current[i]))
+				);
+			}
+		}
+
+		return false;
 	}
 };

@@ -2,6 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import type {DataRegionsType} from "../../../../types/types";
+
 /**
  * Axis based chart data config options
  */
@@ -24,7 +26,7 @@ export default {
 	data_xs: {},
 
 	/**
-	 * Set a format specifier to parse string specifed as x.
+	 * Set a format specifier to parse string specified as x.
 	 * @name data․xFormat
 	 * @memberof Options
 	 * @type {string}
@@ -44,7 +46,7 @@ export default {
 	 *        type: "timeseries"
 	 *    }
 	 * }
-	 * @see [D3's time specifier](https://github.com/d3/d3-time-format#locale_format)
+	 * @see [D3's time specifier](https://d3js.org/d3-time-format#locale_format)
 	 */
 	data_xFormat: "%Y-%m-%d",
 
@@ -63,13 +65,22 @@ export default {
 
 	/**
 	 * Sort on x axis.
+	 * - **NOTE:** This option works for lineish(area/line/spline/step) types only.
 	 * @name data․xSort
 	 * @memberof Options
 	 * @type {boolean}
 	 * @default true
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Data.DataXSort)
 	 * @example
 	 * data: {
-	 *   xSort: false
+	 *   xSort: false,
+	 *   x: "x",
+	 *   columns: [
+	 *     // The line graph will start to be drawn following the x axis sequence
+	 *     // Below data, will start drawing x=1: 200, x=2: 300, x=3: 100
+	 *     ["x", 3, 1, 2],
+	 *     ["data1", 100, 200, 300]
+	 *   ]
 	 * }
 	 */
 	data_xSort: true,
@@ -89,7 +100,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	data_axes: <{[key: string]: string}> {},
+	data_axes: <Record<string, string>>{},
 
 	/**
 	 * Define regions for each data.<br>
@@ -97,8 +108,12 @@ export default {
 	 * - The object type should be as:
 	 *   - start {number}: Start data point number. If not set, the start will be the first data point.
 	 *   - [end] {number}: End data point number. If not set, the end will be the last data point.
-	 *   - [style.dasharray="2 2"] {object}: The first number specifies a distance for the filled area, and the second a distance for the unfilled area.
-	 * - **NOTE:** Currently this option supports only line chart and dashed style. If this option specified, the line will be dashed only in the regions.
+	 *   - [style.dasharray="2 2"] {string}: The first number specifies a distance for the filled area, and the second a distance for the unfilled area.
+	 * - **NOTE:**
+	 *   - Supports only line type.
+	 *   - `start` and `end` values should be in the exact x value range.
+	 *   - Dashes will be applied using `stroke-dasharray` css property when data doesn't contain nullish value(or nullish value with `line.connectNull=true` set).
+	 *   - Dashes will be applied via path command when data contains nullish value.
 	 * @name data․regions
 	 * @memberof Options
 	 * @type {object}
@@ -119,25 +134,50 @@ export default {
 	 *   }
 	 * }
 	 */
-	data_regions: <{start?: number; end?: number; style?: {dasharray: string;}}[]> {},
+	data_regions: <DataRegionsType>{},
 
 	/**
 	 * Set the stacking to be normalized
 	 * - **NOTE:**
 	 *   - For stacking, '[data.groups](#.data%25E2%2580%25A4groups)' option should be set
 	 *   - y Axis will be set in percentage value (0 ~ 100%)
-	 *   - Must have postive values
+	 *   - Must have positive values
+	 *   - Data not in any group will not be normalized when using perGroup option
 	 * @name data․stack․normalize
 	 * @memberof Options
-	 * @type {boolean}
+	 * @type {boolean|object}
 	 * @default false
-	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Data.DataStackNormalized)
+	 * @see [Demo: Data Stack Normalized](https://naver.github.io/billboard.js/demo/#Data.DataStackNormalized)
+	 * @see [Demo: Data Stack Normalized per Group](https://naver.github.io/billboard.js/demo/#Data.DataStackNormalizedGroup)
 	 * @example
 	 * data: {
 	 *   stack: {
+	 *      // Normalize all grouped data together (all groups combined to 0-100%)
 	 *      normalize: true
+	 *
+	 *      // Normalize per group (each group independently becomes 0-100%)
+	 *      // Data not in any group will display with their original values.
+	 *      // If non-grouped data shares the same axis (e.g., y), it will be
+	 *      // displayed on the 0-100 absolute scale. To display original values,
+	 *      // assign them to a separate axis (e.g., y2).
+	 *      normalize: {
+	 *        perGroup: true
+	 *      }
+	 *   },
+	 *   groups: [
+	 *     ["data1", "data2"]  // This group will be normalized to 0-100%
+	 *   ],
+	 *   // data3 is not in any group, so it displays original values
+	 *   // Assign it to y2 axis to use a separate scale
+	 *   axes: {
+	 *     data3: "y2"
+	 *   }
+	 * },
+	 * axis: {
+	 *   y2: {
+	 *     show: true
 	 *   }
 	 * }
 	 */
-	data_stack_normalize: false
+	data_stack_normalize: <boolean | {perGroup?: boolean}>false
 };

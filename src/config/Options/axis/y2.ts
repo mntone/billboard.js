@@ -49,7 +49,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_type: <"indexed"|"log"|"timeseries"> "indexed",
+	axis_y2_type: <"indexed" | "log" | "timeseries">"indexed",
 
 	/**
 	 * Set max value of y2 axis.
@@ -64,7 +64,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_max: <number|undefined> undefined,
+	axis_y2_max: <number | undefined>undefined,
 
 	/**
 	 * Set min value of y2 axis.
@@ -79,15 +79,16 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_min: <number|undefined> undefined,
+	axis_y2_min: <number | undefined>undefined,
 
 	/**
 	 * Change the direction of y2 axis.<br><br>
-	 * If true set, the direction will be from the top to the bottom.
+	 * If true set, the direction will be `top -> bottom`.
 	 * @name axis․y2․inverted
 	 * @memberof Options
 	 * @type {boolean}
 	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.InvertedAxis)
 	 * @example
 	 * axis: {
 	 *   y2: {
@@ -110,7 +111,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_center: <number|undefined> undefined,
+	axis_y2_center: <number | undefined>undefined,
 
 	/**
 	 * Show y2 axis inside of the chart.
@@ -151,14 +152,14 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_label: <string|object> {},
+	axis_y2_label: <string | object>{},
 
 	/**
 	 * Set formatter for y2 axis tick text.<br><br>
 	 * This option works in the same way as axis.y.format.
 	 * @name axis․y2․tick․format
 	 * @memberof Options
-	 * @type {Function}
+	 * @type {function}
 	 * @default undefined
 	 * @example
 	 * axis: {
@@ -170,14 +171,14 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_tick_format: <Function|undefined> undefined,
+	axis_y2_tick_format: <Function | undefined>undefined,
 
 	/**
 	 * Setting for culling ticks.
 	 * - `true`: the ticks will be culled, then only limited tick text will be shown.<br>
 	 *   This option does not hide the tick lines by default, if want to hide tick lines, set `axis.y2.tick.culling.lines=false`.
 	 * - `false`: all of ticks will be shown.<br><br>
-	 * The number of ticks to be shown can be chaned by `axis.y2.tick.culling.max`.
+	 * The number of ticks to be shown can be changed by `axis.y2.tick.culling.max`.
 	 * @name axis․y2․tick․culling
 	 * @memberof Options
 	 * @type {boolean}
@@ -232,6 +233,44 @@ export default {
 	axis_y2_tick_culling_lines: true,
 
 	/**
+	 * Control culling start point to be reversed. If set to true, the culling will be started from the end to start.
+	 * - **NOTE:** This option is only available when `axis.y2.tick.culling` is set to truthy value.
+	 * @name axis․y2․tick․culling․reverse
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @example
+	 * axis: {
+	 *   y2: {
+	 *     tick: {
+	 *       culling: {
+	 *           reverse: true,
+	 *       }
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_y2_tick_culling_reverse: false,
+
+	/**
+	 * Set the axis tick line to be positioned inside of the chart.
+	 * @name axis․y2․tick․inner
+	 * @memberof Options
+	 * @type {boolean}
+	 * @default false
+	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Axis.TickInner)
+	 * @example
+	 * axis: {
+	 *   y2: {
+	 *     tick: {
+	 *       inner: true
+	 *     }
+	 *   }
+	 * }
+	 */
+	axis_y2_tick_inner: false,
+
+	/**
 	 * Show or hide y2 axis outer tick.
 	 * @name axis․y2․tick․outer
 	 * @memberof Options
@@ -252,7 +291,7 @@ export default {
 	 * Set y2 axis tick values manually.
 	 * @name axis․y2․tick․values
 	 * @memberof Options
-	 * @type {Array|Function}
+	 * @type {Array|function}
 	 * @default null
 	 * @example
 	 * axis: {
@@ -268,7 +307,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_tick_values: <number[]|(()=> number[])|null> null,
+	axis_y2_tick_values: <number[] | (() => number[]) | null>null,
 
 	/**
 	 * Rotate y2 axis tick text.
@@ -305,7 +344,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_tick_count: <number|undefined> undefined,
+	axis_y2_tick_count: <number | undefined>undefined,
 
 	/**
 	 * Show or hide y2 axis tick line.
@@ -343,7 +382,7 @@ export default {
 	 *   }
 	 * }
 	 */
-	axis_y2_tick_stepSize: <number|null> null,
+	axis_y2_tick_stepSize: <number | null>null,
 
 	/**
 	 * Show or hide y2 axis tick text.
@@ -411,7 +450,7 @@ export default {
 	 *     padding: 10
 	 * }
 	 */
-	axis_y2_padding: <number|{top?: number; bottom?: number;}> {},
+	axis_y2_padding: <number | {top?: number, bottom?: number}>{},
 
 	/**
 	 * Set default range of y2 axis.<br><br>

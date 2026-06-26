@@ -2,26 +2,44 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {
-	select as d3Select,
-	selectAll as d3SelectAll
-} from "d3-selection";
+import {select as d3Select, selectAll as d3SelectAll} from "d3-selection";
+import type {d3Selection} from "../../../types/types";
 import {$AXIS, $COMMON, $FOCUS, $GRID} from "../../config/classes";
-import {isArray, isValue} from "../../module/util";
+import {AXIS_DEFAULT_TICK_COUNT} from "../../config/const";
+import {getPointer, isArray, isValue} from "../../module/util";
+import type {IDataRow} from "../data/IData";
 
 // Grid position and text anchor helpers
-const getGridTextAnchor = d => isValue(d.position) || "end";
-const getGridTextDx = d => (d.position === "start" ? 4 : (d.position === "middle" ? 0 : -4));
+const GRID_FOCUS_SELECTOR = `line.${$FOCUS.xgridFocus}, line.${$FOCUS.ygridFocus}`;
+const _getGridTextAnchor = d => isValue(d.position) || "end";
+const _getGridTextDx = d => (d.position === "start" ? 4 : (d.position === "middle" ? 0 : -4));
+
+/**
+ * Get current grid focus line selection.
+ * @param {object} $$ ChartInternal context
+ * @returns {d3.selection} Grid focus line selection
+ * @private
+ */
+function _getGridFocusEl($$): d3Selection {
+	const {state, $el: {main}} = $$;
+	const cached = state._gridFocusEl;
+	const mainNode = main.node();
+	const cachedNodes = cached?.nodes?.() || [];
+
+	return cachedNodes.length && cachedNodes.every(node => mainNode?.contains(node)) ?
+		cached :
+		(state._gridFocusEl = main.selectAll(GRID_FOCUS_SELECTOR));
+}
 
 /**
  * Get grid text x value getter function
  * @param {boolean} isX Is x Axis
  * @param {number} width Width value
  * @param {number} height Height value
- * @returns {Function}
+ * @returns {function}
  * @private
  */
-function getGridTextX(isX, width, height): Function {
+function _getGridTextX(isX, width, height): Function {
 	return d => {
 		let x = isX ? 0 : width;
 
@@ -41,13 +59,13 @@ function getGridTextX(isX, width, height): Function {
  * @param {string} type Type
  * @private
  */
-function smoothLines(el, type: string): void {
+function _smoothLines(el, type: string): void {
 	if (type === "grid") {
 		el.each(function() {
 			const g = d3Select(this);
 
 			["x1", "x2", "y1", "y2"]
-				.forEach(v => g.attr(v, Math.ceil(+g.attr(v))));
+				.forEach(v => g.attr(v, +g.attr(v)));
 		});
 	}
 }
@@ -72,7 +90,8 @@ export default {
 		const {config, state: {clip}, $el} = $$;
 
 		if (config.grid_x_lines.length || config.grid_y_lines.length) {
-			$el.gridLines.main = $el.main.insert("g", `.${$COMMON.chart}${config.grid_lines_front ? " + *" : ""}`)
+			$el.gridLines.main = $el.main.insert("g",
+				`.${$COMMON.chart}${config.grid_lines_front ? " + *" : ""}`)
 				.attr("clip-path", clip.pathGrid)
 				.attr("class", `${$GRID.grid} ${$GRID.gridLines}`);
 
@@ -89,21 +108,24 @@ export default {
 		const isRotated = config.axis_rotated;
 		const xgridData = $$.generateGridData(config.grid_x_type, scale.x);
 		const tickOffset = $$.axis.isCategorized() ? $$.axis.x.tickOffset() : 0;
-		const pos = d => (scale.zoom || scale.x)(d) + (
-			tickOffset * (isRotated ? -1 : 1)
-		);
+		const pos = d =>
+			(scale.zoom || scale.x)(d) + (
+				tickOffset * (isRotated ? -1 : 1)
+			);
 
-		state.xgridAttr = isRotated ? {
-			"x1": 0,
-			"x2": state.width,
-			"y1": pos,
-			"y2": pos,
-		} : {
-			"x1": pos,
-			"x2": pos,
-			"y1": 0,
-			"y2": state.height,
-		};
+		state.xgridAttr = isRotated ?
+			{
+				x1: 0,
+				x2: state.width,
+				y1: pos,
+				y2: pos
+			} :
+			{
+				x1: pos,
+				x2: pos,
+				y1: 0,
+				y2: state.height
+			};
 
 		grid.x = main.select(`.${$GRID.xgrids}`)
 			.selectAll(`.${$GRID.xgrid}`)
@@ -121,22 +143,26 @@ export default {
 				const grid = d3Select(this);
 
 				Object.keys(state.xgridAttr).forEach(id => {
-					grid.attr(id, state.xgridAttr[id])
-						.style("opacity", () => (
-							grid.attr(isRotated ? "y1" : "x1") === (isRotated ? state.height : 0) ?
-								"0" : null
-						));
+					grid.attr(id, state.xgridAttr[id]);
 				});
+
+				// hide the gridline overlapping the axis line (attr() returns a string)
+				grid.style("opacity", () => (
+					+grid.attr(isRotated ? "y1" : "x1") === (isRotated ? state.height : 0) ?
+						"0" :
+						null
+				));
 			});
 		}
 	},
 
 	updateYGrid(): void {
 		const $$ = this;
-		const {config, state, $el: {grid, main}} = $$;
+		const {axis, config, scale, state, $el: {grid, main}} = $$;
 		const isRotated = config.axis_rotated;
-		const gridValues = $$.axis.y.tickValues() || $$.scale.y.ticks(config.grid_y_ticks);
-		const pos = d => Math.ceil($$.scale.y(d));
+		const pos = d => scale.y(d);
+		const gridValues = axis.y.getGeneratedTicks(config.grid_y_ticks) ||
+			$$.scale.y.ticks(config.grid_y_ticks);
 
 		grid.y = main.select(`.${$GRID.ygrids}`)
 			.selectAll(`.${$GRID.ygrid}`)
@@ -155,7 +181,7 @@ export default {
 			.attr("y1", isRotated ? 0 : pos)
 			.attr("y2", isRotated ? state.height : pos);
 
-		smoothLines(grid.y, "grid");
+		_smoothLines(grid.y, "grid");
 	},
 
 	updateGrid() {
@@ -168,109 +194,64 @@ export default {
 		grid.main.style("visibility", $$.hasArcType() ? "hidden" : null);
 
 		$$.hideGridFocus();
-		$$.updateXGridLines();
-		$$.updateYGridLines();
+		$$.updateGridLines("x");
+		$$.updateGridLines("y");
 	},
 
 	/**
-	 * Update X Grid lines
+	 * Update Grid lines
+	 * @param {string} type x | y
 	 * @private
 	 */
-	updateXGridLines(): void {
+	updateGridLines(type: "x" | "y"): void {
 		const $$ = this;
 		const {config, $el: {gridLines, main}, $T} = $$;
 		const isRotated = config.axis_rotated;
+		const isX = type === "x";
 
-		config.grid_x_show && $$.updateXGrid();
+		config[`grid_${type}_show`] && $$[`update${type.toUpperCase()}Grid`]();
 
-		let xLines = main.select(`.${$GRID.xgridLines}`)
-			.selectAll(`.${$GRID.xgridLine}`)
-			.data(config.grid_x_lines);
+		let lines = main.select(`.${$GRID[`${type}gridLines`]}`)
+			.selectAll(`.${$GRID[`${type}gridLine`]}`)
+			.data(config[`grid_${type}_lines`]);
 
 		// exit
-		$T(xLines.exit())
+		$T(lines.exit())
 			.style("opacity", "0")
 			.remove();
 
 		// enter
-		const xgridLine = xLines.enter().append("g");
+		const gridLine = lines.enter().append("g");
 
-		xgridLine.append("line")
+		gridLine.append("line")
 			.style("opacity", "0");
 
-		xgridLine.append("text")
-			.attr("transform", isRotated ? "" : "rotate(-90)")
-			.attr("dy", -5)
-			.style("opacity", "0");
+		lines = gridLine.merge(lines);
 
-		xLines = xgridLine.merge(xLines);
+		lines.each(function(d) {
+			const g = d3Select(this);
 
-		$T(xLines
-			.attr("class", d => `${$GRID.xgridLine} ${d.class || ""}`.trim())
+			if (g.select("text").empty() && d.text) {
+				g.append("text")
+					.style("opacity", "0");
+			}
+		});
+
+		$T(lines
+			.attr("class", d => `${$GRID[`${type}gridLine`]} ${d.class || ""}`.trim())
 			.select("text")
-			.attr("text-anchor", getGridTextAnchor)
-			.attr("dx", getGridTextDx)
-		)
-			.text(d => d.text)
-			.style("opacity", null);
+			.attr("text-anchor", _getGridTextAnchor)
+			.attr("transform",
+				() => (isX ?
+					(isRotated ? null : "rotate(-90)") :
+					(isRotated ? "rotate(-90)" : null)))
+			.attr("dx", _getGridTextDx)
+			.attr("dy", -5))
+			.text(function(d) {
+				return d.text ?? this.remove();
+			});
 
-		gridLines.x = xLines;
-	},
-
-	/**
-	 * Update Y Grid lines
-	 * @private
-	 */
-	updateYGridLines(): void {
-		const $$ = this;
-		const {config, state: {width, height}, $el, $T} = $$;
-		const isRotated = config.axis_rotated;
-
-		config.grid_y_show && $$.updateYGrid();
-
-		let ygridLines = $el.main.select(`.${$GRID.ygridLines}`)
-			.selectAll(`.${$GRID.ygridLine}`)
-			.data(config.grid_y_lines);
-
-		// exit
-		$T(ygridLines.exit())
-			.style("opacity", "0")
-			.remove();
-
-		// enter
-		const ygridLine = ygridLines.enter().append("g");
-
-		ygridLine.append("line")
-			.style("opacity", "0");
-
-		ygridLine.append("text")
-			.attr("transform", isRotated ? "rotate(-90)" : "")
-			.style("opacity", "0");
-
-		ygridLines = ygridLine.merge(ygridLines);
-
-		// update
-		const yv = $$.yv.bind($$);
-
-		$T(ygridLines
-			.attr("class", d => `${$GRID.ygridLine} ${d.class || ""}`.trim())
-			.select("line"))
-			.attr("x1", isRotated ? yv : 0)
-			.attr("x2", isRotated ? yv : width)
-			.attr("y1", isRotated ? 0 : yv)
-			.attr("y2", isRotated ? height : yv)
-			.style("opacity", null);
-
-		$T(ygridLines.select("text")
-			.attr("text-anchor", getGridTextAnchor)
-			.attr("dx", getGridTextDx))
-			.attr("dy", -5)
-			.attr("x", getGridTextX(isRotated, width, height))
-			.attr("y", yv)
-			.text(d => d.text)
-			.style("opacity", null);
-
-		$el.gridLines.y = ygridLines;
+		gridLines[type] = lines;
 	},
 
 	redrawGrid(withTransition: boolean): any[] {
@@ -282,32 +263,52 @@ export default {
 			$T
 		} = $$;
 		const xv = $$.xv.bind($$);
+		const yv = $$.yv.bind($$);
 
-		let lines = gridLines.x.select("line");
-		let texts = gridLines.x.select("text");
+		let xLines = gridLines.x.select("line");
+		let xTexts = gridLines.x.select("text");
 
-		lines = $T(lines, withTransition)
+		let yLines = gridLines.y.select("line");
+		let yTexts = gridLines.y.select("text");
+
+		xLines = $T(xLines, withTransition)
 			.attr("x1", isRotated ? 0 : xv)
 			.attr("x2", isRotated ? width : xv)
 			.attr("y1", isRotated ? xv : 0)
 			.attr("y2", isRotated ? xv : height);
 
-		texts = $T(texts, withTransition)
-			.attr("x", getGridTextX(!isRotated, width, height))
-			.attr("y", xv)
-			.text(d => d.text);
+		xTexts = $T(xTexts, withTransition)
+			.attr("x", _getGridTextX(!isRotated, width, height))
+			.attr("y", xv);
+
+		yLines = $T(yLines, withTransition)
+			.attr("x1", isRotated ? yv : 0)
+			.attr("x2", isRotated ? yv : width)
+			.attr("y1", isRotated ? 0 : yv)
+			.attr("y2", isRotated ? height : yv);
+
+		yTexts = $T(yTexts, withTransition)
+			.attr("x", _getGridTextX(isRotated, width, height))
+			.attr("y", yv);
 
 		return [
-			lines.style("opacity", null),
-			texts.style("opacity", null)
+			xLines.style("opacity", null),
+			xTexts.style("opacity", null),
+			yLines.style("opacity", null),
+			yTexts.style("opacity", null)
 		];
 	},
 
 	initFocusGrid(): void {
 		const $$ = this;
-		const {config, state: {clip}, $el} = $$;
+		const {config, state, state: {clip}, $el} = $$;
+
+		// Invalidate cached D3 selection in case grid is re-initialized
+		state._gridFocusEl = null;
 		const isFront = config.grid_front;
-		const className = `.${isFront && $el.gridLines.main ? $GRID.gridLines : $COMMON.chart}${isFront ? " + *" : ""}`;
+		const className = `.${isFront && $el.gridLines.main ? $GRID.gridLines : $COMMON.chart}${
+			isFront ? " + *" : ""
+		}`;
 
 		const grid = $el.main.insert("g", className)
 			.attr("clip-path", clip.pathGrid)
@@ -321,7 +322,14 @@ export default {
 		config.grid_y_show &&
 			grid.append("g").attr("class", $GRID.ygrids);
 
-		if (config.interaction_enabled && config.grid_focus_show) {
+		if (config.axis_tooltip) {
+			const axis = grid.append("g").attr("class", "bb-axis-tooltip");
+
+			axis.append("line").attr("class", "bb-axis-tooltip-x");
+			axis.append("line").attr("class", "bb-axis-tooltip-y");
+		}
+
+		if (config.interaction_enabled && config.grid_focus_show && !config.axis_tooltip) {
 			grid.append("g")
 				.attr("class", $FOCUS.xgridFocus)
 				.append("line")
@@ -337,6 +345,64 @@ export default {
 		}
 	},
 
+	showAxisGridFocus() {
+		const $$ = this;
+		const {config, format, state: {event, width, height}} = $$;
+		const isRotated = config.axis_rotated;
+
+		// get mouse event position
+		const [x, y] = getPointer(event, $$.$el.eventRect?.node());
+		const pos = {x, y};
+
+		for (const [axis, node] of Object.entries($$.$el.axisTooltip)) {
+			const attr = (axis === "x" && !isRotated) || (axis !== "x" && isRotated) ? "x" : "y";
+			const value = pos[attr];
+			let scaleText = $$.scale[axis]?.invert(value);
+
+			if (scaleText) {
+				scaleText = axis === "x" && $$.axis.isTimeSeries() ?
+					format.xAxisTick(scaleText) :
+					scaleText?.toFixed(2);
+
+				// set position & its text value based on position
+				(node as d3Selection)?.attr(attr, value)
+					.text(scaleText);
+			}
+		}
+
+		$$.$el.main.selectAll(
+			`line.bb-axis-tooltip-x, line.bb-axis-tooltip-y`
+		).style("visibility", null)
+			.each(function(d, i) {
+				const line = d3Select(this);
+
+				if (i === 0) {
+					line
+						.attr("x1", x)
+						.attr("x2", x)
+						.attr("y1", i ? 0 : height)
+						.attr("y2", i ? height : 0);
+				} else {
+					line
+						.attr("x1", i ? 0 : width)
+						.attr("x2", i ? width : 0)
+						.attr("y1", y)
+						.attr("y2", y);
+				}
+			});
+	},
+
+	hideAxisGridFocus() {
+		const $$ = this;
+
+		$$.$el.main.selectAll(
+			`line.${$AXIS.axisTooltipX}, line.${$AXIS.axisTooltipY}`
+		).style("visibility", "hidden");
+
+		Object.values($$.$el.axisTooltip)
+			.forEach((v: d3Selection) => v?.style("display", "none"));
+	},
+
 	/**
 	 * Show grid focus line
 	 * @param {Array} data Selected data
@@ -346,12 +412,20 @@ export default {
 		const $$ = this;
 		const {config, state: {width, height}} = $$;
 		const isRotated = config.axis_rotated;
-		const focusEl = $$.$el.main.selectAll(`line.${$FOCUS.xgridFocus}, line.${$FOCUS.ygridFocus}`);
 
-		const dataToShow = (data || [focusEl.datum()]).filter(d => d && isValue($$.getBaseValue(d)));
+		// Cache grid focus selection to avoid repeated DOM queries on mousemove
+		const focusEl = _getGridFocusEl($$);
+
+		const dataToShow: IDataRow[] = (data || [focusEl.datum()]).filter(d =>
+			d && isValue($$.getBaseValue(d))
+		);
 
 		// Hide when bubble/scatter/stanford plot exists
-		if (!config.tooltip_show || dataToShow.length === 0 || $$.hasType("bubble") || $$.hasArcType()) {
+		if (
+			!config.tooltip_show || dataToShow.length === 0 || (
+				!config.axis_x_forceAsSingle && $$.hasType("bubble")
+			) || $$.hasArcType()
+		) {
 			return;
 		}
 
@@ -377,7 +451,8 @@ export default {
 							pos.x, // y1
 							isEdge ? pos.y : width, // x2
 							pos.x // y2
-						] : [
+						] :
+						[
 							pos.x,
 							isEdge ? pos.y : null,
 							pos.x,
@@ -392,7 +467,8 @@ export default {
 							isEdge && !isY2 ? pos.x : null, // y1
 							pos.y, // x2
 							isEdge && isY2 ? pos.x : height // y2
-						] : [
+						] :
+						[
 							isEdge && isY2 ? pos.x : null,
 							pos.y,
 							isEdge && !isY2 ? pos.x : width,
@@ -404,18 +480,18 @@ export default {
 					.forEach((v, i) => el.attr(v, xy[i]));
 			});
 
-		smoothLines(focusEl, "grid");
+		_smoothLines(focusEl, "grid");
 		$$.showCircleFocus?.(data);
 	},
 
-	hideGridFocus(): void {
+	hideGridFocus(force = false): void {
 		const $$ = this;
-		const {state: {inputType, resizing}, $el: {main}} = $$;
+		const {state: {inputType, resizing}} = $$;
 
-		if (inputType === "mouse" || !resizing) {
-			main.selectAll(`line.${$FOCUS.xgridFocus}, line.${$FOCUS.ygridFocus}`)
-				.style("visibility", "hidden");
+		if (force || inputType === "mouse" || !resizing) {
+			const focusEl = _getGridFocusEl($$);
 
+			focusEl.style("visibility", "hidden");
 			$$.hideCircleFocus?.();
 		}
 	},
@@ -454,14 +530,14 @@ export default {
 		let gridData: Date[] = [];
 
 		if (type === "year") {
-			const xDomain = $$.getXDomain();
+			const xDomain = $$.getXDomain($$.data.targets);
 			const [firstYear, lastYear] = xDomain.map(v => v.getFullYear());
 
 			for (let i = firstYear; i <= lastYear; i++) {
 				gridData.push(new Date(`${i}-01-01 00:00:00`));
 			}
 		} else {
-			gridData = scale.ticks(10);
+			gridData = scale.ticks(AXIS_DEFAULT_TICK_COUNT);
 
 			if (gridData.length > tickNum) { // use only int
 				gridData = gridData.filter(d => String(d).indexOf(".") < 0);
@@ -472,17 +548,22 @@ export default {
 	},
 
 	getGridFilterToRemove(params): Function {
-		return params ? line => {
-			let found = false;
+		return params ?
+			line => {
+				let found = false;
 
-			(isArray(params) ? params.concat() : [params]).forEach(param => {
-				if ((("value" in param && line.value === param.value) || ("class" in param && line.class === param.class))) {
-					found = true;
-				}
-			});
+				(isArray(params) ? params.concat() : [params]).forEach(param => {
+					if (
+						(("value" in param && line.value === param.value) ||
+							("class" in param && line.class === param.class))
+					) {
+						found = true;
+					}
+				});
 
-			return found;
-		} : () => true;
+				return found;
+			} :
+			() => true;
 	},
 
 	removeGridLines(params, forX?: boolean): void {
@@ -502,5 +583,5 @@ export default {
 		const gridLines = `grid_${forX ? "x" : "y"}_lines`;
 
 		config[gridLines] = config[gridLines].filter(toShow);
-	},
+	}
 };

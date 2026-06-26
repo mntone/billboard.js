@@ -58,9 +58,17 @@ export default class Elements {
 			.select("line")
 			.transition()
 			.duration(duration)
-			.attr("x1", d => (isRotated ? yvCustom(d, "y1") : xvCustom(d, "x1")))
+			.attr("x1", d => {
+				const v = isRotated ? yvCustom(d, "y1") : xvCustom(d, "x1");
+
+				return v;
+			})
 			.attr("x2", d => (isRotated ? yvCustom(d, "y2") : xvCustom(d, "x2")))
-			.attr("y1", d => (isRotated ? xvCustom(d, "x1") : yvCustom(d, "y1")))
+			.attr("y1", d => {
+				const v = isRotated ? xvCustom(d, "x1") : yvCustom(d, "y1");
+
+				return v;
+			})
 			.attr("y2", d => (isRotated ? xvCustom(d, "x2") : yvCustom(d, "y2")))
 			.transition()
 			.style("opacity", null);
@@ -103,18 +111,27 @@ export default class Elements {
 			.select("polygon")
 			.transition()
 			.duration(duration)
-			.attr("points", d => d.points.map(value => [
-				isRotated ? yvCustom(value, "y") : xvCustom(value, "x"),
-				isRotated ? xvCustom(value, "x") : yvCustom(value, "y")
-			].join(",")).join(" "))
+			.attr("points", d =>
+				d.points.map(value =>
+					[
+						isRotated ? yvCustom(value, "y") : xvCustom(value, "x"),
+						isRotated ? xvCustom(value, "x") : yvCustom(value, "y")
+					].join(",")
+				).join(" "))
 			.transition()
 			.style("opacity", d => String(d.opacity ? d.opacity : 0.2));
 
 		stanfordRegion.select("text")
 			.transition()
 			.duration(duration)
-			.attr("x", d => (isRotated ? yvCustom(getCentroid(d.points), "y") : xvCustom(getCentroid(d.points), "x")))
-			.attr("y", d => (isRotated ? xvCustom(getCentroid(d.points), "x") : yvCustom(getCentroid(d.points), "y")))
+			.attr("x",
+				d => (isRotated ?
+					yvCustom(getCentroid(d.points), "y") :
+					xvCustom(getCentroid(d.points), "x")))
+			.attr("y",
+				d => (isRotated ?
+					xvCustom(getCentroid(d.points), "x") :
+					yvCustom(getCentroid(d.points), "y")))
 			.text(d => {
 				if (d.text) {
 					const {value, percentage} = countPointsInRegion(d.points);
@@ -146,7 +163,7 @@ export default class Elements {
 			value = config.axis_x_categories.indexOf(d.value);
 		}
 
-		return Math.ceil($$.scale.x(value));
+		return $$.scale.x(value);
 	}
 
 	yvCustom(d, xyValue): number {
@@ -154,6 +171,6 @@ export default class Elements {
 		const yScale = d.axis && d.axis === "y2" ? $$.scale.y2 : $$.scale.y;
 		const value = xyValue ? d[xyValue] : $$.getBaseValue(d);
 
-		return Math.ceil(yScale(value));
+		return yScale(value);
 	}
 }

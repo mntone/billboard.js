@@ -4,9 +4,21 @@
  */
 import CLASS from "../../config/classes";
 
+// Hoisted to module level to avoid recompilation on every getTargetSelectorSuffix() call
+const RE_SELECTOR_SUFFIX = /[\x00-\x20\x7F-\xA0\s?!@#$%^&*()_=+,.<>'":;\[\]\/|~`{}\\]/g; // eslint-disable-line no-control-regex
+
 export default {
 	generateClass(prefix: string, targetId: string): string {
-		return ` ${prefix} ${prefix + this.getTargetSelectorSuffix(targetId)}`;
+		const cache = this.state.generateClassCache;
+		const key = `${prefix}\0${targetId}`;
+		let cls = cache.get(key);
+
+		if (!cls) {
+			cls = ` ${prefix} ${prefix + this.getTargetSelectorSuffix(targetId)}`;
+			cache.set(key, cls);
+		}
+
+		return cls;
 	},
 
 	/**
@@ -18,7 +30,7 @@ export default {
 	 */
 	getClass(type: string, withShape: boolean): Function {
 		const isPlural = /s$/.test(type);
-		const useIdKey = /^(area|arc|line)s?$/.test(type);
+		const useIdKey = /^(area|arc|line|funnel|treemap)s?$/.test(type);
 		const key = isPlural ? "id" : "index";
 
 		return (d): string => {
@@ -77,32 +89,33 @@ export default {
 	},
 
 	classFocused(d): string {
-		return ` ${this.state.focusedTargetIds.indexOf(d.id) >= 0 ? CLASS.focused : ""}`;
+		return ` ${this.state.focusedTargetIds.has(d.id) ? CLASS.focused : ""}`;
 	},
 
 	classDefocused(d): string {
-		return ` ${this.state.defocusedTargetIds.indexOf(d.id) >= 0 ? CLASS.defocused : ""}`;
+		return ` ${this.state.defocusedTargetIds.has(d.id) ? CLASS.defocused : ""}`;
 	},
 
 	getTargetSelectorSuffix(targetId?: string | number): string {
 		const targetStr = targetId || targetId === 0 ? `-${targetId}` : "";
 
-		return targetStr.replace(/([\s?!@#$%^&*()_=+,.<>'":;\[\]\/|~`{}\\])/g, "-");
+		// replace control ascii(0 ~ 32) and extended ascii(127 ~ 160)
+		return targetStr.replace(RE_SELECTOR_SUFFIX, "-");
 	},
 
-	selectorTarget(id: string, prefix?: string): string {
-		const pfx = prefix || "";
+	selectorTarget(id: string, prefix = "", postfix = ""): string {
 		const target = this.getTargetSelectorSuffix(id);
 
 		// select target & circle
-		return `${pfx}.${CLASS.target + target}, ${pfx}.${CLASS.circles + target}`;
+		return `${prefix}.${CLASS.target + target} ${postfix}, ${prefix}.${
+			CLASS.circles + target
+		} ${postfix}`;
 	},
 
 	selectorTargets(idsValue, prefix: string): string[] | null {
 		const ids = idsValue || [];
 
-		return ids.length ?
-			ids.map(id => this.selectorTarget(id, prefix)) : null;
+		return ids.length ? ids.map(id => this.selectorTarget(id, prefix)) : null;
 	},
 
 	selectorLegend(id: string): string {
@@ -110,7 +123,6 @@ export default {
 	},
 
 	selectorLegends(ids): string[] | null {
-		return ids?.length ?
-			ids.map(id => this.selectorLegend(id)) : null;
-	},
+		return ids?.length ? ids.map(id => this.selectorLegend(id)) : null;
+	}
 };

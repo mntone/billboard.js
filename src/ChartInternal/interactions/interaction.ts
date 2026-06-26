@@ -2,68 +2,22 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {select as d3Select} from "d3-selection";
 import {drag as d3Drag} from "d3-drag";
+import {select as d3Select} from "d3-selection";
 import {$ARC, $AXIS, $COMMON, $SHAPE} from "../../config/classes";
 import {KEY} from "../../module/Cache";
-import {emulateEvent, getPointer, isNumber, isObject} from "../../module/util";
+import {
+	emulateEvent,
+	getBoundingRect,
+	getPointer,
+	getTransformCTM,
+	hasViewBox,
+	isNumber,
+	isObject
+} from "../../module/util";
+import type {IArcDataRow} from "../data/IData";
 
 export default {
-	selectRectForSingle(context, eventRect, index: number): void {
-		const $$ = this;
-		const {config, $el: {main}} = $$;
-		const isSelectionEnabled = config.data_selection_enabled;
-		const isSelectionGrouped = config.data_selection_grouped;
-		const isSelectable = config.data_selection_isselectable;
-		const isTooltipGrouped = config.tooltip_grouped;
-		const selectedData = $$.getAllValuesOnIndex(index);
-
-		if (isTooltipGrouped) {
-			$$.showTooltip(selectedData, context);
-			$$.showGridFocus?.(selectedData);
-
-			if (!isSelectionEnabled || isSelectionGrouped) {
-				return;
-			}
-		}
-
-		main.selectAll(`.${$SHAPE.shape}-${index}`)
-			.each(function() {
-				d3Select(this).classed($COMMON.EXPANDED, true);
-
-				if (isSelectionEnabled) {
-					eventRect.style("cursor", isSelectionGrouped ? "pointer" : null);
-				}
-
-				if (!isTooltipGrouped) {
-					$$.hideGridFocus?.();
-					$$.hideTooltip();
-
-					!isSelectionGrouped && $$.setExpand(index);
-				}
-			})
-			.filter(function(d) {
-				return $$.isWithinShape(this, d);
-			})
-			.call(selected => {
-				const d = selected.data();
-
-				if (isSelectionEnabled &&
-					(isSelectionGrouped || isSelectable?.bind($$.api)(d))
-				) {
-					eventRect.style("cursor", "pointer");
-				}
-
-				if (!isTooltipGrouped) {
-					$$.showTooltip(d, context);
-					$$.showGridFocus?.(d);
-					$$.unexpandCircles?.();
-
-					selected.each(d => $$.setExpand(index, d.id));
-				}
-			});
-	},
-
 	/**
 	 * Expand data shape/point
 	 * @param {number} index Index number
@@ -107,46 +61,63 @@ export default {
 	 * @param {number|object} d data object
 	 * @private
 	 */
-	setOverOut(isOver: boolean, d): void {
+	setOverOut(isOver: boolean, d: number | IArcDataRow): void {
 		const $$ = this;
-		const {config, state: {hasRadar}, $el: {main}} = $$;
-		const isArc = isObject(d);
+		const {config, state: {hasFunnel, hasRadar, hasTreemap}, $el: {main}} = $$;
+		const isArcishData = isObject(d);
 
 		// Call event handler
-		if (isArc || d !== -1) {
-			let callback = config[isOver ? "data_onover" : "data_onout"].bind($$.api);
+		if (isArcishData || d !== -1) {
+			const callback = config[isOver ? "data_onover" : "data_onout"].bind($$.api);
 
-			config.color_onover && $$.setOverColor(isOver, d, isArc);
+			config.color_onover && $$.setOverColor(isOver, d, isArcishData);
 
-			if (isArc) {
-				callback(d, main.select(`.${$ARC.arc}${$$.getTargetSelectorSuffix(d.id)}`).node());
+			if (isArcishData) {
+				const suffix = $$.getTargetSelectorSuffix((d as IArcDataRow).id);
+				const selector = hasFunnel || hasTreemap ?
+					`${$COMMON.target + suffix} .${$SHAPE.shape}` :
+					$ARC.arc + suffix;
+
+				callback(d, main.select(`.${selector}`).node());
 			} else if (!config.tooltip_grouped) {
-				let last = $$.cache.get(KEY.setOverOut) || [];
+				const last = $$.cache.get(KEY.setOverOut) || [];
 
-				const shape = main.selectAll(`.${$SHAPE.shape}-${d}`)
+				// select based on the index
+				const shapesAtIndex = main.selectAll(`.${$SHAPE.shape}-${d}`)
 					.filter(function(d) {
 						return $$.isWithinShape(this, d);
 					});
 
-				shape
-					.each(function(d) {
-						if (last.length === 0 || last.every(v => v !== this)) {
-							callback(d, this);
-							last.push(this);
-						}
-					});
+				// filter if has new selection
+				const shape = shapesAtIndex.filter(function() {
+					return last.every(v => v !== this);
+				});
 
-				if (last.length > 0 && shape.empty()) {
-					callback = config.data_onout.bind($$.api);
+				// call onout callback
+				if (
+					!isOver || shapesAtIndex.empty() || (
+						last.length === shape.size() && shape.nodes().every((v, i) => v !== last[i])
+					)
+				) {
+					while (last.length) {
+						const target = last.pop();
 
-					last.forEach(v => callback(d3Select(v).datum(), v));
-					last = [];
+						config.data_onout.bind($$.api)(d3Select(target).datum(), target);
+					}
 				}
+
+				// call onover callback
+				shape.each(function() {
+					if (isOver) {
+						callback(d3Select(this).datum(), this);
+						last.push(this);
+					}
+				});
 
 				$$.cache.add(KEY.setOverOut, last);
 			} else {
 				if (isOver) {
-					config.point_focus_only && hasRadar ?
+					hasRadar && $$.isPointFocusOnly() ?
 						$$.showCircleFocus($$.getAllValuesOnIndex(d, true)) :
 						$$.setExpand(d, null, true);
 				}
@@ -178,7 +149,7 @@ export default {
 
 	/**
 	 * Return draggable selection function
-	 * @returns {Function}
+	 * @returns {function}
 	 * @private
 	 */
 	getDraggableSelection(): Function {
@@ -189,16 +160,17 @@ export default {
 			d3Drag()
 				.on("drag", function(event) {
 					state.event = event;
-					$$.drag(getPointer(event, this));
+					$$.drag(getPointer(event, <SVGElement>this));
 				})
 				.on("start", function(event) {
 					state.event = event;
-					$$.dragstart(getPointer(event, this));
+					$$.dragstart(getPointer(event, <SVGElement>this));
 				})
 				.on("end", event => {
 					state.event = event;
 					$$.dragend();
-				}) : () => {};
+				}) :
+			() => {};
 	},
 
 	/**
@@ -208,38 +180,79 @@ export default {
 	 * @param {number} index Index of eventRect
 	 * @param {Array} mouse x and y coordinate value
 	 */
-	dispatchEvent(type: string, index: number, mouse): void {
+	dispatchEvent(type: string, index: number, mouse: [number, number]): void {
 		const $$ = this;
-		const {config, state: {eventReceiver, hasAxis, hasRadar}, $el: {eventRect, arcs, radar}} = $$;
-		const isMultipleX = $$.isMultipleX();
-		const element = (
-			hasRadar ? radar.axes.select(`.${$AXIS.axis}-${index} text`) : (
-				eventRect || arcs.selectAll(`.${$COMMON.target} path`).filter((d, i) => i === index)
+		const {
+			config,
+			state: {
+				eventReceiver,
+				hasAxis,
+				hasFunnel,
+				hasRadar,
+				hasTreemap
+			},
+			$el: {eventRect, funnel, radar, svg, treemap}
+		} = $$;
+		let element = (
+			((hasFunnel || hasTreemap) && eventReceiver.rect) ||
+			(hasRadar && radar.axes.select(`.${$AXIS.axis}-${index} text`)) || (
+				eventRect || $$.getArcElementByIdOrIndex?.(index)
 			)
-		).node();
+		)?.node?.();
 
-		let {width, left, top} = element.getBoundingClientRect();
+		if (element) {
+			const isMultipleX = $$.isMultipleX();
+			const isRotated = config.axis_rotated;
+			let {width, left, top} = getBoundingRect(element);
 
-		if (hasAxis && !hasRadar && !isMultipleX) {
-			const coords = eventReceiver.coords[index];
+			if (hasAxis && !hasRadar && !isMultipleX) {
+				const coords = eventReceiver.coords[index];
 
-			width = coords.w;
-			left += coords.x;
-			top += coords.y;
+				if (coords) {
+					width = coords.w;
+					left += coords.x;
+					top += coords.y;
+				} else {
+					width = 0;
+					left = 0;
+					top = 0;
+				}
+			}
+
+			let x = left + (mouse ? mouse[0] : 0) + (
+				isMultipleX || isRotated ? 0 : (width / 2)
+			);
+
+			// value 4, is to adjust coordinate value set from: scale.ts - updateScales(): $$.getResettedPadding(1)
+			let y = top + (mouse ? mouse[1] : 0) + (isRotated ? 4 : 0);
+
+			// eventRect doesn't exist for radar/funnel/treemap charts
+			if (hasViewBox(svg) && $$.$el.eventRect) {
+				const ctm = getTransformCTM($$.$el.eventRect.node(), x, y, false);
+
+				x = ctm.x;
+				y = ctm.y;
+			}
+
+			const params = {
+				screenX: x,
+				screenY: y,
+				clientX: x,
+				clientY: y,
+				bubbles: hasRadar // radar type needs to bubble up event
+			};
+
+			// for funnel and treemap event bound to <g> node
+			if (hasFunnel || hasTreemap) {
+				element = (funnel ?? treemap).node();
+			}
+
+			emulateEvent[/^(mouse|click)/.test(type) ? "mouse" : "touch"](
+				element,
+				type,
+				params
+			);
 		}
-
-		const x = left + (mouse ? mouse[0] : 0) + (
-			isMultipleX || config.axis_rotated ? 0 : (width / 2)
-		);
-		const y = top + (mouse ? mouse[1] : 0);
-		const params = {
-			screenX: x,
-			screenY: y,
-			clientX: x,
-			clientY: y
-		};
-
-		emulateEvent[/^(mouse|click)/.test(type) ? "mouse" : "touch"](element, type, params);
 	},
 
 	setDragStatus(isDragging: boolean): void {
@@ -252,9 +265,13 @@ export default {
 	 */
 	unbindZoomEvent(): void {
 		const $$ = this;
-		const {$el: {eventRect, zoomResetBtn}} = $$;
+		const {$el: {canvas, eventRect, svg, zoomResetBtn}} = $$;
 
 		eventRect?.on(".zoom wheel.zoom .drag", null);
+		canvas?.on(".zoom wheel.zoom .drag", null);
+
+		// remove the Safari wheel workaround listener bound in bindZoomOnEventRect()
+		svg?.on("wheel", null);
 
 		zoomResetBtn?.on("click", null)
 			.style("display", "none");
@@ -264,9 +281,9 @@ export default {
 	 * Unbind all attached events
 	 * @private
 	 */
-	unbindAllEvents():	void {
+	unbindAllEvents(): void {
 		const $$ = this;
-		const {$el: {arcs, eventRect, legend, region, svg}, brush} = $$;
+		const {$el: {arcs, eventRect, legend, region, svg, treemap}, brush} = $$;
 		const list = [
 			"wheel",
 			"click",
@@ -287,7 +304,15 @@ export default {
 		].join(" ");
 
 		// detach all possible event types
-		[svg, eventRect, region?.list, brush?.getSelection(), arcs?.selectAll("path"), legend?.selectAll("g")]
+		[
+			svg,
+			eventRect,
+			region?.list,
+			brush?.getSelection(),
+			arcs?.selectAll("path"),
+			legend?.selectAll("g"),
+			treemap
+		]
 			.forEach(v => v?.on(list, null));
 
 		$$.unbindZoomEvent?.();

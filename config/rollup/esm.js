@@ -1,5 +1,4 @@
 import {readdirSync} from "fs";
-import babel from '@rollup/plugin-babel';
 import typescript from "@rollup/plugin-typescript";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
@@ -26,9 +25,6 @@ const plugins = [
         runOnce: true
     }),
     resolve(),
-    babel({
-        babelHelpers: "runtime"
-    }),
     typescript(),
     replace({
         "__VERSION__": version,
@@ -37,6 +33,7 @@ const plugins = [
 ];
 
 const external = id => /^d3-/.test(id);
+const hasSideEffects = id => /[/\\]src[/\\]Chart[/\\]api[/\\]stubs\.ts$/.test(id);
 
 const bbPlugins = readdirSync(resolvePath("../src/Plugin/"), {
         withFileTypes: true
@@ -56,11 +53,20 @@ const bbPlugins = readdirSync(resolvePath("../src/Plugin/"), {
 
 export default [
     {
-        input: "src/index.esm.ts",
+        input: [
+            "src/index.esm.ts",
+            "src/index.canvas.ts"
+        ],
         output: {
-            file: `${distPath}/billboard.js`,
+            dir: distPath,
             format: "es",
+            preserveModules: true,
+            preserveModulesRoot: "src",
             banner: getBannerStr()
+        },
+        treeshake: {
+            moduleSideEffects: hasSideEffects,
+            propertyReadSideEffects: false
         },
         plugins,
         external

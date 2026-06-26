@@ -2,11 +2,11 @@
  * Copyright (c) 2021 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
+import type {IData} from "../../ChartInternal/data/IData";
 import {$COMMON} from "../../config/classes";
+import {getBoundingRect} from "../../module/util";
 import Plugin from "../Plugin";
 import Options from "./Options";
-import {IData} from "../../ChartInternal/data/IData";
-import {loadConfig} from "../../config/config";
 
 /**
  * Sparkline plugin.<br>
@@ -55,7 +55,6 @@ import {loadConfig} from "../../config/config";
  */
 export default class Sparkline extends Plugin {
 	static version = `0.0.1`;
-	private config;
 	private element;
 
 	constructor(options) {
@@ -66,7 +65,7 @@ export default class Sparkline extends Plugin {
 	}
 
 	$beforeInit(): void {
-		loadConfig.call(this, this.options);
+		this.loadConfig();
 
 		this.validate();
 		this.element = [].slice.call(document.querySelectorAll(this.config.selector));
@@ -207,7 +206,7 @@ export default class Sparkline extends Plugin {
 		const {$$} = this;
 		const {state: {eventReceiver}} = $$;
 
-		eventReceiver.rect = e.target.getBoundingClientRect();
+		eventReceiver.rect = getBoundingRect(e.target, true);
 	}
 
 	moveHandler(e): void {
@@ -221,6 +220,11 @@ export default class Sparkline extends Plugin {
 		}
 
 		$$.state.event = e;
+
+		if ($$.isPointFocusOnly?.() && d) {
+			$$.showCircleFocus?.([d]);
+		}
+
 		$$.setExpand(index, data.id, true);
 		$$.showTooltip([d], e.target);
 	}
@@ -229,7 +233,9 @@ export default class Sparkline extends Plugin {
 		const {$$} = this;
 
 		$$.state.event = e;
-		$$.unexpandCircles();
+
+		$$.isPointFocusOnly() ? $$.hideCircleFocus() : $$.unexpandCircles();
+
 		$$.hideTooltip();
 	}
 

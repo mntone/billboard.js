@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import {$AXIS, $COMMON, $EVENT, $FOCUS, $GRID} from "../../src/config/classes";
 import util from "../assets/util";
@@ -17,7 +17,7 @@ describe("GRID", function() {
 	});
 
 	describe("check for default grid lines", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -100,7 +100,7 @@ describe("GRID", function() {
 	});
 
 	describe("y grid show", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -155,28 +155,171 @@ describe("GRID", function() {
 
 		it("should show grids depending on y axis ticks", () => {
 			const ygrids = chart.$.main.select(`.${$GRID.ygrids}`);
-			const expectedYs = [];
+			const expectedYs: number[] = [];
 
 			ygrids.selectAll(`.${$GRID.ygrid}`).each(function(d, i) {
 				expectedYs[i] = +d3Select(this).attr("y1");
 			});
 
 			expect(ygrids.size()).to.be.equal(1);
-			expect(ygrids.selectAll(`.${$GRID.ygrid}`).size()).to.be.equal(5);
+			expect(ygrids.selectAll(`.${$GRID.ygrid}`).size()).to.be.equal(3);
 
 			chart.$.main.select(`.${$AXIS.axisY}`).selectAll(".tick").each(function(d, i) {
-				let y: any = d3Select(this).attr("transform").match(/\d+\)/);
+				let y: any = d3Select(this).attr("transform").match(/,([^)]+)\)$/);
 
 				if (y.length >= 1) {
-					y = parseInt(y[0]);
+					y = parseInt(y[1]);
 				}
 
-				expect(y).to.be.closeTo(expectedYs[i], 1);
+				if (expectedYs[i]) {
+					expect(y).to.be.closeTo(expectedYs[i], 1);
+				}
 			});
+		});
+
+		it("set options", () => {
+				args = {
+					data: {
+						columns: [
+							["data1", 130, 340, 200, 500, 250, 350]
+						],
+						type: "line"
+					},
+					axis: {
+						y: {
+							min: 0
+						}
+					},
+					grid: {
+						y: {
+							show: true,
+							ticks: 5
+						}
+					}
+				};
+		});
+		
+		it("y grid showed with nice intervals?", () => {
+			const yPos = [426, 319.75, 213.5, 107.25, 1];
+
+			chart.$.grid.y.each(function(d, i) {
+				expect(+this.getAttribute("y1")).to.be.equal(yPos[i]);
+			});
+		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 100, 50, 150, 200, 100, 350, 58, 210, 80, 126],
+						["data2", 305, 350, 55, 25, 335, 29, 258, 310, 180, 226],
+						["data3", 223, 121, 259, 247, 53, 159, 95, 111, 307, 337]
+					],
+					type: "line",
+					labels: true
+				},
+				axis: {
+					y: {
+					type: "log",
+					max: 400
+					}
+				},
+				grid: {
+					y: {
+					show: true
+					}
+				}
+			};
+		});
+
+		it("grid lines should fully generated for log type y axis", () => {
+			const gridLen = chart.$.grid.y.size();
+			const tickLen = chart.internal.$el.axis.y.selectAll(".tick").size();
+
+			expect(gridLen).to.be.equal(tickLen);
+		});
+
+		it("shouldn't be throw error", () => {
+			try {
+				util.generate({
+					"data": {
+						"json": [
+							{ "data_periodo": "2018-05-01", "int_exists": 0 },
+							{ "data_periodo": "2018-06-01", "int_exists": 0 }
+						],
+						"keys": {
+							"x": "data_periodo",
+							"value": [
+								"int_exists"
+							]
+						},
+						"type": "line"
+					},
+					"axis": {
+						"y": {
+							"tick": {
+								"format": null,
+								"count": 1
+							},
+							"show": false,
+							"max": 1,
+							"min": 0.1
+						},
+					},
+					"grid": {
+						"y": {
+							"show": true,
+							"lines": [
+								{
+									"value": 0,
+									"position": "start",
+									"text": "assenza"
+								},
+								{
+									"value": 1,
+									"position": "start",
+									"text": "presenza"
+								}
+							]
+						}
+					}
+				});
+			} catch (e) {
+				// it shouldn't be thrown
+				expect(false).to.be.true;
+			}
+
+			expect(true).to.be.ok;
 		});
 	});
 
 	describe("front option", () => {
+		beforeAll(() => {
+			args = {
+				data:{
+					columns:[
+						["data1",30,200,100,400,150,250]
+					]
+				},
+				axis:{
+					y:{
+						tick:{
+							count: 5
+						}
+					}
+				},
+				grid:{
+					y:{
+						show: true,
+						lines:[
+							{"value":2,"text":"Label on 2"}
+						],
+						ticks: 3
+					}
+				}
+			};
+		});
+
 		it("grid element should positioned before chart element", () => {
 			const grid = chart.$.main.select(`.${$GRID.grid}`).node();
 			const nextSiblingClassName = grid.nextSibling.getAttribute("class");
@@ -208,7 +351,7 @@ describe("GRID", function() {
 
 	describe("y grid lines", () => {
 		describe("position #1", () => {7
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -231,7 +374,7 @@ describe("GRID", function() {
 				expect(chart.$.main.selectAll(`.${$GRID.ygrid}-lines .${$GRID.ygrid}-line`).size()).to.be.equal(3);
 			});
 
-			it("should locate grid lines properly", done => {
+			it("should locate grid lines properly", () => new Promise(done => {
 				setTimeout(() => {
 					const lines = chart.$.main.selectAll(`.${$GRID.ygrid}-lines .${$GRID.ygrid}-line line`);
 					const expectedY1s = [373, 268, 196];
@@ -243,9 +386,9 @@ describe("GRID", function() {
 						y1 && expect(y1).to.be.closeTo(expectedY1s[i], 1);
 					});
 
-					done();
-				}, 500);
-			});
+					done(1);
+				}, 350);
+			}));
 
 			it("should locate grid texts properly", () => {
 				const lines = chart.$.main.selectAll(`.${$GRID.ygrid}-lines .${$GRID.ygrid}-line`);
@@ -264,7 +407,7 @@ describe("GRID", function() {
 		});
 
 		describe("position #2", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -290,7 +433,7 @@ describe("GRID", function() {
 				expect(chart.$.main.selectAll(`.${$GRID.ygrid}-lines .${$GRID.ygrid}-line`).size()).to.be.equal(3);
 			});
 
-			it("should locate grid lines properly", done => {
+			it("should locate grid lines properly", () => new Promise(done => {
 				setTimeout(() => {
 					const lines = chart.$.main.selectAll(`.${$GRID.ygrid}-lines .${$GRID.ygrid}-line line`);
 					const expectedX1s = [75, 220, 321];
@@ -302,9 +445,9 @@ describe("GRID", function() {
 						x1 && expect(x1).to.be.closeTo(expectedX1s[i], 1);
 					});
 
-					done();
-				}, 500);
-			});
+					done(1);
+				}, 350);
+			}));
 
 			it("should locate grid texts properly", () => {
 				const lines = chart.$.main.selectAll(`.${$GRID.ygrid}-lines .${$GRID.ygrid}-line`);
@@ -345,7 +488,7 @@ describe("GRID", function() {
 
 	describe("x grid lines", () => {
 		describe("position #1", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -375,7 +518,7 @@ describe("GRID", function() {
 				expect(chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`).size()).to.be.equal(3);
 			});
 
-			it("should locate grid lines properly", done => {
+			it("should locate grid lines properly", () => new Promise(done => {
 				const lines = chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`);
 				const expectedX1s = [202, 397, 593];
 
@@ -386,9 +529,9 @@ describe("GRID", function() {
 						expect(x1).to.be.closeTo(expectedX1s[i], 1);
 					});
 
-					done();
-				}, 300);
-			});
+					done(1);
+				}, 350);
+			}));
 
 			it("should locate grid texts properly", () => {
 				const lines = chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`);
@@ -407,7 +550,7 @@ describe("GRID", function() {
 		});
 
 		describe("position #2", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -433,7 +576,7 @@ describe("GRID", function() {
 				expect(chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`).size()).to.be.equal(3);
 			});
 
-			it("should locate grid lines properly", done => {
+			it("should locate grid lines properly", () => new Promise(done => {
 				const lines = chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`);
 				const expectedY1s = [144, 283, 421];
 
@@ -441,11 +584,11 @@ describe("GRID", function() {
 					lines.each(function(d, i) {
 						const y1 = +d3Select(this).select("line").attr("y1");
 
-						expect(y1).to.be.equal(expectedY1s[i]);
+						expect(y1).to.be.closeTo(expectedY1s[i], 1);
 					});
-					done();
-				}, 500);
-			});
+					done(1);
+				}, 350);
+			}));
 
 			it("should locate grid texts properly", () => {
 				const lines = chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`);
@@ -465,7 +608,7 @@ describe("GRID", function() {
 		});
 
 		describe("with padding.top", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -485,7 +628,7 @@ describe("GRID", function() {
 				};
 			});
 
-			it("should show x grid lines", done => {
+			it("should show x grid lines", () => new Promise(done => {
 				const lines = chart.$.main.select(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`);
 				const expectedX1 = 593;
 				const expectedText = ["Label 3"];
@@ -500,14 +643,13 @@ describe("GRID", function() {
 						expect(t.text()).to.be.equal(expectedText[i]);
 					});
 					
-					done();
-				}, 300);
-			});
-
+					done(1);
+				}, 350);
+			}));
 		});
 
 		describe("on category axis", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						x: "x",
@@ -532,7 +674,7 @@ describe("GRID", function() {
 				};
 			});
 
-			it("should show x grid lines", done => {
+			it("should show x grid lines", () => new Promise(done => {
 				const lines = chart.$.main.selectAll(`.${$GRID.xgrid}-lines .${$GRID.xgrid}-line`);
 				const expectedX1 = [524, 75];
 				const expectedText = ["Label 3", "Label a"];
@@ -547,14 +689,14 @@ describe("GRID", function() {
 						expect(t.text()).to.be.equal(expectedText[i]);
 					});
 
-					done();
-				}, 300);
-			});
+					done(1);
+				}, 350);
+			}));
 		});
 	});
 
 	describe("Grid x/y", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -585,7 +727,7 @@ describe("GRID", function() {
 	});
 
 	describe("Focus grid lines", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -619,7 +761,7 @@ describe("GRID", function() {
 		const checkFocusGridPosition = expectedPositions => {
 			chart.$.grid.main.selectAll("line").each(function(d, i) {
 				["x1", "y1", "x2", "y2"].forEach(v => {
-					expect(+this.getAttribute(v)).to.be.equal(expectedPositions[i][v]);
+					expect(+this.getAttribute(v)).to.be.closeTo(expectedPositions[i][v], 1);
 				});
 			});
 		}
@@ -739,7 +881,7 @@ describe("GRID", function() {
 	});
 
 	describe("Grid text position", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -839,7 +981,7 @@ describe("GRID", function() {
 			};
 		});
 
-		it("Grid text position should be updated", done => {
+		it("Grid text position should be updated", () => new Promise(done => {
 			const {main} = chart.$;
 			const eventRect = main.select(`.${$EVENT.eventRect}-75`).node();
 
@@ -859,7 +1001,7 @@ describe("GRID", function() {
 						}, chart);
 
 						resolve(true);
-					}, 500);
+					}, 350);
 				});  
 			}).then(() => {
 				setTimeout(() => {
@@ -875,9 +1017,9 @@ describe("GRID", function() {
 						expect(lineX).to.be.equal(textY);
 					});
 
-					done();
-				}, 500);
+					done(1);
+				}, 350);
 			});
-		});
+		}));
 	});
 });

@@ -5,6 +5,7 @@ const Types = {
         "area-spline",
         "area-spline-range",
         "area-step",
+        "area-step-range",
         "bar",
         "grouped-bar",
         "bubble",
@@ -13,19 +14,26 @@ const Types = {
         "spline",
         "step",
         "candlestick",
+        "treemap",
         "polar",
         "radar",
+        "funnel",
         "gauge",
         "gauge-multi",
         "gauge-stack-data",
+        "gauge-arc-length",
         "donut",
         "pie",
         "pie-inner-radius",
         "pie-outer-radius",
+        "pie-corner-radius",
+        "gauge-needle",
+        "donut-needle",
+        "range-text-donut",
+        "range-text-gauge",
         "normalized",
         "combination",
-        "multi-axes",
-        "gauge-arc-length",
+        "multi-axes"
     ],
     getRandom(min = 100, max = 1000) {
         return Math.random() * (max - min) + min;
@@ -50,8 +58,8 @@ const Types = {
                         data = [
                             data, // open
                             data + this.getRandom(50, 350), // high
-                            data - this.getRandom(50, 150), // low
-                            data + this.getRandom(50, 150)  // close
+                            data - this.getRandom(50, 130), // low
+                            data + this.getRandom(50, 200)  // close
                         ]
                     }
                     
@@ -66,6 +74,9 @@ const Types = {
     },
     getOptions: function() {
         return {
+            size: {
+                height: 150
+            },
             data: {
                 columns: []
             },
@@ -84,10 +95,10 @@ const Types = {
                 show: false
             },
             padding: {
-                top: 30,
+                mode: "fit",
+                left: 10,
                 right: 10,
-                bottom: 5,
-                left: 10
+                top: 35
             },
             point: {
                 r: 3.5
@@ -95,10 +106,21 @@ const Types = {
             bubble: {
                 maxR: 15
             },
+            funnel: {
+                neck: {
+                    width: {
+                        ratio: 0.3
+                    },
+                    height: {
+                        ratio: 0.35
+                    }
+                }
+            },
             gauge: {
                 title: "100%",
                 label: {
-                    extents: v => Math.round(v)
+                    extents: v => Math.round(v),
+                    ratio: 1
                 }
             },
             donut: {
@@ -109,7 +131,9 @@ const Types = {
             pie: {
                 innerRadius: {},
                 outerRadius: {},
-                label: {}
+                label: {
+                    ratio: 1
+                }
             },
             polar: {
                 label: {
@@ -169,6 +193,19 @@ const Types = {
                 type = "bar";
                 options.data.groups = [["data0", "data1"]];
 
+            } else if (type === "funnel") {
+                options.data.columns = [
+                    ["data0", 100],
+                    ["data1", 50],
+                    ["data2", 30]
+                ];
+
+                options.padding = {
+                    top: 30,
+                    left: 10,
+                    right: 10
+                };
+
             } else if (type === "gauge") {
                 options.data.columns = [["data0", 70]];
 
@@ -176,6 +213,29 @@ const Types = {
                 options.padding.top = 5;
 
             } else if (type === "candlestick") {
+
+            } else if (type === "treemap") {
+                options.data.columns = [
+                    ["data1", 250],
+                    ["data2", 200],
+                    ["data3", 300],
+                    ["data4", 150],
+                    ["data5", 100],
+                    ["data6", 70]
+                ];
+
+                options.data.labels = {
+                    colors: "#fff",
+                    centered: true
+                };
+
+                options.treemap = {
+                    label: {
+                    format: function(value, ratio, id) {
+                          return `${(ratio * 100).toFixed(1)}%`;
+                     }
+                  }
+                };
             
             } else if (type === "gauge-stack-data") {
                 type = "gauge";
@@ -212,7 +272,133 @@ const Types = {
                     data1: 65,
                     data2: 35
                 };
-                
+            } else if (type === "pie-corner-radius") {
+                type = "pie";
+                options.arc = {
+                    cornerRadius: 70
+                };
+                options.pie.label.show = false;
+                options.data.columns = [
+                    ["data1", 30],
+                    ["data2", 45],
+                    ["data3", 25],
+                    ["data4", 35],
+                    ["data5", 15],
+                    ["data6", 35]
+                ];
+            } else if (type === "gauge-needle") {
+                type = "gauge";
+
+                options.data.columns = [
+                    ["a", 20],
+                    ["b", 20],
+                    ["c", 20],
+                    ["d", 20],
+                    ["e", 20]
+                ];
+
+                options.arc = {
+                    needle: {
+                        show: true,
+                        length: 80,
+                        value: 83,
+                        top: {
+                            // rx and ry are the two radii of the ellipse;
+                            // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d#elliptical_arc_curve
+                            rx: 1,
+                            ry: 1,
+                            width: 1
+                          },
+                          bottom: {
+                            // rx and ry are the two radii of the ellipse;
+                            // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d#elliptical_arc_curve
+                            rx: 1,
+                            ry: 1,
+                            width: 10,
+                            len: 10
+                        }
+                    }
+                };
+
+                options.gauge = {
+                    width: 10,
+                    title: "{=NEEDLE_VALUE}%\n",
+                    label: {
+                      format: function(value, ratio, id) { return id; }
+                    }
+                };
+
+            } else if (type === "donut-needle") {
+                type = "donut";
+
+                options.data.columns = [
+                   	["data1", 10],
+                    ["data2", 10],
+                    ["data3", 10],
+                    ["data4", 10],
+                    ["data5", 10],
+                    ["data6", 10]
+                ];
+
+                options.arc = {
+                    needle: {
+                        show: true,
+                        length: 80,
+                        value: 35,
+                        color: "grey",
+                        path: function(length) {
+                            const len = length - 20;
+                            const width = 3;
+                            const path = `M 0 -${len + 20}
+                                L -10 -${len}
+                                L -${width} -${len}
+                                L -${width} 0 
+                                A 0 1 0 0 0 ${width} 0
+                                L ${width} -${len}
+                                L 10 -${len} Z`;
+
+                            return path;
+                        }
+                    }
+                };
+
+            } else if (type === "range-text-donut") {
+                type = "donut";
+
+                options.data.columns = [
+                    ["data1", 30],
+                    ["data2", 20],
+                    ["data3", 50]
+                ];
+
+                options.arc = {
+                    rangeText: {
+                        values: [25, 50, 75, 100],
+                        unit: "%"
+                    }
+                };
+
+            } else if (type === "range-text-gauge") {
+                type = "gauge";
+
+                options.data.columns = [
+                    ["data1", 30],
+                    ["data2", 20],
+                    ["data3", 50]
+                ];
+
+                options.arc = {
+                    rangeText: {
+                        values: [5, 10, 30, 50, 70, 83, 100],
+                    }
+                };
+                options.gauge = {
+                    label: {
+                        format: () => "",
+                        extents: () => ""
+                    }
+                };
+
             } else if (type === "combination") {
                 options.data.types = {
                     data0: "bar",
@@ -260,15 +446,24 @@ const Types = {
                 options.padding = {
                     top: 15, bottom: 0, left: 0, right: 0
                 };
+                
+                options.arc = {
+                    cornerRadius: 15
+                };
 
+                options.data.columns = [
+                    ["data", 77]
+                ];
                 options.data.labels = false;
                 options.gauge = {
-                    type: "multi",
+                    type: "single",
                     fullCircle: true,
-                    arcLength: 75,
+                    arcLength: 70,
+                    startingAngle: -2.2,
+                    width: 20,
                     label: {
-                        show: false
-                    }
+                        extents: function() { return ""; }
+                      },
                 };
             }
 
@@ -278,6 +473,10 @@ const Types = {
                     .classed("title", true)
                     .text(v);
             }
+
+        // if (type === "gauge") {
+        //     debugger;
+        // }
 
             bb.generate(options);
         });

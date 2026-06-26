@@ -2,8 +2,16 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {Data} from "./options";
-import {ArrayOrString, d3Selection, DataArray, DataItem, PrimitiveArray, TargetIds} from "./types";
+import {Data, RegionOptions} from "./options.js";
+import {
+	ArrayOrString,
+	d3Selection,
+	DataArray,
+	DataItem,
+	DataRegionsType,
+	PrimitiveArray,
+	TargetIds
+} from "./types.js";
 
 export interface Chart {
 	$: {
@@ -26,6 +34,11 @@ export interface Chart {
 		 * Main grouping element
 		 */
 		main: d3Selection;
+
+		/**
+		 * Needle element
+		 */
+		needle: d3Selection;
 
 		/**
 		 * Tooltip element
@@ -51,6 +64,11 @@ export interface Chart {
 		 * Arc element
 		 */
 		arc: d3Selection;
+
+		/**
+		 * Data point circle elements
+		 */
+		circles: d3Selection;
 
 		bar: {
 			/**
@@ -102,20 +120,20 @@ export interface Chart {
 		 * Update regions.
 		 * @param regions Regions will be replaced with this argument. The format of this argument is the same as regions.
 		 */
-		(regions: any[]): void;
+		(regions: RegionOptions[]): void;
 
 		/**
 		 * Add new region. This API adds new region instead of replacing like regions.
 		 * @param grids New region will be added. The format of this argument is the same as regions and it's possible to give an Object if only one region will be added.
 		 */
-		add(regions: any[] | {}): void;
+		add(regions: RegionOptions | RegionOptions[]): void;
 
 		/**
 		 * Remove regions. This API removes regions.
 		 * @param args This argument should include classes. If classes is given, the regions that have one of the specified classes will be removed. If args is not given, all of regions will be
 		 * removed.
 		 */
-		remove(args?: { value?: number | string; class?: string }): void;
+		remove(args?: { classes: string[] }): void;
 	};
 
 	data: {
@@ -133,7 +151,7 @@ export interface Chart {
 
 		/**
 		 * Get values of the data loaded in the chart.
-		 * @param targetIds This API returns the values of specified target. If this argument is not given, null will be retruned.
+		 * @param targetIds This API returns the values of specified target. If this argument is not given, null will be returned.
 		 */
 		values(targetIds?: ArrayOrString): number[];
 
@@ -252,6 +270,12 @@ export interface Chart {
 
 	subchart: {
 		/**
+		 * Select subchart by giving x domain range.
+		 * @param domain If domain range is given, the subchart will be selected to the given domain. If no argument is given, the current subchart selection domain will be returned.
+		 */
+		(domain?: Array<Date|number|string>): Array<Date|number>;
+
+		/**
 		 * Hide generated subchart
 		 * - **NOTE:** for ESM imports, needs to import 'subchart' exports and instantiate it by calling `subchart()`.
 		 */
@@ -268,6 +292,11 @@ export interface Chart {
 		 * - **NOTE:** for ESM imports, needs to import 'subchart' exports and instantiate it by calling `subchart()`.
 		 */
 		toggle(): void;
+
+		/**
+		 * Reset subchart selection
+		 */
+		reset(): void;
 	};
 
 	tooltip: {
@@ -347,7 +376,7 @@ export interface Chart {
 	load(this: Chart, args: {
 		append?: boolean;
 		url?: string;
-		json?: [{ [key: string]: string | number }] | {[key: string]: Array<string|number>};
+		json?: Array<{[key: string]: string | number }> | {[key: string]: Array<string | number>};
 		rows?: PrimitiveArray[];
 		columns?: PrimitiveArray[];
 		data?: Array<{ [key: string]: number }>;
@@ -357,13 +386,15 @@ export interface Chart {
 		categories?: string[];
 		axes?: { [key: string]: string | string[] };
 		colors?: { [key: string]: string };
+		regions?: DataRegionsType;
 		headers?: { [key: string]: string };
-		keys?: { [key: string]: string };
+		keys?: { [key: string]: string | string[] };
 		mimeType?: string;
 		type?: string;
 		types?: { [key: string]: string };
 		unload?: boolean | ArrayOrString;
 		done?: (this: Chart) => void;
+		resizeAfter?: boolean;
 	}): void;
 
 	/**
@@ -372,13 +403,17 @@ export interface Chart {
 	 * - If no argument is given, all of targets will be toggles.
 	 * - If ids given, the data that has specified target id will be unloaded. ids should be String or Array.
 	 * - If ids is not specified, all data will be unloaded.
-	 * - If done given, the specified function will be called after data loded.
+	 * - If done given, the specified function will be called after data loaded.
 	 *
 	 * - NOTE:
 	 *   - If you call load API soon after/before unload, unload param of load should be used. Otherwise chart will not be rendered properly because of cancel of animation.
 	 *   - done will be called after data loaded, but it's not after rendering. It's because rendering will finish after some transition and there is some time lag between loading and rendering.
 	 */
-	unload(this: Chart, targetIds?: TargetIds, done?: (this: Chart) => void): void;
+	unload(this: Chart, args?: TargetIds | {
+		ids?: TargetIds,
+		done?: (this: Chart) => void,
+		resizeAfter?: boolean;
+	}): void;
 
 	/**
 	 * Flow data to the chart. By this API, you can append new data points to the chart.
@@ -484,7 +519,7 @@ export interface Chart {
 
 	/**
 	 * Force to redraw.
-	 * - **NOTE:** When zoom/subchart is used, the zoomed state will be resetted.
+	 * - **NOTE:** When zoom/subchart is used, the zoomed state will be reset.
 	 * @param soft For soft redraw.
 	 */
 	flush(soft?: boolean): void;
@@ -504,6 +539,12 @@ export interface Chart {
 	 * @param [option.width={currentWidth}] width
 	 * @param [option.height={currentHeigth}] height
 	 * @param [option.preserveAspectRatio=true] Preserve aspect ratio on given size
+	 * @param [option.preserveFontStyle=false]  Preserve font style(font-family).
+	 * **NOTE:**
+	 *   - This option is useful when outlink web font style's `font-family` are applied to chart's text element.
+	 *   - Text element's position(especially "transformed") can't be preserved correctly according the page's layout condition.
+	 *   - If need to preserve accurate text position, embed the web font data within to the page and set `preserveFontStyle=false`.
+	 *     - Checkout the embed example: https://stackblitz.com/edit/zfbya9-8nf9nn?file=index.html
 	 * @param callback The callback to be invoked when export is ready.
 	 */
 	export(this: Chart, option?: {
@@ -511,15 +552,18 @@ export interface Chart {
 		height?: number;
 		mimeType?: string;
 		preserveAspectRatio?: boolean;
+		preserveFontStyle?: boolean;
 	}, callback?: (this: Chart, dataUrl: string) => void): string;
 
 	/**
 	 * Get or set single config option value.
+	 * - **NOTE:**
+	 *   - without parameter, will return all specified generation options object only. (will exclude any other options not specified at the initialization)
 	 * @param optionName The option key name.
 	 * @param value The value accepted for indicated option.
 	 * @param redraw Set to redraw with the new option changes. (NOTE: Doesn't guarantee work in all circumstances. It can be applied for limited options only)
 	 */
-	config(optionName: string, value?: any, redraw?: boolean): any;
+	config(optionName?: string, value?: any, redraw?: boolean): any;
 }
 
 export interface GridOperations {

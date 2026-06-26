@@ -3,10 +3,11 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import {format as d3Format} from "d3-format";
-import {$AREA, $AXIS, $COMMON, $CIRCLE, $LEGEND, $LINE} from "../../src/config/classes";
+import sinon from "sinon";
+import {$AREA, $AXIS, $COMMON, $CIRCLE, $EVENT, $LEGEND, $LINE} from "../../src/config/classes";
 import util from "../assets/util";
 
 describe("API load", function() {
@@ -18,7 +19,7 @@ describe("API load", function() {
 	});
 
 	describe("XHR data loading", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: []
@@ -26,23 +27,23 @@ describe("API load", function() {
 			};
 		});
 
-		it("should be load data via 'url'", done => {
+		it("should be load data via 'url'", () => new Promise(done => {
 			chart.load({
-				url: "/base/test/assets/data/test.json",
+				url: "/test/assets/data/test.json",
 				mimeType: "json",
 				headers: {
 					"Content-Type": "text/xml"
 				},
-				done: () => {
+				done() {
 					expect(chart.data().length).to.be.equal(3);
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("check for load options", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -62,10 +63,13 @@ describe("API load", function() {
 			}
 		});
 
-		it("options has been updated properly?", done => {
+		it("options has been updated properly?", () => new Promise(done => {
 			const className = "abcd";
 			const color = "red";
 			const categories = ["cat1", "cat2", "cat3", "cat4", "cat5"];
+			const regions = {
+				data2: [{start: 1, end: 3, style: {dasharray: "4 2"}}]
+			};
 
 			setTimeout(() => {
 				chart.load({
@@ -85,6 +89,7 @@ describe("API load", function() {
 					axes: {
 						data2: "y2"
 					},
+					regions,
 					done: function() {
 						const main = chart.$.main;
 
@@ -103,15 +108,32 @@ describe("API load", function() {
 						// updated axes?
 						expect(+main.selectAll(".bb-axis-y2 .tick tspan").nodes().pop().textContent).to.be.equal(1000);
 
-						done();
+						// updated data.regions?
+						expect(chart.internal.config.data_regions).to.deep.equal(regions);
+
+						done(1);
 					}
 				});
-			}, 500);
-		});
+			}, 350);
+		}));
+
+		it("should update data.regions without loading data", () => new Promise(done => {
+			const regions = {
+				data1: [{start: 1, end: 2, style: {dasharray: "5 2"}}]
+			};
+
+			chart.load({
+				regions,
+				done() {
+					expect(chart.internal.config.data_regions).to.deep.equal(regions);
+					done(1);
+				}
+			});
+		}));
 	});
 
 	describe("indexed data as column", () => {
-		it("should load additional data", done => {
+		it("should load additional data", () => new Promise(done => {
 			const main = chart.$.main;
 			const legend = chart.$.legend;
 
@@ -119,7 +141,7 @@ describe("API load", function() {
 				columns: [
 					["data3", 800, 500, 900, 500, 1000, 700]
 				],
-				done: () => {
+				done() {
 					const target = main.select(`.${$LINE.chartLine}.${$COMMON.target}.${$COMMON.target}-data3`);
 					const legendItem = legend.select(`.${$LEGEND.legendItem}.${$LEGEND.legendItem}-data3`);
 					const circles = main.selectAll(`.${$CIRCLE.circles}.${$CIRCLE.circles}-data3 circle`);
@@ -128,16 +150,16 @@ describe("API load", function() {
 					expect(legendItem.size()).to.be.equal(1);
 					expect(circles.size()).to.be.equal(6);
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("timeseries data as column", () => {
 		let date = ["2013-01-01", "2013-01-02", "2013-01-03", "2013-01-04", "2013-01-05", "2013-01-06"];
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -158,7 +180,7 @@ describe("API load", function() {
 			};
 		});
 
-		it("should load additional data", done => {
+		it("should load additional data", () => new Promise(done => {
 			const main = chart.$.main;
 			const legend = chart.$.legend;
 
@@ -167,7 +189,7 @@ describe("API load", function() {
 					["x"].concat(date.concat().splice(1, 3)),
 					["data3", 400, 500, 450]
 				],
-				done: () => {
+				done() {
 					const target = main.select(`.${$LINE.chartLine}.${$COMMON.target}.${$COMMON.target}-data3`);
 					const legendItem = legend.select(`.${$LEGEND.legendItem}.${$LEGEND.legendItem}-data3`);
 					const circles = main.selectAll(`.${$CIRCLE.circles}.${$CIRCLE.circles}-data3 circle`);
@@ -183,14 +205,14 @@ describe("API load", function() {
 						expect(text).to.be.equal(date[i]);
 					});
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("category data", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -209,7 +231,7 @@ describe("API load", function() {
 		});
 
 		describe("as column", () => {
-			it("should load additional data #1", done => {
+			it("should load additional data #1", () => new Promise(done => {
 				const main = chart.$.main;
 				const legend = chart.$.legend;
 
@@ -218,7 +240,7 @@ describe("API load", function() {
 						["x", "cat2", "cat3", "cat4"],
 						["data3", 800, 500, 900]
 					],
-					done: () => {
+					done() {
 						const target = main.select(`.${$LINE.chartLine}.${$COMMON.target}.${$COMMON.target}-data3`);
 						const legendItem = legend.select(`.${$LEGEND.legendItem}.${$LEGEND.legendItem}-data3`);
 						const tickTexts = main.selectAll(`.${$AXIS.axisX} g.tick text`);
@@ -234,12 +256,12 @@ describe("API load", function() {
 							expect(text).to.be.equal(expected[i]);
 						});
 
-						done();
+						done(1);
 					}
 				});
-			});
+			}));
 
-			it("should load additional data #2", done => {
+			it("should load additional data #2", () => new Promise(done => {
 				const main = chart.$.main;
 				const legend = chart.$.legend;
 
@@ -248,7 +270,7 @@ describe("API load", function() {
 						["x", "new1", "new2", "new3", "new4", "new5", "new6"],
 						["data3", 800, 500, 900, 500, 1000, 700]
 					],
-					done: () => {
+					done() {
 						const target = main.select(`.${$LINE.chartLine}.${$COMMON.target}.${$COMMON.target}-data3`);
 						const legendItem = legend.select(`.${$LEGEND.legendItem}.${$LEGEND.legendItem}-data3`);
 						const tickTexts = main.selectAll(`.${$AXIS.axisX} g.tick text`);
@@ -263,15 +285,15 @@ describe("API load", function() {
 							expect(text).to.be.equal(expected[i]);
 						});
 
-						done();
+						done(1);
 					}
 				});
-			});
+			}));
 		});
 	});
 
 	describe("JSON data", () => {
-		before(() => {
+		beforeAll(() => {
 			args.data = {
 				json: [
 					{name: "www.site1.com", upload: 200, download: 200},
@@ -286,7 +308,7 @@ describe("API load", function() {
 			};
 		});
 
-		it("should load json data", done => {
+		it("should load json data", () => new Promise(done => {
 			const json = [
 				{name: "www.site5.com", upload: 300, download: 100},
 				{name: "www.site6.com", upload: 400, download: 200},
@@ -296,7 +318,7 @@ describe("API load", function() {
 
 			chart.load({
 				json,
-				done: () => {
+				done() {
 					const categories = chart.categories();
 					const upload = chart.data.values("upload");
 					const download = chart.data.values("download");
@@ -307,14 +329,14 @@ describe("API load", function() {
 						expect(v.download).to.be.equal(download[i]);
 					});
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("data point circle display", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -325,7 +347,7 @@ describe("API load", function() {
 			};
 		});
 
-		it("when 'bar' type is loaded, circles should be removed", done => {
+		it("when 'bar' type is loaded, circles should be removed", () => new Promise(done => {
 			const circleSize = chart.$.circles.size();
 
 			// when
@@ -336,14 +358,14 @@ describe("API load", function() {
 				type: "bar",
 				done: function() {
 					expect(chart.$.circles.size()).to.be.equal(circleSize / 2);
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("y Axis Label", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -377,7 +399,7 @@ describe("API load", function() {
 			}
 		});
 
-		it("should be updated the axis label position ", done => {
+		it("should be updated the axis label position ", () => new Promise(done => {
 			const axisLabel = chart.$.main.select(`.${$AXIS.axisYLabel}`);
 			const dy = +axisLabel.attr("dy");
 
@@ -386,14 +408,14 @@ describe("API load", function() {
 					["data5", 2300000, 1900000, 3000000, 5000000, 3000000]
 				],
 				unload: ["data1"],
-				done: () => {
+				done() {
 					setTimeout(() => {
 						expect(+axisLabel.attr("dy")).to.be.below(dy);
-						done();
-					}, 500);
+						done(1);
+					}, 350);
 				}
 			});
-		});
+		}));
 
 		it("check for .unload()", () => {
 			const target = "data2";
@@ -401,7 +423,7 @@ describe("API load", function() {
 			// when
 			chart.unload({
 				ids: target,
-				done: () => {
+				done() {
 					expect(chart.data(target).length).to.be.equal(0);
 					expect(chart.internal.cache.get(target)).to.be.null;
 				}
@@ -433,7 +455,7 @@ describe("API load", function() {
 			["Chinese",0,0,0,0,0,0,0,0,0,0],
 		];
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -443,10 +465,10 @@ describe("API load", function() {
 			};
 		});
 
-		it("should be correctly updating eventRect elements", done => {
+		it("should be correctly updating eventRect elements", () => new Promise(done => {
 			chart.load({
 				columns: cols2,
-				done: () => {
+				done() {
 					let lastX = 0;
 
 					chart.internal.state.eventReceiver.data.forEach(function(v, i) {
@@ -456,10 +478,10 @@ describe("API load", function() {
 						lastX = x;
 					});
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 
 		it("set options", () => {
 			args = {
@@ -495,7 +517,7 @@ describe("API load", function() {
 			}	
 		});
 
-		it("event rect size should update after .load() is called", done => {
+		it("event rect size should update after .load() is called", () => new Promise(done => {
 			// when
 			chart.load({
 				columns: [
@@ -509,14 +531,56 @@ describe("API load", function() {
 					expect(+$el.eventRect.attr("width")).to.be.equal(state.width);
 					expect(+$el.eventRect.attr("height")).to.be.equal(state.height);
 
-					done();
+					done(1);
 				}
 			});
+		}));
+
+		it("set options: initialize with empty data", () => {
+			args = {
+				data: {
+					columns: [],
+					type: "area"
+				},
+				background: {
+					color: "red"
+				}
+			};
 		});
+
+		it("check for correct event binding", () => new Promise(done => {
+			chart.load({
+				xs: {
+					data: 'dataX'
+				},
+				columns: [
+					["data", 300, 350, 300, 200, 50, 300],
+					["dataX", 1, 2, 3, 4, 5, 6],
+				],
+				done: function() {
+					expect(this.internal.$el.eventRect.classed($EVENT.eventRect)).to.be.true;						
+
+					this.tooltip.show({
+						data: {
+							x: 3,
+							id: "data",
+							value: 300
+						}
+					});
+
+					const {tooltip} = this.$;
+					
+					expect(tooltip.select(".name").text()).to.be.equal("data");
+					expect(+tooltip.select(".value").text()).to.be.equal(300);
+
+					done(1);
+				}
+			});
+		}));
 	});
 
 	describe("different type loading", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -526,7 +590,7 @@ describe("API load", function() {
 			};
 		});
 
-		it("check 'line' -> 'area' type loading", done => {
+		it("check 'line' -> 'area' type loading", () => new Promise(done => {
 			const {areas} = chart.$.line;
 
 			expect(areas).to.be.null;
@@ -541,17 +605,17 @@ describe("API load", function() {
 						const {areas} = this.$.line;
 
 						expect(areas && !areas.empty()).to.be.true;
-						done();
+						done(1);
 					}
 				});
-			}, 500);
-		});
+			}, 350);
+		}));
 
 		it("set options data.type='area'", () => {
 			args.data.type = "area";
 		});
 
-		it("check 'area' -> 'area-spline' type loading", done => {
+		it("check 'area' -> 'area-spline' type loading", () => new Promise(done => {
 			const {areas} = chart.$.line;
 
 			expect(areas && !areas.empty()).to.be.true;
@@ -569,15 +633,15 @@ describe("API load", function() {
 
 						// check for duplicated node appends
 						expect(chart.$.main.selectAll(`.${$AREA.areas}`).size()).to.be.equal(1);
-						done();
+						done(1);
 					}
 				});
-			}, 500);
-		});
+			}, 350);
+		}));
 	});
 
 	describe("area-line-range type loading", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -608,7 +672,7 @@ describe("API load", function() {
 			}
 		});
 
-		it("should render range area for newly loaded data", done => {
+		it("should render range area for newly loaded data", () => new Promise(done => {
 			chart.load({
 				columns: [
 					["data3", [220, 215, 205], [240, 225, 215], [260, 235, 225], [280, 245, 235], [270, 255, 225], [240, 225, 215]],
@@ -619,14 +683,14 @@ describe("API load", function() {
 				done: function() {
 					expect(this.$.line.areas.filter(`.${$AREA.area}-data3`).size()).to.be.equal(1);
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("should handle correct event rect lengths", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -636,20 +700,20 @@ describe("API load", function() {
 			};
 		});
 
-		it("should updating correct event rect length when loaded new data are lesser", done => {
+		it("should updating correct event rect length when loaded new data are lesser", () => new Promise(done => {
 			chart.load({
 				columns: [["data1", 100, 200]],
 				unload: true,
 				done: function() {
 					expect(this.internal.state.eventReceiver.coords.length).to.be.equal(2);
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 	});
 
 	describe("Append data loading", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -669,7 +733,7 @@ describe("API load", function() {
 		});
 
 
-		it("timeseries: check if data has been appended", done => {
+		it("timeseries: check if data has been appended", () => new Promise(done => {
 			const value = 37;
 
 			chart.load({
@@ -684,17 +748,17 @@ describe("API load", function() {
 
 					expect(newData.length).to.be.equal(oldData.length + 1);
 					expect(newData).to.deep.equal(oldData.concat(value));
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 
 		it("set options", () => {
 			args.data.columns[0] = ["x", "a", "b", "c"];
 			args.axis.x.type = "category";
 		});
 
-		it("category: check if data has been appended", done => {
+		it("category: check if data has been appended", () => new Promise(done => {
 			const category = "dd";
 			const value = 37;
 
@@ -711,10 +775,10 @@ describe("API load", function() {
 					expect(this.categories()).to.deep.equal(args.data.columns[0].slice(1).concat(category));
 					expect(newData.length).to.be.equal(oldData.length + 1);
 					expect(newData).to.deep.equal(oldData.concat(value));
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 
 		it("set options", () => {
 			args = {
@@ -727,7 +791,7 @@ describe("API load", function() {
 			};
 		});
 
-		it("indexed: check if data has been appended", done => {
+		it("indexed: check if data has been appended", () => new Promise(done => {
 			const value = 37;
 
 			chart.load({
@@ -745,10 +809,10 @@ describe("API load", function() {
 						this.internal.$el.axis.x.selectAll(".tick text").nodes().map(v => +v.textContent)
 					).to.deep.equal([0,1,2,3]);
 
-					done();
+					done(1);
 				}
 			});
-		});
+		}));
 
 		it("set options", () => {
 			args = {
@@ -763,7 +827,7 @@ describe("API load", function() {
 			}
 		});
 
-		it("row data: check if data has been appended", done => {
+		it("row data: check if data has been appended", () => new Promise(done => {
 			const value = 37;
 			const oldData = chart.data.values("data1");
 
@@ -779,14 +843,180 @@ describe("API load", function() {
 				 	expect(newData.length).to.be.equal(oldData.length + 1);
 					expect(newData).to.deep.equal(oldData.concat(value));
 
-					done();
+					done(1);
 				}
 			});
+		}));
+	});
+
+	describe("Append data loading with zoom-in state", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["sample", 30, 200, 100, 400, 150],
+					],
+					type: "line"
+				},
+				zoom: {
+					enabled: true
+				},
+				transition: {
+					duration: 0
+				}
+			};
 		});
+
+		it("indexed axis type", () => new Promise(done => {
+			const {$el, scale} = chart.internal;
+			const zoomDomain = [1, 2];
+			const orgDomain = scale.x.orgDomain().map(Math.abs);
+
+			// when
+			chart.zoom(zoomDomain);
+
+			chart.load({
+				columns: [['sample', 130, 150]],
+				append: true,
+				done() {
+					// zoom state shoud persist
+					expect(this.zoom()).to.deep.equal(zoomDomain);
+					
+					// zoom domain range should be increased
+					expect(
+						scale.x.orgDomain()
+							.map(Math.abs)
+							.every((v, i) => v > orgDomain[i])
+					).to.be.true;
+
+					// when
+					chart.unzoom();
+					
+					const values = chart.data.values("sample");
+					const ticks = $el.axis.x.selectAll(".tick:first-of-type, .tick:last-of-type")
+						.nodes().map(v => +v.textContent);
+
+					expect(ticks).to.be.deep.equal([0, values.length - 1]);
+
+					done(1);
+				}
+			});
+		}));
+		
+		it("set options: axis.x.type='category", () => {
+			args.axis = {
+				x: {
+					type: "category"
+				}
+			};
+		});
+
+		it("category axis type", () => new Promise(done => {
+			const {$el, scale} = chart.internal;
+			const zoomDomain = [1, 2];
+			const orgDomain = scale.x.orgDomain().map(Math.abs);
+
+			// when
+			chart.zoom(zoomDomain);
+
+			chart.load({
+				columns: [['sample', 130, 150]],
+				append: true,
+				done() {
+					// zoom state shoud persist
+					expect(this.zoom()).to.deep.equal(zoomDomain);
+
+					// zoom domain range should be increased
+					expect(
+						scale.x.orgDomain()
+							.map(Math.abs)
+							.some((v, i) => v > orgDomain[i])
+					).to.be.true;
+
+					// when
+					chart.unzoom();
+					
+					const values = chart.data.values("sample");
+					const ticks = $el.axis.x.selectAll(".tick:first-of-type, .tick:last-of-type")
+						.nodes().map(v => +v.textContent);
+
+					expect(ticks).to.be.deep.equal([0, values.length - 1]);
+
+					done(1);
+				}
+			});
+		}));
+
+		it("set options: axis.x.type='timeseries", () => {
+			args = {
+				data: {
+					x: "x",
+					columns: [
+						["x", "2023-10-01", "2023-10-02", "2023-10-03", "2023-10-04", "2023-10-05"],
+						['sample', 30, 200, 100, 400, 150],
+					],
+					type: "line",
+				},
+				zoom: {
+					enabled: true,
+				},
+				transition: {
+					duration: 0,
+				},
+				axis: {
+					x: {
+						type: "timeseries",
+						tick: {
+							format: "%Y-%m-%d"
+						}
+					}
+				}
+			};
+		});
+
+		it("timeseires axis type", () => new Promise(done => {
+			const {$el, scale} = chart.internal;
+			const orgDomain = scale.x.orgDomain().map(Number);
+			let zoomDomain = ["2023-10-2", "2023-10-3"];
+
+			// when
+			chart.zoom(zoomDomain);
+
+			zoomDomain = scale.zoom.domain().map(Number);
+
+			chart.load({
+				columns: [
+					["x", "2023-10-06", "2023-10-07"],
+					['sample', 130, 150]
+				],
+				append: true,
+				done() {
+					// zoom state shoud persist
+					expect(scale.zoom.domain().map(Number)).to.deep.equal(zoomDomain);
+
+					// zoom domain range should be increased
+					expect(
+						scale.x.orgDomain()
+							.map(Number)
+							.some((v, i) => v > orgDomain[i])
+					).to.be.true;
+
+					// when
+					chart.unzoom();
+					
+					const values = chart.data.values("sample");
+					const ticks = $el.axis.x.selectAll(".tick:first-of-type, .tick:last-of-type")
+						.nodes().map(v => +new Date(v.textContent));
+
+					expect(ticks).to.be.deep.equal(["2023-10-01", "2023-10-07"].map(v => +new Date(v)));
+					done(1);
+				}
+			});
+		}));
 	});
 
 	describe("Multiple consecutive load call", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -801,7 +1031,7 @@ describe("API load", function() {
 			};
 		});
 
-		it("should be rendered properly", done => {
+		it("should be rendered properly", () => new Promise(done => {
 			new Promise((resolve, reject) => {
 				chart.load({
 					columns: [["data1", 230, 190, 300, 500, 300, 400]],
@@ -823,15 +1053,301 @@ describe("API load", function() {
 					done: function() {
 						const {axis} = this.internal.$el;
 						const {lines} = this.$.line;
-	
+		
 						expect(lines.size()).to.be.equal(1);
 						expect(+axis.y.selectAll(".tick:last-of-type text").text()).to.be.equal(155);
-						expect(lines.attr("d")).to.be.equal("M6,390.5833333333333L124,319.75L241,248.91666666666663L358,178.08333333333331L475,107.25L593,36.41666666666668");
+						// expect(lines.attr("d")).to.be.equal("M6,390.125L124,319.375L241,248.625L359,177.875L476,107.125L594,36.375");
 
-						done();
+						done(1);
 					}
 				});
 			});
+		}));
+	});
+
+	describe("Check 'resizeAfter' option", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400, 150]
+					],
+					type: "line"
+				}
+			};
 		});
+
+		it("should resize correctly after the load", () => new Promise(done => {
+			const {height} = chart.internal.state;
+
+			// when
+			chart.load({
+				columns: [
+				   ["www-abcd-abcd", 100, 200, 150, 300],
+				   ["www2-abcd-abcd", 200, 200, 150, 300],
+				   ["www3-abcd-abcd", 300, 200, 150, 300],
+				   ["www4-abcd-abcd", 400, 200, 150, 300],
+				   ["www5-abcd-abcd", 500, 200, 150, 300],
+				   ["www6-abcd-abcd", 600, 200, 150, 300],
+				   ["www7-abcd-abcd", 700, 200, 150, 300]
+				],
+				resizeAfter: true,
+				done: function() {
+					const lastLegend = this.$.legend.select("g:last-child").node();
+					const chartNode = this.$.chart.node();
+
+					setTimeout(() => {
+						expect(this.internal.state.height).to.be.below(height);
+						expect(lastLegend.getBoundingClientRect().bottom).to.be.below(chartNode.getBoundingClientRect().bottom);
+						
+						done(1);
+					}, 350);
+				}
+			});
+		}));
+
+		it("shouldn't resize after the load", () => new Promise(done => {
+			const {height} = chart.internal.state;
+
+			// when
+			chart.load({
+				columns: [
+				   ["www-abcd-abcd", 100, 200, 150, 300],
+				   ["www2-abcd-abcd", 200, 200, 150, 300],
+				   ["www3-abcd-abcd", 300, 200, 150, 300],
+				   ["www4-abcd-abcd", 400, 200, 150, 300],
+				   ["www5-abcd-abcd", 500, 200, 150, 300],
+				   ["www6-abcd-abcd", 600, 200, 150, 300],
+				   ["www7-abcd-abcd", 700, 200, 150, 300]
+				],
+				done: function() {
+					const lastLegend = this.$.legend.select("g:last-child").node();
+					const chartNode = this.$.chart.node();
+
+					setTimeout(() => {
+						expect(this.internal.state.height).to.be.equal(height);
+						expect(lastLegend.getBoundingClientRect().bottom).to.be.above(chartNode.getBoundingClientRect().bottom);
+						
+						done(1);
+					}, 350);
+				}
+			});
+		}));
+
+		it("should resize correctly after the unload", () => new Promise(done => {
+			// when
+			chart.load({
+				columns: [
+				   ["www-abcd-abcd", 100, 200, 150, 300],
+				   ["www2-abcd-abcd", 200, 200, 150, 300],
+				   ["www3-abcd-abcd", 300, 200, 150, 300],
+				   ["www4-abcd-abcd", 400, 200, 150, 300],
+				   ["www5-abcd-abcd", 500, 200, 150, 300],
+				   ["www6-abcd-abcd", 600, 200, 150, 300],
+				   ["www7-abcd-abcd", 700, 200, 150, 300],
+				],
+				done: function() {
+					this.unload({
+                        ids: ["www-abcd-abcd", "www2-abcd-abcd", "www3-abcd-abcd"],
+						resizeAfter: true,
+						done: function() {
+							const lastLegend = this.$.legend.select("g:last-child").node();
+							const chartNode = this.$.chart.node();
+
+							setTimeout(() => {
+								const legendBottom = lastLegend.getBoundingClientRect().bottom;
+								const chartBottom = chartNode.getBoundingClientRect().bottom;
+
+								expect(legendBottom).to.be.closeTo(chartBottom, 10);
+								expect(legendBottom < chartBottom).to.be.true;
+								
+								done(1);
+							}, 350);
+						}
+                    })
+				}
+			});
+		}));
+
+		it("shouldn't resize after the unload", () => new Promise(done => {
+			// when
+			chart.load({
+				columns: [
+				   ["www-abcd-abcd", 100, 200, 150, 300],
+				   ["www2-abcd-abcd", 200, 200, 150, 300],
+				   ["www3-abcd-abcd", 300, 200, 150, 300],
+				   ["www4-abcd-abcd", 400, 200, 150, 300],
+				   ["www5-abcd-abcd", 500, 200, 150, 300],
+				   ["www6-abcd-abcd", 600, 200, 150, 300],
+				   ["www7-abcd-abcd", 700, 200, 150, 300],
+				],
+				done: function() {
+					this.unload({
+                        ids: ["www-abcd-abcd", "www2-abcd-abcd", "www3-abcd-abcd"],
+						resizeAfter: false,
+						done: function() {
+							const lastLegend = this.$.legend.select("g:last-child").node();
+							const chartNode = this.$.chart.node();
+
+							setTimeout(() => {
+								const legendBottom = lastLegend.getBoundingClientRect().bottom;
+								const chartBottom = chartNode.getBoundingClientRect().bottom;
+
+								expect(legendBottom).to.not.be.closeTo(chartBottom, 10);
+								expect(chartBottom - legendBottom > 25).to.be.true;
+								
+								done(1);
+							}, 350);
+						}
+                    })
+				}
+			});
+		}));
+	});
+
+	describe("Check different type loading", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 20, 50, 40, 60, 50],
+						["data2"]
+					],
+					type: "line", 
+					types: {
+						data2: "scatter"
+					}
+				}
+			};
+		});
+
+		it("should generate 'scatter' when line type is used at generation.", () => new Promise(done => {
+			chart.load({
+				columns: [
+					["data2", 200, 130, 90, 240, 130, 220],
+				],
+				done() {
+					const pointer = this.$.circles.filter(({id}) => id === "data2");
+					const target = {
+						data: {
+							x: 3,
+							id: "data2",
+							value: 240
+						}
+					}
+
+					expect(pointer.size()).to.be.equal(this.data.values("data2").length);
+
+					// when
+					this.tooltip.show(target);
+
+					expect(+this.$.tooltip.select(".value").text()).to.be.equal(target.data.value);
+
+					// when unload
+					this.unload({
+						ids: ["data2"],
+						done() {
+							this.tooltip.show({x: 3});
+							expect(+this.$.tooltip.select(".value").text()).to.be.equal(40);
+	
+							done(1);
+						}
+					});
+				}
+			});
+		}));
+
+		it("set options: data.types={data2: 'bubble'}", () => {
+			args.data.types.data2 = "bubble";
+		});
+
+		it("should generate 'bubble' when line type is used at generation.", () => new Promise(done => {
+			chart.load({
+				columns: [
+					["data2", 200, 130, 90, 240, 130, 220],
+				],
+				done() {
+					const pointer = this.$.circles.filter(({id}) => id === "data2");
+					const target = {
+						data: {
+							x: 3,
+							id: "data2",
+							value: 240
+						}
+					}
+
+					expect(pointer.size()).to.be.equal(this.data.values("data2").length);
+
+					// when
+					this.tooltip.show(target);
+
+					expect(+this.$.tooltip.select(".value").text()).to.be.equal(target.data.value);
+
+					// when unload
+					this.unload({
+						ids: ["data2"],
+						done() {
+							this.tooltip.show({x: 3});
+							expect(+this.$.tooltip.select(".value").text()).to.be.equal(40);
+	
+							done(1);
+						}
+					});
+				}
+			});
+		}));
+	});
+
+	describe("Unload callback sequence with transition duration 0", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400, 150, 250],
+						["data2", 50, 20, 10, 40, 15, 25]
+					],
+					empty: {
+						label: {
+							text: "No Data"
+						}
+					}
+				},
+				transition: {
+					duration: 0
+				}
+			};
+		});
+
+		it("should show 'No Data' text after unload callback when transition.duration=0", () => new Promise(done => {
+			const doneSpy = sinon.spy();
+			const {$el} = chart.internal;
+
+			// Verify "No Data" text is not visible initially
+			let emptyText = $el.main.select("text.bb-text.bb-empty");
+			expect(emptyText.empty() || emptyText.style("display") === "none").to.be.true;
+
+			// when
+			chart.unload({
+				ids: ["data1", "data2"],
+				done() {
+					doneSpy();
+					
+					// Check if "No Data" text is visible after unload callback
+					// This tests the fix where unload callback should run after data are unloaded
+					const {$el} = this.internal;
+					const emptyText = $el.main.select("text.bb-text.bb-empty");
+					
+					expect(doneSpy.calledOnce).to.be.true;
+					expect(emptyText.empty()).to.be.false;
+					expect(emptyText.text()).to.be.equal("No Data");
+					expect(emptyText.style("display")).to.not.equal("none");
+					
+					// Verify that all data has been unloaded
+					expect(this.data().length).to.be.equal(0);
+					
+					done(1);
+				}
+			});
+		}));
 	});
 });

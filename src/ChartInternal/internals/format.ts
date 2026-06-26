@@ -2,8 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {isValue, isFunction, isObjectType} from "../../module/util";
-import {AxisType} from "../../../types/types";
+import type {AxisType} from "../../../types/types";
+import {isArray, isFunction, isObject, isObjectType, isValue} from "../../module/util";
 
 /**
  * Get formatted
@@ -13,27 +13,26 @@ import {AxisType} from "../../../types/types";
  * @returns {number | string}
  * @private
  */
-function getFormat($$, typeValue: AxisType, v: number): number | string {
+function _getFormat($$, typeValue: AxisType, v: number): number | string {
 	const {config} = $$;
 	const type = `axis_${typeValue}_tick_format`;
-	const format = config[type] ?
-		config[type] : $$.defaultValueFormat;
+	const format = config[type] ? config[type] : $$.defaultValueFormat;
 
-	return format(v);
+	return format.call($$.api, v);
 }
 
 export default {
 	yFormat(v: number): number | string {
-		return getFormat(this, "y", v);
+		return _getFormat(this, "y", v);
 	},
 
 	y2Format(v: number): number | string {
-		return getFormat(this, "y2", v);
+		return _getFormat(this, "y2", v);
 	},
 
 	/**
 	 * Get default value format function
-	 * @returns {Function} formatter function
+	 * @returns {function} formatter function
 	 * @private
 	 */
 	getDefaultValueFormat(): Function {
@@ -50,8 +49,8 @@ export default {
 		};
 	},
 
-	defaultValueFormat(v): number|string {
-		return isValue(v) ? +v : "";
+	defaultValueFormat(v: number | number[]): number | string {
+		return isArray(v) ? v.join("~") : (isValue(v) ? +v : "");
 	},
 
 	defaultArcValueFormat(v, ratio): string {
@@ -65,7 +64,18 @@ export default {
 	dataLabelFormat(targetId: string): Function {
 		const $$ = this;
 		const dataLabels = $$.config.data_labels;
-		const defaultFormat = v => (isValue(v) ? +v : "");
+		const defaultFormat = v => {
+			const delimiter = "~";
+			let res = v;
+
+			if (isArray(v)) {
+				res = v.join(delimiter);
+			} else if (isObject(v)) {
+				res = Object.values(v).join(delimiter);
+			}
+
+			return res;
+		};
 		let format = defaultFormat;
 
 		// find format according to axis id
@@ -74,7 +84,8 @@ export default {
 		} else if (isObjectType(dataLabels.format)) {
 			if (dataLabels.format[targetId]) {
 				format = dataLabels.format[targetId] === true ?
-					defaultFormat : dataLabels.format[targetId];
+					defaultFormat :
+					dataLabels.format[targetId];
 			} else {
 				format = () => "";
 			}

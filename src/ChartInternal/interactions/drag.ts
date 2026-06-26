@@ -3,9 +3,9 @@
  * billboard.js project is licensed under the MIT license
  */
 import {select as d3Select} from "d3-selection";
-import {d3Selection} from "../../../types/types";
+import type {d3Selection} from "../../../types/types";
 import {$BAR, $CIRCLE, $COMMON, $DRAG, $SELECT, $SHAPE} from "../../config/classes";
-import {getPathBox} from "../../module/util";
+import {getPathBox, scheduleRAFUpdate} from "../../module/util";
 
 /**
  * Module used for data.selection.draggable option
@@ -23,7 +23,8 @@ export default {
 		const isSelectionGrouped = config.data_selection_grouped;
 		const isSelectable = config.interaction_enabled && config.data_selection_isselectable;
 
-		if ($$.hasArcType() ||
+		if (
+			$$.hasArcType() ||
 			!config.data_selection_enabled || // do nothing if not selectable
 			(config.zoom_enabled && !$$.zoom.altDomain) || // skip if zoomable because of conflict drag behavior
 			!config.data_selection_multiple // skip when single selection because drag is used for multiple selection
@@ -39,47 +40,58 @@ export default {
 		const minY = isSelectionGrouped ? state.margin.top : Math.min(sy, my);
 		const maxY = isSelectionGrouped ? state.height : Math.max(sy, my);
 
-		main.select(`.${$DRAG.dragarea}`)
-			.attr("x", minX)
-			.attr("y", minY)
-			.attr("width", maxX - minX)
-			.attr("height", maxY - minY);
+		// Use RAF batching to smooth out rapid drag events
+		const executeDrag = () => {
+			// Check if chart still exists before executing
+			if (!$$ || !$$.$el || !$$.$el.main) {
+				return;
+			}
 
-		// TODO: binary search when multiple xs
-		main.selectAll(`.${$SHAPE.shapes}`)
-			.selectAll(`.${$SHAPE.shape}`)
-			.filter(d => isSelectable?.bind($$.api)(d))
-			.each(function(d, i) {
-				const shape: d3Selection = d3Select(this);
-				const isSelected = shape.classed($SELECT.SELECTED);
-				const isIncluded = shape.classed($DRAG.INCLUDED);
-				let isWithin: any = false;
-				let toggle;
+			main.select(`.${$DRAG.dragarea}`)
+				.attr("x", minX)
+				.attr("y", minY)
+				.attr("width", maxX - minX)
+				.attr("height", maxY - minY);
 
-				if (shape.classed($CIRCLE.circle)) {
-					const x: number = +shape.attr("cx") * 1;
-					const y: number = +shape.attr("cy") * 1;
+			// TODO: binary search when multiple xs
+			main.selectAll(`.${$SHAPE.shapes}`)
+				.selectAll(`.${$SHAPE.shape}`)
+				.filter(d => isSelectable?.bind($$.api)(d))
+				.each(function(d, i) {
+					const shape: d3Selection = d3Select(this);
+					const isSelected = shape.classed($SELECT.SELECTED);
+					const isIncluded = shape.classed($DRAG.INCLUDED);
+					let isWithin;
+					let toggle;
 
-					toggle = $$.togglePoint;
-					isWithin = minX < x && x < maxX && minY < y && y < maxY;
-				} else if (shape.classed($BAR.bar)) {
-					const {x, y, width, height} = getPathBox(this);
+					if (shape.classed($CIRCLE.circle)) {
+						const x: number = +shape.attr("cx");
+						const y: number = +shape.attr("cy");
 
-					toggle = $$.togglePath;
-					isWithin = !(maxX < x || x + width < minX) && !(maxY < y || y + height < minY);
-				} else {
-					// line/area selection not supported yet
-					return;
-				}
+						toggle = $$.togglePoint;
+						isWithin = minX < x && x < maxX && minY < y && y < maxY;
+					} else if (shape.classed($BAR.bar)) {
+						const {x, y, width, height} = getPathBox(this);
 
-				// @ts-ignore
-				if (isWithin ^ isIncluded) {
-					shape.classed($DRAG.INCLUDED, !isIncluded);
-					// TODO: included/unincluded callback here
-					shape.classed($SELECT.SELECTED, !isSelected);
-					toggle.call($$, !isSelected, shape, d, i);
-				}
-			});
+						toggle = $$.togglePath;
+						isWithin = !(maxX < x || x + width < minX) &&
+							!(maxY < y || y + height < minY);
+					} else {
+						// line/area selection not supported yet
+						return;
+					}
+
+					// @ts-ignore
+					if (isWithin ^ isIncluded) {
+						shape.classed($DRAG.INCLUDED, !isIncluded);
+						// TODO: included/unincluded callback here
+						shape.classed($SELECT.SELECTED, !isSelected);
+						toggle.call($$, !isSelected, shape, d, i);
+					}
+				});
+		};
+
+		scheduleRAFUpdate($$.state, executeDrag);
 	},
 
 	/**

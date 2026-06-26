@@ -4,7 +4,7 @@
  */
 /* eslint-disable */
 // @ts-nocheck
-/* global sandbox, window */
+/* global window */
 import bb from "../../src/";
 import {
 	doDrag,
@@ -34,7 +34,7 @@ function initDom(idValue) {
 
 	if (!document.getElementById(id)) {
 		sandbox(id, {
-			style: "width:640px;height:480px;"
+			style: "position:absolute;top:0;left:0;width:640px;height:480px;"
 		});
 
 		document.body.style.margin = "0px";
@@ -44,25 +44,30 @@ function initDom(idValue) {
 /**
  * Generate chart
  * @param {Object} args chart options
+ * @param {boolean} raw Generate with only given options
  * @return {bb} billboard.js instance
  */
-function generate(args) {
+function generate(args, raw = false) {
 	let chart;
 	let inputType = "mouse";
 
 	if (args) {
-		if (!args.bindto) {
-			args.bindto = "#chart";
+		if (!raw) {
+			if (!args.bindto) {
+				args.bindto = "#chart";
+			}
+
+			initDom(args.bindto);
+
+			// when touch param is set, make to be 'touch' input mode
+			if (args.interaction?.inputType?.touch) {
+				inputType = "touch";
+			}
+
+			if (window?.$$TEST$$) {
+				window.$$TEST$$.convertInputType = inputType;
+			}
 		}
-
-		initDom(args.bindto);
-
-		// when touch param is set, make to be 'touch' input mode
-		if (args.interaction?.inputType?.touch) {
-			inputType = "touch";
-		}
-
-		window.$$TEST$$.convertInputType = inputType;
 
 		chart = bb.generate(args);
 	}
@@ -74,7 +79,56 @@ function destroyAll() {
 	bb.instance.forEach(v => v.destroy());
 }
 
+const print = {
+	arg(param) {
+		const msg = JSON.stringify(param, null, 2)
+			.replace(/\"([a-zA-Z_]+)\":/g, "$1:");
+
+		console.log(msg);
+	},
+	path(selection, log = true) {
+		const p = [];
+
+		selection.each(function() {
+			p.push(this.getAttribute("d"));
+		});
+
+		log && console.log(`"${p.join("\",\r\n\"")}"`);
+
+		return p;
+	}
+}
+
+function sandbox(obj: string | HTMLDivElement, prop?): HTMLDivElement {
+	var tmp = document.createElement("div");
+	tmp.className = "_tempSandbox_";
+	
+	if (typeof obj === "string") {
+			tmp.id = obj;
+	} else {
+			tmp.id = "sandbox";
+	}
+
+	if (typeof obj === "object" || typeof prop === "object") {
+			var attrs = typeof prop === "object" ? prop : obj;
+			for(var p in attrs) {
+					if(/class|className/.test(p)) {
+							tmp.setAttribute(p, attrs[p] + " _tempSandbox_");
+					} else {
+							tmp.setAttribute(p, attrs[p]);
+					}
+			}
+	}
+
+	return document.body.appendChild(tmp);
+}
+
+// test should executed from 'coverage:ci' command
+const isCI = process.env.NODE_ENV === "CI";
+const ceil = v => Math.ceil(v);
+
 export default {
+	ceil,
 	destroyAll,
 	doDrag,
 	fireEvent,
@@ -82,7 +136,10 @@ export default {
 	getBBox,
 	hexToRgb,
 	hoverChart,
+	isCI,
 	parseNum,
 	parseSvgPath,
+	print,
+	sandbox,
 	simulator
 };

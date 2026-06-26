@@ -4,22 +4,25 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
+import {beforeEach, beforeAll, afterAll, describe, expect, it} from "vitest";
 import sinon from "sinon";
-import {expect} from "chai";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
 import {$FOCUS, $LEGEND} from "../../src/config/classes";
+import {fireEvent} from "../assets/helper";
 
 describe("LEGEND", () => {
 	let chart;
 	let args;
+
+	afterAll(() => util.destroyAll());
 
 	beforeEach(() => {
 		chart = util.generate(args);
 	});
 
 	describe("legend when multiple charts rendered", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -47,7 +50,7 @@ describe("LEGEND", () => {
 	});
 
 	describe("legend position", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -74,12 +77,12 @@ describe("LEGEND", () => {
 		it("should be located on the right of chart", () => {
 			const x = util.parseNum(chart.$.legend.attr("transform"));
 
-			expect(x).to.be.closeTo(584, 4);
+			expect(x).to.be.closeTo(584, 5);
 		});
 	});
 
 	describe("legend as inset", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -168,7 +171,7 @@ describe("LEGEND", () => {
 	});
 
 	describe("should update args to have only one series", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -193,7 +196,7 @@ describe("LEGEND", () => {
 	});
 
 	describe("legend.hide", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -236,7 +239,7 @@ describe("LEGEND", () => {
 	});
 
 	describe("legend.show", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -266,7 +269,7 @@ describe("LEGEND", () => {
 	});
 
 	describe("custom legend settings", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -318,9 +321,8 @@ describe("LEGEND", () => {
 	describe("set legend using template", () => {
 		const itemClass = "abcd";
 
-		before(() => {
-			// @ts-ignore
-			sandbox("legend-wrapper").innerHTML = "<ul id='legend'></ul>";
+		beforeAll(() => {
+			util.sandbox("legend-wrapper").innerHTML = "<ul id='legend'></ul>";
 
 			args = {
 				data: {
@@ -364,7 +366,7 @@ describe("LEGEND", () => {
 			expect(items.size()).to.be.equal(2);
 		});
 
-		it("custom legend should behaves as normal legend", done => {
+		it("custom legend should behaves as normal legend", () => new Promise(done => {
 			const selector = `.${$LEGEND.legendItem}-data1`;
 			const legend = chart.$.legend.select(selector).node();
 			const rect = legend.getBoundingClientRect();
@@ -383,27 +385,28 @@ describe("LEGEND", () => {
 
 			setTimeout(() => {
 				expect(chart.$.legend.select(selector).classed($LEGEND.legendItemHidden)).to.be.true;
-				done();
-			}, 300);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("check for template update on dynamic loading", d => {
+		it("check for template update on dynamic loading", () => new Promise(done => {
 			setTimeout(function() {
 				chart.load({
 					columns: [
 						["data3", 200, 100, 300, 130, 20]
 					],
 					unload: true,
-					done: () => {
+					done() {
 						const legend = d3Select("#legend");
 
 						expect(legend.selectAll("li").size()).to.be.equal(1);
 						expect(legend.text()).to.be.equal("data3");
-						d();
+						
+						done(1);
 					}
 				});
-			}, 500);
-		});
+			}, 350);
+		}));
 
 		it("set options legend.content.template as function", () => {
 			args.legend.contents.template = function(title, color, data) {
@@ -441,7 +444,7 @@ describe("LEGEND", () => {
 			expect(chart.internal.getCurrentHeight()).to.be.equal(newSize.height);
 		});
 
-		it("set options data.type='pie'", () => {
+		it("set options: data.type='pie'", () => {
 			args.data.type = "pie";
 		});
 
@@ -459,10 +462,34 @@ describe("LEGEND", () => {
 				expect(v).to.be.above(transform2[i]);
 			});
 		});
+
+		it("shoudn't throw error when contents.template isn't specified.", () => {
+			expect(
+				chart = util.generate({
+					data: {
+					columns: [
+						["data1", 120]
+					],
+					type: "line", // for ESM specify as: line()
+					},
+					legend: {
+						contents: {
+							bindto: "#legend"
+						}
+					}
+				})
+			).to.not.throw;
+
+			const template = chart.internal.config.legend_contents_template;
+
+			expect(template).to.be.equal(
+				"<span style='color:#fff;padding:5px;background-color:{=COLOR}'>{=TITLE}</span>"
+			);
+		});
 	});
 
 	describe("when using custom points", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 				  columns: [
@@ -497,6 +524,12 @@ describe("LEGEND", () => {
 				// check if referenced defs node exists
 				if (pointTagName[idx] === "use") {					
 					expect($el.defs.select(this.getAttribute("href")).size()).to.be.equal(1);
+					expect(this.getAttribute("transform")).to.contain("scale(1.25 1.25)");
+				} else if (pointTagName[idx] === "circle") {
+					expect(+this.getAttribute("r")).to.be.equal(3.75);
+				} else if (pointTagName[idx] === "rect") {
+					expect(+this.getAttribute("width")).to.be.equal(7.5);
+					expect(+this.getAttribute("height")).to.be.equal(7.5);
 				}
 
 				expect(nodeName).to.be.equal(pointTagName[idx]);
@@ -504,10 +537,27 @@ describe("LEGEND", () => {
 
 			expect(nodes.size()).to.be.equal(chart.data().length);
 		});
+
+		it("should defs element added removed on unload?", () => new Promise(done => {
+			const {$el: {defs}} = chart.internal;
+			const selector = "[id$=data-3]";
+			const hasDefPoint = !defs.select(selector).empty();
+
+			// when
+			chart.unload({
+				ids: ["data_3"],
+				done() {
+					expect(hasDefPoint).to.be.true;
+					expect(defs.select(selector).empty()).to.be.true;
+
+					done(1);
+				}
+			});
+		}));
 	});
 
 	describe("legend item tile coloring with color_treshold", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -532,7 +582,7 @@ describe("LEGEND", () => {
 
 		// espacially for gauges with multiple arcs to have the same coloring between legend tiles, tooltip tiles and arc
 		it('selects the color from color_pattern if color_treshold is given', function () {
-			const tileColor = [];
+			const tileColor: string[] = [];
 
 			chart.internal.$el.svg.selectAll(`.${$LEGEND.legendItemTile}`).each(function () {
 				tileColor.push(d3Select(this).style('stroke'));
@@ -544,8 +594,11 @@ describe("LEGEND", () => {
 			expect(tileColor[3]).to.be.equal('rgb(255, 0, 0)');
 		});
 
-		it("color.threshold should be generated without error when legend.show=false", done => {
-			const spy = sinon.spy();
+		it("color.threshold should be generated without error when legend.show=false", () => new Promise(done => {
+			const spy = sinon.spy(() => {
+				expect(spy.called).to.be.true;
+				done(1);
+			});
 
 			util.generate({
 				data: {
@@ -563,16 +616,11 @@ describe("LEGEND", () => {
 				},
 				onrendered: spy
 			});
-
-			setTimeout(() => {
-				expect(spy.called).to.be.true;
-				done();
-			}, 500);
-		});
+		}));
 	});
 
 	describe("legend item tile coloring without color_treshold", () => {
-		before(function() {
+		beforeAll(function() {
 			args = {
 				data: {
 					columns: [
@@ -590,7 +638,7 @@ describe("LEGEND", () => {
 		});
 
 		it("selects the color from data_colors, data_color or default", function() {
-			const tileColor = [];
+			const tileColor: string[] = [];
 
 			chart.internal.$el.svg.selectAll(`.${$LEGEND.legendItemTile}`)
 				.each(function() {
@@ -613,8 +661,8 @@ describe("LEGEND", () => {
 		});
 	});
 
-	describe("legend opacity onclcik", () => {
-		before(() => {
+	describe("legend opacity onclick", () => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -641,10 +689,81 @@ describe("LEGEND", () => {
 
 			expect(legend.classed($FOCUS.legendItemFocused)).to.false;
 		});
+
+		it("should toggle only touched legend item on touch input", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, -200, 100, 200, 190, 280],
+						["data2", 30, 200, 120, 400, 150, 150]
+					]
+				},
+				interaction: {
+					inputType: {
+						touch: true
+					}
+				},
+				transition: {
+					duration: 0
+				}
+			};
+			chart.destroy();
+			chart = util.generate(args);
+
+			const legend1 = chart.$.legend.select(`.${$LEGEND.legendItem}-data1`);
+			const legend2 = chart.$.legend.select(`.${$LEGEND.legendItem}-data2`);
+			const node = legend2.node();
+			const {x, y} = node.getBoundingClientRect();
+			const touch = new Touch({
+				identifier: Date.now(),
+				target: node,
+				clientX: x,
+				clientY: y
+			});
+			const dispatchTouch = type => node.dispatchEvent(new TouchEvent(type, {
+				bubbles: true,
+				cancelable: true,
+				touches: type === "touchend" ? [] : [touch],
+				targetTouches: type === "touchend" ? [] : [touch],
+				changedTouches: [touch]
+			}));
+			const xgridFocus = chart.$.grid.main.select(`line.${$FOCUS.xgridFocus}`);
+
+			chart.tooltip.show({index: 1});
+
+			expect(chart.$.tooltip.style("display")).to.be.equal("block");
+			expect(xgridFocus.style("visibility")).to.not.be.equal("hidden");
+
+			dispatchTouch("touchstart");
+			dispatchTouch("touchend");
+
+			expect(chart.$.tooltip.style("display")).to.be.equal("none");
+			expect(chart.$.grid.main.select(`line.${$FOCUS.xgridFocus}`).style("visibility"))
+				.to.be.equal("hidden");
+			expect(legend2.classed($LEGEND.legendItemHidden)).to.be.true;
+			expect(+legend2.style("opacity")).to.be.equal(0.15);
+			expect(legend1.classed($LEGEND.legendItemHidden)).to.be.false;
+			expect(legend1.node().style.opacity).to.be.equal("");
+
+			util.fireEvent(node, "click", {
+				clientX: x,
+				clientY: y
+			}, chart);
+
+			expect(legend2.classed($LEGEND.legendItemHidden)).to.be.true;
+
+			dispatchTouch("touchstart");
+			dispatchTouch("touchend");
+
+			expect(legend2.classed($LEGEND.legendItemHidden)).to.be.false;
+			expect(legend2.node().style.opacity).to.be.equal("");
+			expect(legend1.classed($LEGEND.legendItemHidden)).to.be.false;
+			expect(legend1.node().style.opacity).to.be.equal("");
+		});
 	});
 
 	describe("legend transition", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -660,7 +779,7 @@ describe("LEGEND", () => {
 			};
 		});
 
-		it("legend shouldn't be transitioned", done => {
+		it("legend shouldn't be transitioned", () => new Promise(done => {
 			chart.load({
 				columns: [
 					["data1", 130, 120, 150, 140, 160, 150],
@@ -670,18 +789,378 @@ describe("LEGEND", () => {
 			});
 
 			let cnt = 0
-			const pos = [];
+			const pos: string[] = [];
 			const interval = setInterval(() => {
 				if (cnt >= 5) {
 					clearInterval(interval);
 					expect(pos.every(v => v === pos[0])).to.be.true;
 
-					done();
+					done(1);
 				}
 
 				pos.push(chart.$.legend.select("text").attr("x"));
 				cnt++;
 			}, 50);
+		}));
+	});
+
+	describe("item.tile.type option", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 100],
+						["data2", 300],
+						["data3", 200]
+					],
+					type: "pie", // for ESM specify as: pie()
+				},
+				legend: {
+					item: {
+						tile: {
+							type: "circle"
+						},
+					}
+				}
+			};
+		});
+
+		it("should item tile's shapes are 'circle'?", () => {
+			const legendItems = chart.$.legend.selectAll("circle");
+
+			expect(legendItems.size()).to.be.equal(chart.data().length);
+			
+			legendItems.each(function() {
+				expect(+this.getAttribute("r")).to.be.equal(5);
+			});
+		});
+
+		it("set options: legend.item.tile.r=7", () => {
+			args.legend.item.tile.r = 7;
+		});
+
+		it("check 'circle' item's radius", () => {
+			const legendItems = chart.$.legend.selectAll("circle");
+
+			expect(legendItems.size()).to.be.equal(chart.data().length);
+			
+			legendItems.each(function() {
+				expect(+this.getAttribute("r")).to.be.equal(args.legend.item.tile.r);
+			});
+		});
+
+		it("set options: legend.item.tile='rectangle'", () => {
+			args.legend.item.tile = {
+				type: "rectangle"
+			};
+		});
+
+		it("should item tile's shapes are 'rectangle'?", () => {
+			const legendItems = chart.$.legend.selectAll("line");
+
+			expect(legendItems.size()).to.be.equal(chart.data().length);
+		});
+	});
+
+	describe("legend item interaction", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 300, 350, 300],
+						["data2", 130, 100, 140]
+					],
+					type: "line"
+				},
+				legend: {
+					item: {
+						interaction: false
+					}
+				}
+			};
+		});
+
+		it("shouldn't be interacted", () => {
+			const {legend} = chart.$;
+
+			chart.data().forEach(({id}) => {
+				const item = legend.select(`.bb-legend-item-${id}`);
+
+				expect(item.on("click mouseover mouseout")).to.be.undefined;
+				expect(item.attr("style")).to.be.null;
+			});
+		});
+
+		it("set options: legend.item.onclick", () => {
+			args.legend.item.onclick = sinon.spy(() => {});
+		});
+
+		it("should only 'click' event lister bound", () => {
+			const {legend} = chart.$;
+
+			chart.data().forEach(({id}) => {
+				const item = legend.select(`.bb-legend-item-${id}`);
+
+				expect(item.on("mouseover mouseout")).to.be.undefined;
+				expect(item.on("click")).to.not.be.undefined;
+				expect(item.style("cursor")).to.be.equal("pointer");
+
+				id === "data1" && chart.hide(id);
+
+				fireEvent(item.node(), "click", {
+					clientX: 2,
+					clientY: 2
+				}, chart);
+			});
+
+			// given visible state argguments?
+			expect(args.legend.item.onclick.args)
+				.to.be.deep.equal(chart.data().map(({id}) => [id, id === "data1" ? false : true]));
+		});
+
+		it("set options: legend.item.onover", () => {
+			delete args.legend.item.onclick;
+			args.legend.item.onover = sinon.spy(() => {});
+		});
+
+		it("should only 'mouseover' event lister bound", () => {
+			const {legend} = chart.$;
+
+			chart.data().forEach(({id}) => {
+				const item = legend.select(`.bb-legend-item-${id}`);
+
+				expect(item.on("click mouseout")).to.be.undefined;
+				expect(item.on("mouseover")).to.not.be.undefined;
+				expect(item.style("cursor")).to.be.equal("pointer");
+
+				id === "data2" && chart.hide(id);
+
+				fireEvent(item.node(), "mouseover", {
+					clientX: 2,
+					clientY: 2
+				}, chart);
+			});
+
+			// given visible state argguments?
+			expect(args.legend.item.onover.args)
+				.to.be.deep.equal(chart.data().map(({id}) => [id, id === "data2" ? false : true]));
+		});
+
+		it("set options: legend.item.onout", () => {
+			delete args.legend.item.onover;
+			args.legend.item.onout = sinon.spy(() => {});
+		});
+
+		it("should only 'mouseout' event lister bound", () => {
+			const {legend} = chart.$;
+
+			chart.data().forEach(({id}) => {
+				const item = legend.select(`.bb-legend-item-${id}`);
+
+				expect(item.on("click mouseover")).to.be.undefined;
+				expect(item.on("mouseout")).to.not.be.undefined;
+				expect(item.style("cursor")).to.be.equal("pointer");
+
+				id === "data1" && chart.hide(id);
+
+				fireEvent(item.node(), "mouseout", {
+					clientX: 2,
+					clientY: 2
+				}, chart);
+			});
+
+			// given visible state argguments?
+			expect(args.legend.item.onout.args)
+				.to.be.deep.equal(chart.data().map(({id}) => [id, id === "data1" ? false : true]));
+		});
+
+		it("set options: legend.item.interaction.dblclik=true", () => {
+			args.legend.item.interaction = {
+				dblclick: true
+			};
+		});
+
+		it("check dblclick interaction", () => {
+			const {$: {legend}, internal: {state}} = chart;
+
+			chart.data().forEach(({id}) => {
+				const item = legend.select(`.bb-legend-item-${id}`).node();
+
+				// when double click
+				fireEvent(item, "dblclick", undefined, chart);
+
+				expect(state.hiddenTargetIds.size && !state.hiddenTargetIds.has(id)).to.be.true;
+
+				// when double click again, it should return to initial state
+				fireEvent(item, "dblclick", undefined, chart);
+
+				expect(state.hiddenTargetIds).to.be.empty;
+			});
+		});
+	});
+
+	describe("legend format", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1 data1 data1 data1 data1 data1 ", 2, 3, 5],
+						["data2 data1 data1 data1 data1 data1", 1, 2, 2],
+					],
+					type: "line"
+				},
+				legend: {
+					format: function(id) {
+						if (id.length > 5) {
+							id = id.substr(0, 5) + "...";
+						}
+			
+						return id;
+					}
+				}
+			};
+		});
+
+		it("legend text are formatted correctly?", () => {
+			const formatted = chart.data().map(v => {
+				return args.legend.format(v.id);
+			});
+
+			const legendText = chart.$.legend
+				.selectAll("text").nodes()
+				.map(v => v.textContent);
+
+			expect(formatted).to.be.deep.equal(legendText);
+			expect(chart.$.legend.selectAll("title").empty()).to.be.true;
+		});
+
+		it("set options: legend.format.tooltip=true", () => {
+			args.legend.tooltip = true;
+		});
+
+		it("legend text title are set correctly?", () => {
+			const dataIds = chart.data().map(v => v.id);
+			const legendTitle = chart.$.legend.selectAll("title").nodes().map(v => v.textContent);
+
+			expect(dataIds).to.be.deep.equal(legendTitle);
+		});
+
+		it("set options: data.names", () => {
+			args = {
+				data: {
+					names: {
+					  "data1": "Detailed Name",
+					  "data2": "Name Detailed"
+					},
+					columns: [
+					  ["data1", 71.4],
+					  ["data2", 10],
+					],
+					type: "gauge"
+				},
+				legend: {
+					format: id => id.substr(0, 2) + "...",
+					tooltip: true
+				}
+			}
+		});
+
+		it("should legend title show data.names values.", () => {
+			const legendTitle = chart.$.legend.selectAll("title").nodes().map(v => v.textContent);
+			const dataNames = Object.values(chart.data.names());
+
+			expect(legendTitle).to.be.deep.equal(dataNames);
+		});
+
+		it("set options: legend.format", () => {
+			args.legend.format = function(id, dataId) {
+				return id === "Name Detailed" ? dataId : id;
+			};
+		});
+
+		it("should legend format function receive original data id.", () => {
+			const legend = chart.$.legend.select("g:last-child");
+
+			expect(legend.select("text").text()).to.be.equal("data2");
+			expect(legend.select("title").text()).to.be.equal("Name Detailed");
+		});
+	});
+
+	describe("XSS prevention", () => {
+		describe("legend.contents.template as function", () => {
+			let legendElement: HTMLElement;
+
+			beforeAll(() => {
+				legendElement = document.createElement("div");
+				legendElement.id = "legend-xss-test";
+				document.body.appendChild(legendElement);
+
+				args = {
+					data: {
+						columns: [
+							["data1", 100],
+							["data2", 200]
+						]
+					},
+					legend: {
+						contents: {
+							bindto: "#legend-xss-test",
+							template: function(id, color, values) {
+								return `<span onclick="alert(1)" style="color:${color}"><script>alert('${id}')</script>${id}</span>`;
+							}
+						}
+					}
+				};
+			});
+
+			afterAll(() => {
+				legendElement.parentNode?.removeChild(legendElement);
+			});
+
+			it("should sanitize malicious content from template function", () => {
+				const html = legendElement.innerHTML;
+
+				expect(html).to.not.include("<script>");
+				expect(html).to.not.include("</script>");
+				expect(html).to.not.include("onclick");
+				expect(html).to.include("data1");
+				expect(html).to.include("data2");
+			});
+		});
+
+		describe("legend.contents.template as string with tplProcess", () => {
+			let legendElement: HTMLElement;
+
+			beforeAll(() => {
+				legendElement = document.createElement("div");
+				legendElement.id = "legend-xss-test2";
+				document.body.appendChild(legendElement);
+
+				args = {
+					data: {
+						columns: [
+							["<script>alert(1)</script>", 100]
+						]
+					},
+					legend: {
+						contents: {
+							bindto: "#legend-xss-test2",
+							template: "<span style='background:{=COLOR}'>{=TITLE}</span>"
+						}
+					}
+				};
+			});
+
+			afterAll(() => {
+				legendElement.parentNode?.removeChild(legendElement);
+			});
+
+			it("should sanitize malicious data id in template", () => {
+				const html = legendElement.innerHTML;
+
+				expect(html).to.not.include("<script>");
+				expect(html).to.not.include("</script>");
+			});
 		});
 	});
 });

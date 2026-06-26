@@ -1,53 +1,50 @@
 name: CI
 on: [push, pull_request]
 
-permissions:
-  contents: read
+permissions: write-all
 
 jobs:
   test:
     permissions:
       checks: write  # for coverallsapp/github-action to create new checks
       contents: read  # for actions/checkout to fetch code
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 17.x]
+        node-version: [22.x, 23.x, 24.x]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.node-version }}
-        
-    - name: Cache Node.js modules
-      uses: actions/cache@v2
-      with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
-        path: ~/.npm
-        key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-node-
-          ${{ runner.OS }}-
+        cache: 'pnpm'
 
     - name: Install dependencies
       run: |
-        npm config set package-lock false
-        npm install --save --legacy-peer-deps
+        pnpm install --frozen-lockfile
+        sudo pnpm exec playwright install-deps
+        pnpm exec playwright install
 
     - name: Lint
-      run: npm run lint
+      run: pnpm run lint
 
     - name: Run Test
-      run: npm run coverage
+      run: pnpm run coverage:ci
 
     - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
-        github-token: ${{ secrets.github_token }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./coverage/lcov.info
+        format: lcov
         flag-name: run-${{ matrix.node-version }}
         parallel: true
+        fail-on-error: false
         
   send_coverage:
     permissions:
@@ -57,10 +54,11 @@ jobs:
     steps:
     - name: Coveralls
       # https://github.com/marketplace/actions/coveralls-github-action
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel-finished: true
+        fail-on-error: false
 
   release:
     needs: send_coverage
@@ -68,27 +66,29 @@ jobs:
     if: contains('refs/heads/next refs/heads/latest', github.ref)
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v6
         with:
-          node-version: 14
+          node-version: 24.x
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: |
-          npm config set package-lock false
-          npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Publish
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         id: publish
-        run: npm run release
+        run: pnpm run release
 
       - name: Deploy
         shell: bash

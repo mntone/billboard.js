@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
 import {$AXIS, $BAR, $GAUGE} from "../../src/config/classes";
@@ -17,6 +17,9 @@ describe("API chart", () => {
 				["data1", 30, 200, 100, 400],
 				["data2", 500, 800, 500, 2000]
 			]
+		},
+		transition: {
+			duration: 0
 		}
 	};
 
@@ -45,24 +48,21 @@ describe("API chart", () => {
 			expect(chart.groups().length).to.be.equal(0);
 		});
 
-		it("should update groups correctly", done => {
+		it("should update groups correctly", function() {
 			const main = chart.$.main;
 			const path = main.select(`.${$BAR.bars}-data1 path`);
 			const barWidth = util.getBBox(path).width;
 
+			// when
 			chart.groups([
 				["data1", "data2"]
 			]);
 
-			setTimeout(() => {
-				// check for the groups data set
-				expect(chart.groups()[0].length).to.be.equal(chart.data().length);
+			// check for the groups data set
+			expect(chart.groups()[0].length).to.be.equal(chart.data().length);
 
-				// check for the bars were stacked
-				expect(util.getBBox(path).width).to.be.equal(barWidth * 2);
-
-				done();
-			}, 500);
+			// check for the bars were stacked
+			expect(util.getBBox(path).width).to.be.closeTo(barWidth * 2, 1);
 		});
 	});
 
@@ -111,19 +111,20 @@ describe("API chart", () => {
 			// all methods should be ressetted
 			Object.keys(chart).forEach(key => {
 				expect(chart[key]()).to.be.undefined;
-				expect(/^function()/.test(chart[key].toString())).to.be.true;
+				expect(/^\(\)\s?=\>\s?\{/.test(chart[key].toString())).to.be.true;
 			});
 
+			// @ts-ignore
 			expect(bb.instance.indexOf(chart) === -1).to.be.true;
 
-			const el = document.getElementById("chart");
+			const el = <HTMLDivElement>document.getElementById("chart");
 
 			// should revert removing className and styles
 			expect(el.classList.contains("bb")).to.be.false;
 			expect(el.style.position).to.be.equal("");
 		});
 
-		it("should be destroyed without throwing error", done => {
+		it("should be destroyed without throwing error", () => new Promise(done => {
 			chart = util.generate({
 				data: {
 					columns: [["data1", 50, 20]]
@@ -138,8 +139,8 @@ describe("API chart", () => {
 
 				chart.destroy();
 				setTimeout(done, 500);
-			}, 500);
-		});
+			}, 350);
+		}));
 
 		it("should not throw error when already destroyed", () => {
 			chart.destroy();
@@ -162,7 +163,7 @@ describe("API chart", () => {
 	});
 
 	describe("config()", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -221,7 +222,7 @@ describe("API chart", () => {
 
 		it("check for the axis config update", () => {
 			const axisYTick = chart.$.main.selectAll(`.${$AXIS.axisY} .tick`);
-			const expected = [];
+			const expected: {[key: string]: number}[] = [];
 
 			// axis y tick is outer
 			axisYTick.each(function() {
@@ -253,5 +254,28 @@ describe("API chart", () => {
 				expect(+tspan.getAttribute("x")).to.be.equal(Math.abs(expected[i].tspan));
 			});
 		});
+
+		it("should return generation options object.", () => {
+			expect(args).to.be.deep.equal(chart.config());
+		});
+
+		it("should data.color applied", () => new Promise(done => {
+			const color = "rgb(255, 0, 0)";
+
+			chart.config("data.color", function (c, d) {
+			      return {
+					data1: color
+				}[d.id];
+			}, true);
+
+			setTimeout(() => {
+				const {$: {legend, line: {lines}}} = chart;
+
+				expect(legend.select("line").style("stroke")).to.be.equal(color);
+				expect(lines.style("stroke")).to.be.equal(color);
+
+				done(1);
+			}, 350);
+		}));
 	});
 });

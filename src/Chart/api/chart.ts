@@ -3,7 +3,8 @@
  * billboard.js project is licensed under the MIT license
  */
 import {window} from "../../module/browser";
-import {notEmpty, isDefined} from "../../module/util";
+import {isDefined, isEmpty, notEmpty} from "../../module/util";
+import {cleanupWorkers} from "../../module/worker";
 
 export default {
 	/**
@@ -30,6 +31,7 @@ export default {
 			config.size_height = size ? size.height : null;
 
 			state.resizing = true;
+			state.dirty.size = true;
 
 			this.flush(false);
 			$$.resizeFunction();
@@ -38,7 +40,7 @@ export default {
 
 	/**
 	 * Force to redraw.
-	 * - **NOTE:** When zoom/subchart is used, the zoomed state will be resetted.
+	 * - **NOTE:** When zoom/subchart is used, the zoomed state will be reset.
 	 * @function flush
 	 * @instance
 	 * @memberof Chart
@@ -55,7 +57,6 @@ export default {
 
 		if (state.rendered) {
 			// reset possible zoom scale when is called from resize event
-			// eslint-disable-next-line prefer-rest-params
 			if (state.resizing) { // arguments[1] is given when is called from resize
 				$$.brush?.updateResize();
 			} else {
@@ -66,23 +67,43 @@ export default {
 			// hide possible reset zoom button
 			// https://github.com/naver/billboard.js/issues/2201
 			zoomResetBtn?.style("display", "none");
+
+			// keep current zoom domain
+			if ($$.scale.zoom) {
+				state.current.zoomDomain = $$.scale.zoom.domain();
+			}
+
 			$$.scale.zoom = null;
 
-			soft ? $$.redraw({
-				withTransform: true,
-				withUpdateXDomain: true,
-				withUpdateOrgXDomain: true,
-				withLegend: true
-			}) : $$.updateAndRedraw({
-				withLegend: true,
-				withTransition: false,
-				withTransitionForTransform: false,
-			});
+			// Ensure shapes are fully updated on flush
+			// Skip for resize-only: data hasn't changed, only geometry needs recalculation
+			if (!state.resizing) {
+				state.dirty.data = true;
+			}
+
+			soft ?
+				$$.redraw({
+					withTransform: true,
+					withUpdateXDomain: true,
+					withUpdateOrgXDomain: true,
+					withLegend: true
+				}) :
+				$$.updateAndRedraw({
+					withLegend: true,
+					withTransition: false,
+					withTransitionForTransform: false
+				});
 
 			// reset subchart selection & selection state
 			if (!state.resizing && $$.brush) {
 				$$.brush.getSelection().call($$.brush.move);
 				$$.unselectRect();
+			}
+
+			// restore zoom domain
+			if (state.current.zoomDomain) {
+				$$.api.zoom(state.current.zoomDomain);
+				state.current.zoomDomain = null;
 			}
 		} else {
 			$$.initToRender(true);
@@ -100,24 +121,47 @@ export default {
 	 */
 	destroy(): null {
 		const $$ = this.internal;
-		const {$el: {chart, svg}} = $$;
+		const {state, $el: {chart, style, svg}} = $$;
 
 		if (notEmpty($$)) {
 			$$.callPluginHook("$willDestroy");
+
+			// clear interaction caches that hold DOM references
+			$$.cache?.remove(["setOverOut", "callOverOutForTouch"]);
+
 			$$.charts.splice($$.charts.indexOf(this), 1);
+
+			// release cached web workers/Object URLs when no chart instance remains
+			$$.charts.length === 0 && cleanupWorkers();
 
 			// detach events
 			$$.unbindAllEvents();
 
 			// clear timers && pending transition
-			svg.select("*").interrupt();
-			$$.resizeFunction.clear();
+			svg?.select("*").interrupt();
+			state.canvasFlowFrame !== null &&
+				window.cancelAnimationFrame?.(state.canvasFlowFrame);
+			state.canvasFlowFrame = null;
+			state.canvasFlowFinish = null;
+			state.pendingRaf !== null && window.cancelAnimationFrame?.(state.pendingRaf);
+			state.pendingRaf = null;
+			$$.canvasRenderer?.destroy();
+			$$.canvasEngine?.destroy();
+			$$.resizeFunction?.clear();
 
-			window.removeEventListener("resize", $$.resizeFunction);
+			$$.resizeFunction?.resizeObserver?.disconnect();
+			$$.resizeFunction && window.removeEventListener("resize", $$.resizeFunction);
 			chart.classed("bb", false)
-				.style("position", null)
-				.selectChildren()
-				.remove();
+				.style("position", null);
+
+			if (state.isCanvasMode) {
+				chart.style("min-height", state.canvasInlineStyle.minHeight || null);
+			}
+
+			chart.selectChildren().remove();
+
+			// remove <style> element added by boost.useCssRule option
+			style && style.parentNode.removeChild(style);
 
 			// releasing own references
 			Object.keys(this).forEach(key => {
@@ -139,32 +183,47 @@ export default {
 	},
 
 	/**
-	 * Get or set single config option value.
+	 * Get or set config option value.
+	 * - **NOTE**
+	 *  - The option key name must be specified as the last level.
+	 *  - When no argument is given, it will return all specified generation options object only. (will exclude any other options not specified at the initialization)
 	 * @function config
 	 * @instance
 	 * @memberof Chart
 	 * @param {string} name The option key name.
-	 * @param {*} [value] The value accepted for indicated option.
+	 * @param {string|number|boolean|object|Array} [value] The value accepted for indicated option.
 	 * @param {boolean} [redraw] Set to redraw with the new option changes.
-	 * - **NOTE:** Doesn't guarantee work in all circumstances. It can be applied for limited options only.
-	 * @returns {*}
+	 * - **NOTE:** Doesn't guarantee to work in all circumstances. It can be applied for limited options only.
+	 * @returns {string|number|boolean|object|Array} The option value or all options object
 	 * @example
+	 *
 	 * // Getter
 	 * chart.config("gauge.max");
 	 *
+	 * // Getter specified with top level key name will not work.
+	 * // The option key name must be specified as the last level.
+	 * // chart.config("gauge"); // will not work
+	 *
+	 * // without any arguments, it returns generation config object
+	 * chart.config();  // {data: { ... }, axis: { ... }, ...}
+	 *
 	 * // Setter
 	 * chart.config("gauge.max", 100);
+	 *
+	 * // Setter specified with top level key name will not work.
+	 * // The option key name must be specified as the last level.
+	 * // chart.config("gauge", {min: 10, max: 20}); // will not work
 	 *
 	 * // Setter & redraw with the new option
 	 * chart.config("gauge.max", 100, true);
 	 */
 	config(name: string, value?: any, redraw?: boolean): any {
 		const $$ = this.internal;
-		const {config} = $$;
+		const {config, state} = $$;
 		const key = name?.replace(/\./g, "_");
 		let res;
 
-		if (key in config) {
+		if (name && key in config) {
 			if (isDefined(value)) {
 				config[key] = value;
 				res = value;
@@ -173,6 +232,8 @@ export default {
 			} else {
 				res = config[key];
 			}
+		} else if (arguments.length === 0 || isEmpty(name)) {
+			res = state.orgConfig;
 		}
 
 		return res;

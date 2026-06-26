@@ -4,8 +4,8 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import sinon from "sinon";
-import {expect} from "chai";
 import {
 	select as d3Select,
 	selectAll as d3SelectAll
@@ -28,7 +28,7 @@ describe("SELECTION", () => {
 
 	describe("check for callbacks", () => {
 		describe("data.selction.enabled", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -144,5 +144,51 @@ describe("SELECTION", () => {
 				expect(d3SelectAll(`.${$SELECT.SELECTED}`).size() === 2).to.be.true;
 			});
 		});
+	});
+
+	describe("check for selection", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400, 150, 250],
+						["data2", 230, 280, 320, 218, 250, 150]
+					],
+					type: "line",
+					selection: {
+						enabled: true,
+						multiple: false
+					}
+				},
+				point:{
+					focus: {
+						only: true
+					}
+				}
+			};
+		});
+
+		it("check one selection only.", () => new Promise(done => {
+			const eventRect = chart.internal.$el.eventRect.node();
+
+			// when
+			chart.tooltip.show({x: 3});
+
+			chart.$.circles.each(function() {				
+				util.fireEvent(eventRect, "click", {
+					clientX: +this.getAttribute("cx"),
+					clientY: +this.getAttribute("cy")
+				}, chart);
+			});
+
+			setTimeout(() => {
+				const selected = chart.$.main.selectAll(`.${$SELECT.selectedCircles} circle`);
+
+				expect(selected.size()).to.be.equal(1);
+				expect(selected.datum().id).to.be.equal("data2");
+
+				done(1);
+			}, 350);
+		}));
 	});
 });

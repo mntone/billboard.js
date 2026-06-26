@@ -3,9 +3,20 @@
  * billboard.js project is licensed under the MIT license
  */
 import {select as d3Select} from "d3-selection";
-import {KEY} from "../../module/Cache";
 import {$AXIS, $COMMON, $LEVEL, $RADAR, $SHAPE, $TEXT} from "../../config/classes";
-import {getMinMax, getRange, isDefined, isEmpty, isNumber, isUndefined, setTextValue, toArray} from "../../module/util";
+import {KEY} from "../../module/Cache";
+import {
+	getBoundingRect,
+	getMinMax,
+	getPathBox,
+	getRange,
+	isDefined,
+	isEmpty,
+	isNumber,
+	isUndefined,
+	setTextValue,
+	toArray
+} from "../../module/util";
 
 /**
  * Get the position value
@@ -18,7 +29,8 @@ import {getMinMax, getRange, isDefined, isEmpty, isNumber, isUndefined, setTextV
  * @returns {number}
  * @private
  */
-function getPosition(isClockwise: boolean, type: "x" | "y", edge: number, pos: number, range: number, ratio: number): number {
+function _getPosition(isClockwise: boolean, type: "x" | "y", edge: number, pos: number,
+	range: number, ratio: number): number {
 	const index = isClockwise && pos > 0 ? edge - pos : pos;
 	const r = 2 * Math.PI;
 	const func = type === "x" ? Math.sin : Math.cos;
@@ -27,7 +39,8 @@ function getPosition(isClockwise: boolean, type: "x" | "y", edge: number, pos: n
 }
 
 // cache key
-const cacheKey = KEY.radarPoints;
+const cacheKeyPoints = KEY.radarPoints;
+const cacheKeyTextWidth = KEY.radarTextWidth;
 
 export default {
 	initRadar(): void {
@@ -51,6 +64,14 @@ export default {
 				.attr("class", $SHAPE.shapes);
 
 			current.dataMax = config.radar_axis_max || $$.getMinMaxData().max[0].value;
+
+			if (config.radar_axis_text_show) {
+				config.interaction_enabled && $$.bindRadarEvent();
+
+				// it needs to calculate dimension at the initialization
+				$$.updateRadarLevel();
+				$$.updateRadarAxes();
+			}
 		}
 	},
 
@@ -68,7 +89,9 @@ export default {
 		const {config} = $$;
 
 		if (isEmpty(config.axis_x_categories)) {
-			config.axis_x_categories = getRange(0, getMinMax("max", targets.map(v => v.values.length)));
+			config.axis_x_categories = getRange(0, getMinMax("max", targets.map(v =>
+				v.values.length
+			)));
 		}
 
 		$$.generateRadarPoints();
@@ -81,14 +104,16 @@ export default {
 		const edge = config.axis_x_categories.length;
 		const isClockwise = config.radar_direction_clockwise;
 
-		const pos = toArray(type).map(v => getPosition(
-			isClockwise,
-			v,
-			edge,
-			index,
-			isDefined(range) ? range : (type === "x" ? width : height),
-			isNumber(ratio) ? ratio : config.radar_size_ratio
-		));
+		const pos = toArray(type).map(v =>
+			_getPosition(
+				isClockwise,
+				v,
+				edge,
+				index,
+				isDefined(range) ? range : (type === "x" ? width : height),
+				isNumber(ratio) ? ratio : config.radar_size_ratio
+			)
+		);
 
 		return pos.length === 1 ? pos[0] : pos;
 	},
@@ -102,7 +127,7 @@ export default {
 		const targets = $$.data.targets;
 
 		const [width, height] = $$.getRadarSize();
-		const points = $$.cache.get(cacheKey) || {};
+		const points = $$.cache.get(cacheKeyPoints) || {};
 		const size = points._size;
 
 		// recalculate position only when the previous dimension has been changed
@@ -114,7 +139,7 @@ export default {
 			});
 
 			points._size = {width, height};
-			$$.cache.add(cacheKey, points);
+			$$.cache.add(cacheKeyPoints, points);
 		}
 	},
 
@@ -136,7 +161,7 @@ export default {
 	},
 
 	generateGetRadarPoints(): Function {
-		const points = this.cache.get(cacheKey);
+		const points = this.cache.get(cacheKeyPoints);
 
 		return (d, i) => {
 			const point = points[d.id][i];
@@ -168,8 +193,10 @@ export default {
 		// Generate points
 		const points = levelData.map(v => {
 			const range = levelRatio[v];
-			const pos = getRange(0, edge).map(i => (
-				$$.getRadarPosition(["x", "y"], i, range, 1)).join(",")
+			const pos = getRange(0, edge).map(i =>
+				(
+					$$.getRadarPosition(["x", "y"], i, range, 1)
+				).join(",")
 			);
 
 			return pos.join(" ");
@@ -200,14 +227,17 @@ export default {
 			levelEnter.append("text")
 				.attr("dx", "-.5em")
 				.style("text-anchor", "end")
-				.text(d => levelTextFormat(
-					state.current.dataMax / levelData.length * (d + 1)
-				));
+				.text(d =>
+					levelTextFormat(
+						state.current.dataMax / levelData.length * (d + 1)
+					)
+				);
 		}
 
 		levelEnter
 			.merge(level)
-			.attr("transform", d => `translate(${width - levelRatio[d]}, ${height - levelRatio[d]})`)
+			.attr("transform",
+				d => `translate(${width - levelRatio[d]}, ${height - levelRatio[d]})`)
 			.selectAll("polygon")
 			.attr("points", d => points[d]);
 
@@ -250,6 +280,7 @@ export default {
 		// axis text
 		if (config.radar_axis_text_show) {
 			const {x = 0, y = 0} = config.radar_axis_text_position;
+			const textWidth = $$.cache.get(cacheKeyTextWidth) || 0;
 
 			axis.select("text")
 				.style("text-anchor", "middle")
@@ -263,7 +294,7 @@ export default {
 				.attr("transform", function(d) {
 					if (isUndefined(this.width)) {
 						// cache evaluated axis text width
-						this.width = this.getBoundingClientRect().width / 2;
+						this.width = getBoundingRect(this, true).width / 2;
 					}
 
 					let posX = $$.getRadarPosition("x", d.index, undefined, 1);
@@ -288,80 +319,76 @@ export default {
 
 					return `translate(${posX} ${posY})`;
 				});
-		}
 
-		$$.bindEvent();
+			if (!textWidth) {
+				const widths = [radar.axes, radar.levels].map(v => getPathBox(v.node()).width);
+
+				if (widths.every(v => v > 0)) {
+					$$.cache.add(cacheKeyTextWidth, widths[0] - widths[1]);
+				}
+			}
+		}
 	},
 
-	bindEvent(): void {
+	bindRadarEvent(): void {
 		const $$ = this;
 		const {config, state, $el: {radar, svg}} = $$;
-		const focusOnly = config.point_focus_only;
+		const focusOnly = $$.isPointFocusOnly();
 		const {inputType, transiting} = state;
+		const isMouse = inputType === "mouse";
 
-		if (config.interaction_enabled) {
-			const isMouse = inputType === "mouse";
-			const getIndex = event => {
-				let target = event.target;
+		const hide = event => {
+			state.event = event;
 
-				// in case of multilined axis text
-				if (/tspan/i.test(target.tagName)) {
-					target = target.parentNode;
-				}
-
-				const d: any = d3Select(target).datum();
-
-				return d && Object.keys(d).length === 1 ? d.index : undefined;
-			};
-			const hide = event => {
-				state.event = event;
-
-				const index = getIndex(event);
-				const noIndex = isUndefined(index);
-
-				if (isMouse || noIndex) {
-					$$.hideTooltip();
-
-					focusOnly ?
-						$$.hideCircleFocus() :
-						$$.unexpandCircles();
-
-					if (isMouse) {
-						$$.setOverOut(false, index);
-					} else if (noIndex) {
-						$$.callOverOutForTouch();
-					}
-				}
-			};
-
-			radar.axes.selectAll("text")
-				.on(isMouse ? "mouseover " : "touchstart", event => {
-					if (transiting) { // skip while transiting
-						return;
-					}
-
-					state.event = event;
-					const index = getIndex(event);
-
-					$$.selectRectForSingle(svg.node(), null, index);
-					isMouse ? $$.setOverOut(true, index) : $$.callOverOutForTouch(index);
-				})
-				.on("mouseout", isMouse ? hide : null);
-
-			if (!isMouse) {
-				svg.on("touchstart", hide);
+			if (!config.interaction_onout) {
+				return;
 			}
+
+			// const index = getIndex(event);
+
+			const index = $$.getDataIndexFromEvent(event);
+			const noIndex = isUndefined(index);
+
+			if (isMouse || noIndex) {
+				$$.hideTooltip();
+
+				focusOnly ? $$.hideCircleFocus() : $$.unexpandCircles();
+
+				if (isMouse) {
+					$$.setOverOut(false, index);
+				} else if (noIndex) {
+					$$.callOverOutForTouch();
+				}
+			}
+		};
+
+		radar.axes
+			.on(isMouse ? "mouseover " : "touchstart", event => {
+				if (transiting) { // skip while transiting
+					return;
+				}
+
+				state.event = event;
+				const index = $$.getDataIndexFromEvent(event);
+
+				$$.selectRectForSingle(svg.node(), index);
+				isMouse ? $$.setOverOut(true, index) : $$.callOverOutForTouch(index);
+			}, isMouse ? undefined : {passive: true})
+			.on("mouseout", isMouse ? hide : null);
+
+		if (!isMouse) {
+			svg.on("touchstart", hide, {passive: true});
 		}
 	},
 
 	updateRadarShape(): void {
 		const $$ = this;
 		const targets = $$.data.targets.filter(d => $$.isRadarType(d));
-		const points = $$.cache.get(cacheKey);
+		const points = $$.cache.get(cacheKeyPoints);
 
 		const areas = $$.$el.radar.shapes
 			.selectAll("polygon")
-			.data(targets);
+			.data($$.filterNullish(targets));
 
 		const areasEnter = areas.enter().append("g")
 			.attr("class", $$.getChartClass("Radar"));
@@ -386,7 +413,7 @@ export default {
 	 * @private
 	 */
 	radarCircleX(d): number {
-		return this.cache.get(cacheKey)[d.id][d.index][0];
+		return this.cache.get(cacheKeyPoints)[d.id][d.index][0];
 	},
 
 	/**
@@ -396,6 +423,6 @@ export default {
 	 * @private
 	 */
 	radarCircleY(d): number {
-		return this.cache.get(cacheKey)[d.id][d.index][1];
+		return this.cache.get(cacheKeyPoints)[d.id][d.index][1];
 	}
 };

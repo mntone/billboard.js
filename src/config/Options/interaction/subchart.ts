@@ -19,11 +19,11 @@ export default {
 	 * @property {boolean} [subchart.showHandle=false] Show sub chart's handle.
 	 * @property {boolean} [subchart.axis.x.show=true] Show or hide x axis.
 	 * @property {boolean} [subchart.axis.x.tick.show=true] Show or hide x axis tick line.
-	 * @property {Function|string} [subchart.axis.x.tick.format] Use custom format for x axis ticks - see [axis.x.tick.format](#.axis․x․tick․format) for details.
+	 * @property {function|string} [subchart.axis.x.tick.format] Use custom format for x axis ticks - see [axis.x.tick.format](#.axis․x․tick․format) for details.
 	 * @property {boolean} [subchart.axis.x.tick.text.show=true] Show or hide x axis tick text.
 	 * @property {Array} [subchart.init.range] Set initial selection domain range.
 	 * @property {number} [subchart.size.height] Change the height of the subchart.
-	 * @property {Function} [subchart.onbrush] Set callback for brush event.<br>
+	 * @property {function} [subchart.onbrush] Set callback for brush event.<br>
 	 *  Specified function receives the current zoomed x domain.
 	 * @see [Demo](https://naver.github.io/billboard.js/demo/#Interaction.SubChart)
 	 * @example
@@ -65,8 +65,8 @@ export default {
 	subchart_size_height: 60,
 	subchart_axis_x_show: true,
 	subchart_axis_x_tick_show: true,
-	subchart_axis_x_tick_format: <Function|string|undefined> undefined,
+	subchart_axis_x_tick_format: <Function | string | undefined>undefined,
 	subchart_axis_x_tick_text_show: true,
-	subchart_init_range: <undefined|[number, number]> undefined,
+	subchart_init_range: <undefined | [number, number]>undefined,
 	subchart_onbrush: () => {}
 };

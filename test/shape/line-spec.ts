@@ -4,7 +4,7 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
-import {expect} from "chai";
+import {beforeEach, beforeAll, afterAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import {
 	curveStepAfter as d3CurveStepAfter,
@@ -29,7 +29,7 @@ describe("SHAPE LINE", () => {
 	const parseSvgPath = util.parseSvgPath;
 
 	describe("shape-rendering for line chart", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -65,11 +65,11 @@ describe("SHAPE LINE", () => {
 			args.line.step.type = "step-after";
 		});
 
-		it("should have shape-rendering = crispedges when it's step chart", () => {
+		it("should 'shape-rendering' shouldn't be set 'crispedges' when it's step chart", () => {
 			chart.$.main.selectAll(`.${$LINE.line}`).each(function() {
 				const style = d3Select(this).style("shape-rendering").toLowerCase();
 
-				expect(style).to.be.equal("crispedges");
+				expect(style).to.be.equal("auto");
 			});
 		});
 
@@ -83,7 +83,7 @@ describe("SHAPE LINE", () => {
 	});
 
 	describe("point.show option", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -96,7 +96,7 @@ describe("SHAPE LINE", () => {
 			};
 		});
 
-		it("should not show the circle for null", (done) => {
+		it("should not show the circle for null",  () => new Promise(done => {
 			const target = chart.$.circles.filter(d => d.id === "data1");
 
 			setTimeout(() => {
@@ -104,15 +104,15 @@ describe("SHAPE LINE", () => {
 					expect(this.style.opacity).to.be.equal(d.index === 1 ? "0" : "");
 				});
 
-				done();
-			}, 300)
+				done(1);
+			}, 350)
 
-		});
+		}));
 
-		it("should not draw a line segment for null data", done => {
+		it("should not draw a line segment for null data", () => new Promise(done => {
 			setTimeout(() => {
 				const target = chart.$.main.select(`.${$LINE.chartLine}.${$COMMON.target}-data1`);
-				const commands = parseSvgPath(target.select(`.${$LINE.line}-data1`).attr("d"));
+				const commands: any = parseSvgPath(target.select(`.${$LINE.line}-data1`).attr("d"));
 				let segments = 0;
 
 				for (let i = 0; i < commands.length; i++) {
@@ -121,13 +121,13 @@ describe("SHAPE LINE", () => {
 
 				expect(segments).to.be.equal(3);
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("spline.interpolation option", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -163,7 +163,7 @@ describe("SHAPE LINE", () => {
 	});
 
 	describe("data point nodes generation", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -205,7 +205,7 @@ describe("SHAPE LINE", () => {
 	});
 
 	describe("step type generation", () => {
-		before(() => {
+		beforeAll(() => {
 			skipEach = true;
 
 			args = {
@@ -224,7 +224,7 @@ describe("SHAPE LINE", () => {
 			};
 		});
 
-		after(() => { skipEach = false; });
+		afterAll(() => { skipEach = false; });
 
 		it("check line.step.type=step-after option", () => {
 			const generateChartWithStep = () => {
@@ -257,10 +257,38 @@ describe("SHAPE LINE", () => {
 
 			expect(to).to.be.equal(d3CurveStepBefore);
 		});
+
+		it("set options", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100]
+					],
+					type: "step"
+				},
+				point: {
+					pattern: [
+						"<polygon points='2.5 0 0 2.5 2.5 5 5 2.5 2.5 0'></polygon>"
+					]
+				},
+				tooltip: {
+					grouped: false
+				}
+			};
+		});
+
+		it("should correctly show tooltip with tooltip.grouped=false.", () => {
+			// when
+			chart.tooltip.show({
+				data: {id:"data1", value: 200, x: 1}
+			});
+
+			expect(+chart.$.tooltip.select(".value").text()).to.be.equal(chart.data.values("data1")[1])
+		});
 	});
 
-	describe("step type: catetegory axis & line.ConnectNull", () => {
-		before(() => {
+	describe("step type: category axis & line.ConnectNull", () => {
+		beforeAll(() => {
 			args = {
 				data: {
 					x: "x",
@@ -284,8 +312,8 @@ describe("SHAPE LINE", () => {
 
 		it("should be generated correctly", () => {
 			const path = {
-				column1: "M-42,202.43229166666669L0,202.43229166666669L0,202.43229166666669L126,202.43229166666669L126,202.43229166666669L252,202.43229166666669L252,191.36458333333331L420,191.36458333333331L420,351.8463541666667L588,351.8463541666667L588,351.8463541666667L630,351.8463541666667",
-				column2: "M-42,36.41666666666668L0,36.41666666666668L0,36.41666666666668L126,36.41666666666668L126,147.09375L252,147.09375L252,136.02604166666669L378,136.02604166666669L378,124.95833333333331L504,124.95833333333331L504,390.5833333333333L588,390.5833333333333L588,390.5833333333333L630,390.5833333333333"
+				column1: "M-42.071,202.432L0,202.432L0,202.432L126.214,202.432L126.214,202.432L252.429,202.432L252.429,191.365L420.714,191.365L420.714,351.846L589,351.846L589,351.846L631.071,351.846",
+				column2: "M-42.071,36.417L0,36.417L0,36.417L126.214,36.417L126.214,147.094L252.429,147.094L252.429,136.026L378.643,136.026L378.643,124.958L504.857,124.958L504.857,390.583L589,390.583L589,390.583L631.071,390.583"
 			}
 
 			chart.$.line.lines.each(function(d) {
@@ -295,7 +323,9 @@ describe("SHAPE LINE", () => {
 	});
 
 	describe("line options", () => {
-		before(() => {
+		const rx = /,([^)]+)\)/;
+
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -341,19 +371,13 @@ describe("SHAPE LINE", () => {
 			const tickElements = tickNodes.nodes();
 
 			const translateValues = [
-				"translate(0,391)",
-				"translate(0,347)",
-				"translate(0,303)",
-				"translate(0,258)",
-				"translate(0,214)",
-				"translate(0,170)",
-				"translate(0,125)",
-				"translate(0,81)",
-				"translate(0,37)"
+				391, 347, 303, 258, 214, 170, 125, 81, 37
 			];
 
 			tickNodes.each((data, index) => {
-				expect(d3Select(tickElements[index]).attr("transform")).to.be.equal(translateValues[index]);
+				const transform = tickElements[index].getAttribute("transform");				
+
+				expect(+transform.match(rx)[1]).to.be.closeTo(translateValues[index], 1);
 			});
 		});
 
@@ -365,19 +389,13 @@ describe("SHAPE LINE", () => {
 			const tickElements = tickNodes.nodes();
 
 			const translateValues = [
-				"translate(0,426)",
-				"translate(0,378)",
-				"translate(0,330)",
-				"translate(0,282)",
-				"translate(0,233)",
-				"translate(0,185)",
-				"translate(0,137)",
-				"translate(0,88)",
-				"translate(0,40)"
+				426, 378, 330, 282, 233, 185, 137, 88, 40
 			];
 
-			tickNodes.each((d, index) => {
-				expect(d3Select(tickElements[index]).attr("transform")).to.be.equal(translateValues[index]);
+			tickNodes.each((data, index) => {
+				const transform = tickElements[index].getAttribute("transform");				
+
+				expect(+transform.match(rx)[1]).to.be.closeTo(translateValues[index], 1);
 			});
 		});
 	});

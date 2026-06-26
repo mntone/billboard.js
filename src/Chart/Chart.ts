@@ -9,7 +9,6 @@ import {extend, isFunction, notEmpty} from "../module/util";
 import apiChart from "./api/chart";
 import apiColor from "./api/color";
 import apiData from "./api/data";
-import apiExport from "./api/export";
 import apiFocus from "./api/focus";
 import apiLegend from "./api/legend";
 import apiLoad from "./api/load";
@@ -39,6 +38,10 @@ import apiTooltip from "./api/tooltip";
  * @property {d3.selection} $.svg Main svg element
  * @property {d3.selection} $.defs Definition element
  * @property {d3.selection} $.main Main grouping element
+ * @property {d3.selection} $.needle Needle element
+ *  - **NOTE:**
+ *    - The element will have `bb-needle` as class name.
+ *    - Will provide special helper `.updateHelper(value: number, updateConfig: boolean)` method to facilitate needle position update.
  * @property {d3.selection} $.tooltip Tooltip element
  * @property {d3.selection} $.legend Legend element
  * @property {d3.selection} $.title Title element
@@ -55,10 +58,35 @@ import apiTooltip from "./api/tooltip";
  * @property {d3.selection} $.text.texts Data label text elements
  * @memberof Chart
  * @example
- * var chart = bb.generate({ ... });
+ * const chart = bb.generate({ ... });
  *
  * chart.$.chart; // wrapper element
  * chart.$.line.circles;  // all data point circle elements
+ * @example
+ * // Update arc needle position
+ * const chart = bb.generate({
+ *   data: {
+ *     type: "donut"
+ *   },
+ *   arc: {
+ *     needle: {
+ *       show: true,
+ *       ...
+ *     }
+ *   }
+ * });
+ *
+ * chart.$.needle.updateHelper(70);  // update needle position to point value 70.
+ *
+ * // update needle position to point value 70 and the config value.
+ * // NOTE: updating config value, will update needle pointer initial value too.
+ * chart.$.needle.updateHelper(70, true);
+ *
+ * // update needle point position every 1 second
+ * let i = 0;
+ * setInterval(() => {
+ *   chart.$.needle.updateHelper(i += 10);
+ * }, 1000)
  */
 /**
  * Plugin instance array
@@ -81,6 +109,7 @@ export default class Chart {
 
 	constructor(options) {
 		const $$ = new ChartInternal(this);
+		// let hook = () => {};
 
 		this.internal = $$;
 
@@ -91,6 +120,10 @@ export default class Chart {
 				const isChild = target !== argThis;
 				const isNotNil = notEmpty(fn[key]);
 				const hasChild = isNotNil && Object.keys(fn[key]).length > 0;
+				// const hookFn = function(...params) {
+				// 	hook();
+				// 	return fn[key].bind(argThis)(...params);
+				// }
 
 				if (isFunc && ((!isChild && hasChild) || isChild)) {
 					target[key] = fn[key].bind(argThis);
@@ -108,6 +141,12 @@ export default class Chart {
 
 		$$.beforeInit();
 		$$.init();
+
+		// if ($$.config.render.lazy !== false && hasStyle($$.$el.chart, {"display": "none", "visibility": "hidden"})) {
+		// 	hook = () => {
+		// 		logError(`The call of APIs won't work. Please, make sure if chart element is %cvisible.`);
+		// 	};
+		// }
 	}
 }
 
@@ -116,7 +155,6 @@ extend(Chart.prototype, [
 	apiChart,
 	apiColor,
 	apiData,
-	apiExport,
 	apiFocus,
 	apiLegend,
 	apiLoad,

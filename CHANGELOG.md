@@ -1,3 +1,660 @@
+## [4.0.1](https://github.com/naver/billboard.js/compare/4.0.0...4.0.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* **types:** add canvas subpath mapping ([a6b180a](https://github.com/naver/billboard.js/commit/a6b180a259e6115c1065ad24c4d3c473845be89f))
+
+# [4.0.0](https://github.com/naver/billboard.js/compare/3.18.0...4.0.0) (2026-06-16)
+
+
+### Bug Fixes
+
+* **background:** Correct background image position in canvas ([34009de](https://github.com/naver/billboard.js/commit/34009de310a2f1370388b291cc08a18d1cc9981c))
+* **boost:** Correct rootSelector typo in CSS scope initialization ([a0673ee](https://github.com/naver/billboard.js/commit/a0673ee6b52518720fa2c55706a4ee584c27b85d)), closes [#4123](https://github.com/naver/billboard.js/issues/4123)
+* **boost:** Reuse Worker and Object URL to prevent memory leak ([fc812fb](https://github.com/naver/billboard.js/commit/fc812fb763bacdf3a50511fc7d0147ba70674f9b)), closes [#3720](https://github.com/naver/billboard.js/issues/3720)
+* **canvas:** address canvas render review issues ([70df3f6](https://github.com/naver/billboard.js/commit/70df3f6d52afb63a320d02bc9af14d887de5aa90))
+* **canvas:** align candlestick labels with wick endpoints ([b328da4](https://github.com/naver/billboard.js/commit/b328da4d371874caf522e09a91f86874a52389c3))
+* **canvas:** align rendering and touch interaction parity ([5944cab](https://github.com/naver/billboard.js/commit/5944cab8ddf4808faf9744d8a6b573996eb1903e))
+* **data:** Add type check before 'in' operator in JSON dot-notation path resolver ([67c00b9](https://github.com/naver/billboard.js/commit/67c00b90020b8acb8bbbbdb3c70e04d6f14cfa85)), closes [#4116](https://github.com/naver/billboard.js/issues/4116)
+* **data:** Handle non-array value for data.json ([dc5d04c](https://github.com/naver/billboard.js/commit/dc5d04c39f4fa9828ce2e1f1e75f717657f0fb32)), closes [#4103](https://github.com/naver/billboard.js/issues/4103)
+* **types:** Add file extensions to types ([02c7bf6](https://github.com/naver/billboard.js/commit/02c7bf69a3632052b5cf6aa90e4e904da187efad)), closes [#4097](https://github.com/naver/billboard.js/issues/4097)
+* **types:** Export shape option types from main entry point ([#4109](https://github.com/naver/billboard.js/issues/4109)) ([f4a236a](https://github.com/naver/billboard.js/commit/f4a236aaf9e90592e63b933a4a022287daa48035)), closes [#4104](https://github.com/naver/billboard.js/issues/4104)
+* **util:** camelCase SVG tag/attribute matching in sanitizer ([631ddc5](https://github.com/naver/billboard.js/commit/631ddc516e88b3aecb81eca2373aabb3851420c6)), closes [#4078](https://github.com/naver/billboard.js/issues/4078) [#4106](https://github.com/naver/billboard.js/issues/4106)
+* **util:** update sanitization function ([#4105](https://github.com/naver/billboard.js/issues/4105)) ([d492644](https://github.com/naver/billboard.js/commit/d4926443fbf4f9d5af250a92d41669a8f483f77c))
+* **zoom:** fix drag zoom boundary release and circle transition desync  ([00f6859](https://github.com/naver/billboard.js/commit/00f685937d7a15bc80636708627e3ba1b353893a)), closes [#4131](https://github.com/naver/billboard.js/issues/4131) [#4131](https://github.com/naver/billboard.js/issues/4131)
+
+
+### Features
+
+* **canvas:** add canvas rendering mode ([200c99e](https://github.com/naver/billboard.js/commit/200c99efc5858ac77680fb5d365aa7686abcdf9e))
+* **esm:** tree-shakable grid, regions, category modules ([678e761](https://github.com/naver/billboard.js/commit/678e7614203e3b720bf6835587e7323e0b83418f))
+* **funnel:** Rotate and spline option ([7a7bf25](https://github.com/naver/billboard.js/commit/7a7bf257da10d514ba5d02648eed41b737652a61)), closes [#4024](https://github.com/naver/billboard.js/issues/4024)
+* **plugin-tableview:** add numberFormat configuration option ([2abe355](https://github.com/naver/billboard.js/commit/2abe3552163c88743849dd65b64ea6c567c5adbc)), closes [#4140](https://github.com/naver/billboard.js/issues/4140) [#4141](https://github.com/naver/billboard.js/issues/4141)
+
+
+### BREAKING CHANGES
+
+* **esm:** chart.export() and chart.flow() are no longer
+included automatically in the ESM build. Explicit import required:
+
+  import bb, { bar, exportApi, flow } from "billboard.js";
+  bb.generate({ ...bar(), ...exportApi(), ...flow(), data: { ... } });
+
+UMD bundle users are not affected.
+
+* refactor(esm): remove prototype stubs for export and flow modules
+
+Remove the stub implementations and delete calls that were added as
+fallbacks — they are unnecessary now that the resolver pattern handles
+lazy loading directly without stub cleanup.
+
+* feat(esm): make grid, regions, category APIs tree-shakable
+
+- Introduce grid(), regions(), category() resolver modules for opt-in ESM import
+- Remove apiGrid, apiRegion, apiCategory from axis resolver
+- Remove internal grid/region renderers from axis resolver
+- Extend Chart/api/stubs with xgrids/ygrids/regions/category/categories stubs
+- Add optional chaining in redraw/eventrect/flow/ChartInternal for grid/region methods
+- Update UMD entry to auto-invoke new resolvers
+- Update ESM entry to export new resolvers
+- Point runtime error docs to new MODULE_IMPORTS.md guide
+- Add tests for new optional modules
+
+Add CHANGELOG-v4.md for release notes and MODULE_IMPORTS.md as the
+canonical module import guide referenced from runtime error messages.
+* **esm:** In ESM builds, chart.xgrids()/ygrids(), chart.regions(),
+chart.category()/categories() now require explicit import:
+
+  import bb, {bar, grid, regions, category} from "billboard.js";
+  grid(); regions(); category();  // run once per app
+
+UMD bundle users are not affected — the UMD entry auto-invokes all resolvers.
+
+# [3.18.0](https://github.com/naver/billboard.js/compare/3.17.4...3.18.0) (2026-01-23)
+
+
+### Bug Fixes
+
+* **color:** Fix color update on gradient ([9d6d392](https://github.com/naver/billboard.js/commit/9d6d392c00c586a490e3a606be96e45f064b12d9)), closes [#4048](https://github.com/naver/billboard.js/issues/4048)
+* **data:** Handle undefined values in total calculation ([18a5b9b](https://github.com/naver/billboard.js/commit/18a5b9b8bf43456d2167140040f9e05ad08e6544)), closes [#4073](https://github.com/naver/billboard.js/issues/4073)
+* **interaction:** Fix data.onover call in touch event ([5fe448c](https://github.com/naver/billboard.js/commit/5fe448c455dc725857f77ec4e39a93021e19a735)), closes [#4076](https://github.com/naver/billboard.js/issues/4076)
+* **load:** Update call sequence to be after data are unloaded ([f9f4a86](https://github.com/naver/billboard.js/commit/f9f4a866134afd8e1b484a857c878895801cf3c4)), closes [#4052](https://github.com/naver/billboard.js/issues/4052)
+* **text:** Fix multiline data labels vertial position ([6b5580a](https://github.com/naver/billboard.js/commit/6b5580af7c59579de1331904b2d859235e5b9497)), closes [#4062](https://github.com/naver/billboard.js/issues/4062)
+* **text:** Fix text alignment to center ([9f2960d](https://github.com/naver/billboard.js/commit/9f2960d93b366a5b53cc42d488a2d00b9701fef3)), closes [#4081](https://github.com/naver/billboard.js/issues/4081)
+* **util:** update sanitization function ([#4085](https://github.com/naver/billboard.js/issues/4085)) ([49e079c](https://github.com/naver/billboard.js/commit/49e079cdd466fc8ba7ab208988181e5b7a5f336b)), closes [#4078](https://github.com/naver/billboard.js/issues/4078)
+
+
+### Features
+
+* **arc:** Intent to ship Arc's annotation ([c740a3b](https://github.com/naver/billboard.js/commit/c740a3bad506ab08b32a2efff00e7bcbc4c41b18)), closes [#3602](https://github.com/naver/billboard.js/issues/3602)
+* **data:** Intent to ship data.stack.normalize.perGroup ([c879c25](https://github.com/naver/billboard.js/commit/c879c259337ee2516970303660231b5452707f55)), closes [#4060](https://github.com/naver/billboard.js/issues/4060)
+* **treemap:** Enhance label formatter to include tile size ([71c0d06](https://github.com/naver/billboard.js/commit/71c0d06868fb4849ca923c50dc7759d5752c7844)), closes [#4066](https://github.com/naver/billboard.js/issues/4066)
+
+## [3.17.4](https://github.com/naver/billboard.js/compare/3.17.3...3.17.4) (2026-01-14)
+
+
+### Bug Fixes
+
+* **all:** Enforce script sanitization ([ffd9f6f](https://github.com/naver/billboard.js/commit/ffd9f6f8a8baabe0e001cf28319b2f5a5480a866)), closes [#4078](https://github.com/naver/billboard.js/issues/4078)
+
+## [3.17.3](https://github.com/naver/billboard.js/compare/3.17.2...3.17.3) (2026-01-13)
+
+
+### Bug Fixes
+
+* **all:** Enforce on security vulnerability ([c69320a](https://github.com/naver/billboard.js/commit/c69320a25b6a2539809bcd74a3cc13deed80d8a3)), closes [#4078](https://github.com/naver/billboard.js/issues/4078)
+
+## [3.17.3](https://github.com/naver/billboard.js/compare/3.17.2...3.17.3) (2026-01-13)
+
+
+### Bug Fixes
+
+* **all:** Enforce on security vulnerability ([c69320a](https://github.com/naver/billboard.js/commit/c69320a25b6a2539809bcd74a3cc13deed80d8a3)), closes [#4078](https://github.com/naver/billboard.js/issues/4078)
+
+## [3.17.3](https://github.com/naver/billboard.js/compare/3.17.2...3.17.3) (2026-01-13)
+
+
+### Bug Fixes
+
+* **all:** Enforce on security vulnerability ([c69320a](https://github.com/naver/billboard.js/commit/c69320a25b6a2539809bcd74a3cc13deed80d8a3)), closes [#4078](https://github.com/naver/billboard.js/issues/4078)
+
+## [3.17.2](https://github.com/naver/billboard.js/compare/3.17.1...3.17.2) (2025-10-22)
+
+
+### Bug Fixes
+
+* **worker:** Exclude empty data ran on Worker thread ([a2e0f6e](https://github.com/naver/billboard.js/commit/a2e0f6e640688a56cbd3c632fcbfb741f2555915)), closes [#4044](https://github.com/naver/billboard.js/issues/4044)
+
+## [3.17.1](https://github.com/naver/billboard.js/compare/3.17.0...3.17.1) (2025-10-20)
+
+
+### Bug Fixes
+
+* **load:** Fix possible context loss  ([a40fd41](https://github.com/naver/billboard.js/commit/a40fd41a1fac6c5cbfe29438590c8831057049db)), closes [#4044](https://github.com/naver/billboard.js/issues/4044)
+
+# [3.17.0](https://github.com/naver/billboard.js/compare/3.16.0...3.17.0) (2025-09-24)
+
+
+### Bug Fixes
+
+* **axis:** Fix axis text position ([b9f491b](https://github.com/naver/billboard.js/commit/b9f491b78857695468f2f37b62ed4f3573e79c12)), closes [#4017](https://github.com/naver/billboard.js/issues/4017)
+* **worker:** Exclude empty data ran on Worker thread ([4fbc2e8](https://github.com/naver/billboard.js/commit/4fbc2e8d9c03ab45d4d0db625e6d0a52c7e20631)), closes [#4041](https://github.com/naver/billboard.js/issues/4041) [#4042](https://github.com/naver/billboard.js/issues/4042)
+
+
+### Features
+
+* **axis:** Intent to ship tick.inner ([db1de3e](https://github.com/naver/billboard.js/commit/db1de3e9cdcd5d67a7a4638946ada705f089eefe)), closes [#4033](https://github.com/naver/billboard.js/issues/4033)
+* **data:** Enhance data.labels.backgroundColors ran as function ([0211d19](https://github.com/naver/billboard.js/commit/0211d199c5da1097648ab4639ce6de019edeaef0)), closes [#4016](https://github.com/naver/billboard.js/issues/4016)
+* **label:** Intent to ship label border ([dd1d70e](https://github.com/naver/billboard.js/commit/dd1d70e88cdba20de4454fbde82518a1545696f2)), closes [#4021](https://github.com/naver/billboard.js/issues/4021)
+* **labels:** Intent to ship data.labels.image ([#4035](https://github.com/naver/billboard.js/issues/4035)) ([487548a](https://github.com/naver/billboard.js/commit/487548ad4ae15029fbe10c59a223de35ad2510bd))
+
+# [3.16.0](https://github.com/naver/billboard.js/compare/3.15.1...3.16.0) (2025-06-27)
+
+
+### Bug Fixes
+
+* **area-range:** Fix line drawn when combining Area Range with regions ([4a86e55](https://github.com/naver/billboard.js/commit/4a86e559d8aff9bdbfb2c4723fe179d23c3d3275)), closes [#3982](https://github.com/naver/billboard.js/issues/3982) [#3983](https://github.com/naver/billboard.js/issues/3983)
+* **axis:** adjust tick generation logic for rotated axes ([67c54aa](https://github.com/naver/billboard.js/commit/67c54aa2203eda7e5c537bfda13af46f47c579be)), closes [#3991](https://github.com/naver/billboard.js/issues/3991)
+* **core:** Fix potential security vulnerability ([a114a31](https://github.com/naver/billboard.js/commit/a114a316f2a4b21918ce0815c3f520897673153e)), closes [#3975](https://github.com/naver/billboard.js/issues/3975)
+* **data:** Filter nullish data from rendering ([02939b8](https://github.com/naver/billboard.js/commit/02939b8bed7f6e871b04ee26b3b3ba171ef9436f)), closes [#3973](https://github.com/naver/billboard.js/issues/3973)
+* **domain:** handle NaN values in data label calculations ([bdd3589](https://github.com/naver/billboard.js/commit/bdd3589396744cfb6f19ce341a27a9666e699ed6)), closes [#3985](https://github.com/naver/billboard.js/issues/3985)
+* **types:** update type definitions for elements ([591f6a6](https://github.com/naver/billboard.js/commit/591f6a68f7f5398b63a567cdae6be45763e633cb)), closes [#3969](https://github.com/naver/billboard.js/issues/3969)
+* **zoom:** maintain zoom state during chart resize ([2da91de](https://github.com/naver/billboard.js/commit/2da91dec4b4be9be2c36791f196dba5662dd96b1)), closes [#3992](https://github.com/naver/billboard.js/issues/3992)
+
+
+### Features
+
+* **axis:** Enhance axis.evalTextSize per axis ([7fa445e](https://github.com/naver/billboard.js/commit/7fa445e6fe8d3b9ae3d785fc199611809766067f)), closes [#4002](https://github.com/naver/billboard.js/issues/4002)
+* **axis:** Intent to ship axis' tick.culling.reverse ([1496d91](https://github.com/naver/billboard.js/commit/1496d911c4a3259e835301aff80f68d9b11ba5dc)), closes [#3967](https://github.com/naver/billboard.js/issues/3967)
+* **bar:** Intent to ship bar.connectLine ([7dd7200](https://github.com/naver/billboard.js/commit/7dd720014a7623fb63bba1c3de84c80b31373f5d)), closes [#3988](https://github.com/naver/billboard.js/issues/3988) [#4000](https://github.com/naver/billboard.js/issues/4000)
+
+## [3.15.1](https://github.com/naver/billboard.js/compare/3.15.0...3.15.1) (2025-04-22)
+
+
+### Bug Fixes
+
+* **core:** Fix potential security vulnerability ([82ea7ac](https://github.com/naver/billboard.js/commit/82ea7ac4f5720d6a7f0c2fa5a5dad51a549667bb)), closes [#3975](https://github.com/naver/billboard.js/issues/3975)
+
+# [3.15.0](https://github.com/naver/billboard.js/compare/3.14.3...3.15.0) (2025-03-20)
+
+
+### Bug Fixes
+
+* **axis:** Fix axis tooltip visibility ([c1c39e7](https://github.com/naver/billboard.js/commit/c1c39e7ecb5f59f3c0948ee5965b687eb3a1a214)), closes [#3948](https://github.com/naver/billboard.js/issues/3948)
+
+
+### Features
+
+* **region:** Enhance regions accept category range ([904e35b](https://github.com/naver/billboard.js/commit/904e35b93f03dd16160376716df8a7149ecb1cf8)), closes [#3920](https://github.com/naver/billboard.js/issues/3920)
+* **regions:** Intent to ship regions.label.center ([31722d9](https://github.com/naver/billboard.js/commit/31722d9d94f5c0aa45ee66d9e44fb25345ba012c)), closes [#3960](https://github.com/naver/billboard.js/issues/3960)
+* **resize:** Container based auto resize ([#3956](https://github.com/naver/billboard.js/issues/3956)) ([fa3b751](https://github.com/naver/billboard.js/commit/fa3b7516276d96ffb8ca868ccda76c82e2c00ec7)), closes [#3955](https://github.com/naver/billboard.js/issues/3955)
+
+## [3.14.3](https://github.com/naver/billboard.js/compare/3.14.2...3.14.3) (2025-01-07)
+
+
+### Bug Fixes
+
+* **tooltip:** Fix tooltip interaction on viewBox ([9deee8f](https://github.com/naver/billboard.js/commit/9deee8fa7a52f57c31a623969e7139eced41d3a3)), closes [#3925](https://github.com/naver/billboard.js/issues/3925)
+
+## [3.14.2](https://github.com/naver/billboard.js/compare/3.14.1...3.14.2) (2024-11-26)
+
+
+### Bug Fixes
+
+* **axis:** Fix x axis extent to work ([4d73834](https://github.com/naver/billboard.js/commit/4d738348ee5c189274d277ce07bd31d626de303d)), closes [#3768](https://github.com/naver/billboard.js/issues/3768)
+* **tooltip:** Fix tooltip position on viewBox resizing ([582feb4](https://github.com/naver/billboard.js/commit/582feb46500a2eaf337a83f225dcebcc4d9317e9)), closes [#3917](https://github.com/naver/billboard.js/issues/3917)
+
+## [3.14.1](https://github.com/naver/billboard.js/compare/3.14.0...3.14.1) (2024-11-18)
+
+
+### Bug Fixes
+
+* **point:** fix data.onclick working with sensitivity function ([587d71e](https://github.com/naver/billboard.js/commit/587d71e9b413d5abd2265a3fb13c3c09914fca80)), closes [#3912](https://github.com/naver/billboard.js/issues/3912)
+* **tooltip:** Hide tooltip on redraw when unexpected error ([3540640](https://github.com/naver/billboard.js/commit/35406406962c89bac0503800771d96ba2f47f56d)), closes [#3909](https://github.com/naver/billboard.js/issues/3909) [#3910](https://github.com/naver/billboard.js/issues/3910)
+
+# [3.14.0](https://github.com/naver/billboard.js/compare/3.13.0...3.14.0) (2024-10-25)
+
+
+### Bug Fixes
+
+* **axis:** fix error when showing tick only ([705947f](https://github.com/naver/billboard.js/commit/705947f635807e359c5c2f869a7d906e2315a01a)), closes [#3881](https://github.com/naver/billboard.js/issues/3881)
+* **bar:** fix representation of radius for small data ([91b5dca](https://github.com/naver/billboard.js/commit/91b5dca91a86779b0c808e3498d85dcb93ab5f0e)), closes [#3903](https://github.com/naver/billboard.js/issues/3903)
+* **event:** Fix interaction with viewBox ([243bf3c](https://github.com/naver/billboard.js/commit/243bf3cf10a7d3b4b0f668240168e4b2d9ba1eba)), closes [#3414](https://github.com/naver/billboard.js/issues/3414)
+* **input:** Fix touch/mouse input detection ([3d4392a](https://github.com/naver/billboard.js/commit/3d4392ac51dca1947c6380329f7c6a6e0b3a497a)), closes [#3854](https://github.com/naver/billboard.js/issues/3854)
+* **point:** fix sensitivity error when blank area is clicked ([0060786](https://github.com/naver/billboard.js/commit/00607861a96826b2e1c9fec37159065680ff278e)), closes [#3900](https://github.com/naver/billboard.js/issues/3900)
+* **scale:** Fix non-shape's element positioned accurately ([216141b](https://github.com/naver/billboard.js/commit/216141bd6a415752fbb31ba3016188b20401f5b0)), closes [#3907](https://github.com/naver/billboard.js/issues/3907)
+* **size:** Fix legend overflows with padding fit mode ([8357d11](https://github.com/naver/billboard.js/commit/8357d1161fa132a6d788c1349dee1f7e99eedf39)), closes [#3872](https://github.com/naver/billboard.js/issues/3872)
+* **zoom:** Fix unzoom after dynamic data load ([385907e](https://github.com/naver/billboard.js/commit/385907e5cbab1af52b63f9a2987a302d479fe332)), closes [#3878](https://github.com/naver/billboard.js/issues/3878)
+* **zoom:** Prevent error for out of range ([6f69e97](https://github.com/naver/billboard.js/commit/6f69e970bd31fdd9d353854c54437c2a9c95e269)), closes [#3895](https://github.com/naver/billboard.js/issues/3895)
+
+
+### Features
+
+* **axis:** Intent to ship axis.evalTextSize ([87048e9](https://github.com/naver/billboard.js/commit/87048e9258d521ffb4da7b98a167e184fe3489a3)), closes [#3889](https://github.com/naver/billboard.js/issues/3889)
+* **interaction:** Intent to ship interaction.onout ([9c668e6](https://github.com/naver/billboard.js/commit/9c668e688624e0003d6dca6ea00fcf79a3f1b782)), closes [#3887](https://github.com/naver/billboard.js/issues/3887)
+* **legend:** Pass visibility state to legend item's event callback ([ba71911](https://github.com/naver/billboard.js/commit/ba71911b7c4b47b95f0b1e2bf8f12138d5b31cb1)), closes [#3897](https://github.com/naver/billboard.js/issues/3897)
+* **render:** Add forced init option on lazy rendering  ([218ce46](https://github.com/naver/billboard.js/commit/218ce4608dd7da7a5288bce1c6f95d71d8aa9c5f)), closes [#3106](https://github.com/naver/billboard.js/issues/3106)
+* **resize:** Intent to ship resize.auto='viewBox' ([db21387](https://github.com/naver/billboard.js/commit/db213873e2959b7c24c44f1330ec86af801406e8)), closes [#3893](https://github.com/naver/billboard.js/issues/3893)
+
+# [3.13.0](https://github.com/naver/billboard.js/compare/3.12.4...3.13.0) (2024-08-23)
+
+
+### Bug Fixes
+
+* **regions:** Mitigate broken dashed lines rendering ([d1df575](https://github.com/naver/billboard.js/commit/d1df575e18c271461fd8a215014b8fad1bd2b897)), closes [#3790](https://github.com/naver/billboard.js/issues/3790)
+* **zoom:** Fix zoom wheel interaction ([81ea359](https://github.com/naver/billboard.js/commit/81ea359cb284fe478c4b4c3a0daa2a2806b00416)), closes [#3856](https://github.com/naver/billboard.js/issues/3856)
+
+
+### Features
+
+* **bar:** Enhance bar width to adjust from callback ([4ce74fc](https://github.com/naver/billboard.js/commit/4ce74fc3d3776d7c55e52e332fe89b8f96ee65e9)), closes [#3820](https://github.com/naver/billboard.js/issues/3820)
+* **legend:** Provide original data id in format callback ([5ce41c7](https://github.com/naver/billboard.js/commit/5ce41c74c7e9131539182210feec3a4061afbe83)), closes [#3663](https://github.com/naver/billboard.js/issues/3663)
+* **regions:** Enhance regions rendering ([567b323](https://github.com/naver/billboard.js/commit/567b323ed58701ec06cde183238b6460c0fa4d6e)), closes [#3830](https://github.com/naver/billboard.js/issues/3830) [#3790](https://github.com/naver/billboard.js/issues/3790)
+* **shape:** Intent to ship area-step-range type ([03b9a7d](https://github.com/naver/billboard.js/commit/03b9a7d5c99d605d9cf63fc2d218bcd78d8234ca)), closes [#3776](https://github.com/naver/billboard.js/issues/3776)
+* **types:** Add area-step-range chart type ([2a763d2](https://github.com/naver/billboard.js/commit/2a763d2c8c1407f6d65a2f77b5a8fa50dd2062b2))
+
+## [3.12.4](https://github.com/naver/billboard.js/compare/3.12.3...3.12.4) (2024-06-13)
+
+
+### Bug Fixes
+
+* **class:** Fix to handle contorl/extended ascii for data names ([7059779](https://github.com/naver/billboard.js/commit/70597796c49d125e06577f73674cf124ed3979d2)), closes [#3804](https://github.com/naver/billboard.js/issues/3804)
+* **types:** Missing tick.text.inner type added for xAxis ([5c1a6a4](https://github.com/naver/billboard.js/commit/5c1a6a43d2f281528f5d2c43d33d6bcae38f0e6d)), closes [#3802](https://github.com/naver/billboard.js/issues/3802)
+
+## [3.12.3](https://github.com/naver/billboard.js/compare/3.12.2...3.12.3) (2024-06-10)
+
+
+### Bug Fixes
+
+* **util:** Update inputtype determination code ([f6201ad](https://github.com/naver/billboard.js/commit/f6201adc23791ec90135c6b41a485ef1dfb0937f)), closes [#3798](https://github.com/naver/billboard.js/issues/3798)
+* **zoom:** Remove unused wheel listener ([0b0e8f8](https://github.com/naver/billboard.js/commit/0b0e8f805799d442e9d74c0f3215ff34d08cfeb1)), closes [#3791](https://github.com/naver/billboard.js/issues/3791)
+
+## [3.12.2](https://github.com/naver/billboard.js/compare/3.12.1...3.12.2) (2024-05-28)
+
+
+### Bug Fixes
+
+* **funnel:** Fix padding and unload ([945251b](https://github.com/naver/billboard.js/commit/945251b3a768944d16fb515cd5331f910a14ecfe)), closes [#3787](https://github.com/naver/billboard.js/issues/3787)
+
+## [3.12.1](https://github.com/naver/billboard.js/compare/3.12.0...3.12.1) (2024-05-27)
+
+
+### Bug Fixes
+
+* **treemap:** Fix generation w/non-exist node ([#3781](https://github.com/naver/billboard.js/issues/3781)) ([eb53a12](https://github.com/naver/billboard.js/commit/eb53a128f952289880c0963576f3fe6529c18a6b)), closes [#3777](https://github.com/naver/billboard.js/issues/3777)
+
+# [3.12.0](https://github.com/naver/billboard.js/compare/3.11.3...3.12.0) (2024-05-27)
+
+
+### Bug Fixes
+
+* **api:** Fix scatter type loading ([413812d](https://github.com/naver/billboard.js/commit/413812d2db3553c7a12ca62b91c852e46a12efe6)), closes [#3740](https://github.com/naver/billboard.js/issues/3740)
+* **treemap:** Fix generation w/non-exist node ([02987ab](https://github.com/naver/billboard.js/commit/02987ab5e6798c381cef4106c5fe3f5f34b71fd4)), closes [#3777](https://github.com/naver/billboard.js/issues/3777)
+* **treemap:** Fix missing element arg on data.onover/out ([22428dc](https://github.com/naver/billboard.js/commit/22428dc19bd0f038686ad62e99a2cc7c87584b35)), closes [#3766](https://github.com/naver/billboard.js/issues/3766)
+* **types:** Add missing arc.needle.value ([e0a30fe](https://github.com/naver/billboard.js/commit/e0a30fee0f48a5501198d71f8fe31a482121d7fd)), closes [#3697](https://github.com/naver/billboard.js/issues/3697)
+* **types:** Add missing region.label option ([e03057c](https://github.com/naver/billboard.js/commit/e03057c4f6396ad2b49dfb9ee3ac62f2386f11f2)), closes [#3732](https://github.com/naver/billboard.js/issues/3732)
+* **types:** Correct typo in BarOptions ([a0ad93a](https://github.com/naver/billboard.js/commit/a0ad93a20b19b7282fc2f76267e9f4595bda1bce)), closes [#3749](https://github.com/naver/billboard.js/issues/3749)
+* **types:** Fix missing polar type ([7f5d5b0](https://github.com/naver/billboard.js/commit/7f5d5b08e4753aa1ea5df1cb6ca4f42b8a9d28d9)), closes [#3778](https://github.com/naver/billboard.js/issues/3778)
+
+
+### Features
+
+* **axis:** Intent to ship axis.tooltip ([54e77cb](https://github.com/naver/billboard.js/commit/54e77cb5c34a6b1ca90b9b533e5e29033b80d821)), closes [#3603](https://github.com/naver/billboard.js/issues/3603)
+* **axis:** Intent to ship axis.x.forceAsSingle ([6ad0554](https://github.com/naver/billboard.js/commit/6ad05543e0aa9aa51f3b9e1a07cbdb1275888f3a)), closes [#3764](https://github.com/naver/billboard.js/issues/3764)
+* **bundler:** Migrate babel -> esbuild ([ff0a98c](https://github.com/naver/billboard.js/commit/ff0a98c50ae76222a3939e96d007d142842d963f)), closes [#3601](https://github.com/naver/billboard.js/issues/3601)
+* **funnel:** Intent to ship funnel type ([e4cdda1](https://github.com/naver/billboard.js/commit/e4cdda1f99480e82c8ac97e63164880b0d75e1ad)), closes [#3449](https://github.com/naver/billboard.js/issues/3449)
+
+## [3.11.3](https://github.com/naver/billboard.js/compare/3.11.2...3.11.3) (2024-03-18)
+
+
+### Bug Fixes
+
+* **clip:** Remove setting full domain url ([83bbd10](https://github.com/naver/billboard.js/commit/83bbd10a5949854868178499228d4f9ecf84da33)), closes [#3684](https://github.com/naver/billboard.js/issues/3684)
+* **legend:** Fix legend title to show data.names if set ([e8fa131](https://github.com/naver/billboard.js/commit/e8fa131be6c283ec98742eecc84fce84f24145f7)), closes [#3662](https://github.com/naver/billboard.js/issues/3662)
+* **tooltip:** Fix tooltip y coordinate with arc.rangeText ([d28258e](https://github.com/naver/billboard.js/commit/d28258e2c739f36227027641724ed85cc736b988)), closes [#3673](https://github.com/naver/billboard.js/issues/3673)
+
+## [3.11.2](https://github.com/naver/billboard.js/compare/3.11.1...3.11.2) (2024-02-23)
+
+
+### Bug Fixes
+
+* **legend:** Remove def element added on unload ([cd79502](https://github.com/naver/billboard.js/commit/cd795022153239fc5021e32fe4fb254208b8d877)), closes [#3660](https://github.com/naver/billboard.js/issues/3660)
+* **point:** Make point.pattern legend available for any chart type ([143282b](https://github.com/naver/billboard.js/commit/143282b740ed799af2433b0c94c9212e015977fe)), closes [#3653](https://github.com/naver/billboard.js/issues/3653)
+* **radar:** Fix working on esm ([5104d9c](https://github.com/naver/billboard.js/commit/5104d9c4ff3e9605c73c21350d2220bc04eeba42)), closes [#3658](https://github.com/naver/billboard.js/issues/3658)
+
+## [3.11.1](https://github.com/naver/billboard.js/compare/3.11.0...3.11.1) (2024-02-22)
+
+
+### Bug Fixes
+
+* **bar:** Fix bar's width update with x axis min/max ([170d836](https://github.com/naver/billboard.js/commit/170d836f374e08fd7d33be91892da39debde201a)), closes [#3636](https://github.com/naver/billboard.js/issues/3636)
+* **types:** Specify d3 types as dependency ([dc381ea](https://github.com/naver/billboard.js/commit/dc381eafb7bc762e72311aa598a87e5d6b240a74)), closes [#2954](https://github.com/naver/billboard.js/issues/2954) [#issuecomment-1949187551](https://github.com/naver/billboard.js/issues/issuecomment-1949187551)
+
+# [3.11.0](https://github.com/naver/billboard.js/compare/3.10.3...3.11.0) (2024-02-15)
+
+
+### Bug Fixes
+
+* **Axis:** Correct x axis height calculation for autorotated x axis tick texts ([d5b5d09](https://github.com/naver/billboard.js/commit/d5b5d09f9e287428aec72cee173f94225a9b8cba)), closes [#3584](https://github.com/naver/billboard.js/issues/3584) [#3585](https://github.com/naver/billboard.js/issues/3585)
+* **axis:** Fix x Axis tick height calculation ([ac26f11](https://github.com/naver/billboard.js/commit/ac26f11ffac4aa3ecc546d08f7b4e8ea6f38d344)), closes [#3643](https://github.com/naver/billboard.js/issues/3643)
+* **axis:** Fixed x axis tick texts rotation when legend is positioned right ([ed4703e](https://github.com/naver/billboard.js/commit/ed4703e0d5f9eb8f492a5df6a151297ffb76b2b6)), closes [#3570](https://github.com/naver/billboard.js/issues/3570) [#3571](https://github.com/naver/billboard.js/issues/3571)
+* **packages:** Fix build error with moduleResolution:bundler ([9c17eea](https://github.com/naver/billboard.js/commit/9c17eeaccb77ce796bebe2d07227b623b702d605)), closes [#3541](https://github.com/naver/billboard.js/issues/3541)
+* **radar:** Fix axes texts exclusion on resize ([3a814a5](https://github.com/naver/billboard.js/commit/3a814a5cf06f43477cddb759a184bc69579d9ad6)), closes [#3126](https://github.com/naver/billboard.js/issues/3126)
+* **regions:** Fix applying regions class ([7e4fa71](https://github.com/naver/billboard.js/commit/7e4fa7185cc525ff92cbff17455844c4846fcc34)), closes [#3611](https://github.com/naver/billboard.js/issues/3611)
+* **tooltip:** Fix tooltip position from interference ([9d28cbb](https://github.com/naver/billboard.js/commit/9d28cbb6720cbe91cfc80ad5351dade1ee768337)), closes [#3575](https://github.com/naver/billboard.js/issues/3575)
+* **tooltip:** Fix wrong tooltip selection on browser scroll change ([#3593](https://github.com/naver/billboard.js/issues/3593)) ([8f80637](https://github.com/naver/billboard.js/commit/8f80637b7c83c333e45017ac3153aab3055be9fa)), closes [#3592](https://github.com/naver/billboard.js/issues/3592)
+* **zoom:** Fix zoom state on data load ([967207b](https://github.com/naver/billboard.js/commit/967207b6df5b5e69f5301d333528096cbf427ab7)), closes [#3422](https://github.com/naver/billboard.js/issues/3422)
+
+
+### Features
+
+* **arc:** Intent to ship arc.rangeText ([e887baf](https://github.com/naver/billboard.js/commit/e887baffeae22bc64ecad128ef1a4f7bb007aa4e)), closes [#2120](https://github.com/naver/billboard.js/issues/2120)
+* **axis:** Add x.tick.text.inner option ([cfc856c](https://github.com/naver/billboard.js/commit/cfc856c081ff1cebe47c8929723dca6d2cf3bb66)), closes [#3552](https://github.com/naver/billboard.js/issues/3552)
+* **gauge:** Intent to ship gauge.enforceMinMax ([c277201](https://github.com/naver/billboard.js/commit/c2772011004d9ccd1c86dfe2155fef1c03c88359)), closes [#2125](https://github.com/naver/billboard.js/issues/2125)
+* **gauge:** Intent to ship gauge.label.ratio ([d4e49ba](https://github.com/naver/billboard.js/commit/d4e49badb55784c8305a0eab7b682a372cb0c0c6)), closes [#3633](https://github.com/naver/billboard.js/issues/3633)
+* **legend:** Itent to ship legend.format, legend.tooltip ([aecff2f](https://github.com/naver/billboard.js/commit/aecff2f95866dce5bfc5f93c891b5d98771c87ad)), closes [#3533](https://github.com/naver/billboard.js/issues/3533)
+
+## [3.10.3](https://github.com/naver/billboard.js/compare/3.10.2...3.10.3) (2023-11-08)
+
+
+### Bug Fixes
+
+* **axis:** Fix x axis autorotate option applies ([e45eaf7](https://github.com/naver/billboard.js/commit/e45eaf7df1c6cf96386a00e3aba6c42e991650f5)), closes [#3433](https://github.com/naver/billboard.js/issues/3433) [#3499](https://github.com/naver/billboard.js/issues/3499)
+* **labels:** Fix data.labels rendering for ranged data ([a8ebdef](https://github.com/naver/billboard.js/commit/a8ebdef220c80a00aa91dcc2153bb39eaccd0d4f)), closes [#3495](https://github.com/naver/billboard.js/issues/3495)
+* **option:** Fix rotated top padding  ([048c4e2](https://github.com/naver/billboard.js/commit/048c4e26ffa06522476b0931098302139c20da4f)), closes [#3433](https://github.com/naver/billboard.js/issues/3433)
+* **tooltip:** Fix tooltip.format.value arg for bar range data ([c0f445e](https://github.com/naver/billboard.js/commit/c0f445efcb57a8be97dbee349f24c94e8113752e)), closes [#3507](https://github.com/naver/billboard.js/issues/3507)
+
+## [3.10.2](https://github.com/naver/billboard.js/compare/3.10.1...3.10.2) (2023-10-27)
+
+
+### Bug Fixes
+
+* **module:** Fix getFallback() uninitialized variable ([57c140d](https://github.com/naver/billboard.js/commit/57c140d899063392cb0c0bb0e23fb46b0cbf9e2b)), closes [#3489](https://github.com/naver/billboard.js/issues/3489)
+
+## [3.10.1](https://github.com/naver/billboard.js/compare/3.10.0...3.10.1) (2023-10-26)
+
+
+### Bug Fixes
+
+* **tooltip:** Fix tooltip error on Arc type ([5e80d9d](https://github.com/naver/billboard.js/commit/5e80d9d2fa39f6d79635c4efb6017f169c44dbca)), closes [#3475](https://github.com/naver/billboard.js/issues/3475) [/github.com/naver/billboard.js/issues/3473#issuecomment-1781091685](https://github.com//github.com/naver/billboard.js/issues/3473/issues/issuecomment-1781091685)
+
+# [3.10.0](https://github.com/naver/billboard.js/compare/3.9.4...3.10.0) (2023-10-25)
+
+
+### Bug Fixes
+
+* **api:** Fix to return indexed categories ([1209138](https://github.com/naver/billboard.js/commit/1209138dec7b82a8e764c5f5dac2afe3713f347a)), closes [#3365](https://github.com/naver/billboard.js/issues/3365)
+* **axis:** Fix axis.x.height=0 to be applied ([0c562c3](https://github.com/naver/billboard.js/commit/0c562c30fc301b6989dd65fae6372e724caf3bb7)), closes [#3424](https://github.com/naver/billboard.js/issues/3424)
+* **axis:** Fix x axis tick text overlap with legend ([796671f](https://github.com/naver/billboard.js/commit/796671ff51f6474b92e0e07431f218e6eb9af794)), closes [#3485](https://github.com/naver/billboard.js/issues/3485)
+* **bar:** Fix stacking bar position on multiple xs ([674bad1](https://github.com/naver/billboard.js/commit/674bad19966fd390a539214f4d46f9053517703f)), closes [#3372](https://github.com/naver/billboard.js/issues/3372)
+* **candlestick:** Fix rendering on rotated axis ([fe4c04b](https://github.com/naver/billboard.js/commit/fe4c04b2f3f963928ba2d26f7eb70bf4b46debca)), closes [#3387](https://github.com/naver/billboard.js/issues/3387)
+* **clip:** Fix x axis hide on title.bottom ([d00052c](https://github.com/naver/billboard.js/commit/d00052c0cc724b4e84c7dc5cb285abfc75d714f1)), closes [#3364](https://github.com/naver/billboard.js/issues/3364)
+* **domain:** fix trimXDomain not trimming min ([bacc287](https://github.com/naver/billboard.js/commit/bacc28735e9397114b75c5230e6c99b854c8993e)), closes [#3420](https://github.com/naver/billboard.js/issues/3420)
+* **labels:** Fix index argument for nullish value ([13d1077](https://github.com/naver/billboard.js/commit/13d1077e8848f399ec7bac685364a6758017b557)), closes [#3547](https://github.com/naver/billboard.js/issues/3547)
+* **option:** Fix inconsistency of padding ([694aa34](https://github.com/naver/billboard.js/commit/694aa34f61475e8f77f07610f90063aeefc7e527)), closes [#3426](https://github.com/naver/billboard.js/issues/3426)
+* **point:** Fix data.onclick not called when point.senstivity is radius ([83b0206](https://github.com/naver/billboard.js/commit/83b020607f52dd99a2cbe32b7d36f50ec0cb6654)), closes [#3466](https://github.com/naver/billboard.js/issues/3466)
+* **point:** Fix pointFucusOnly check error ([f9b65ac](https://github.com/naver/billboard.js/commit/f9b65ac455f0a6da2228e15f45f346ec3a513062)), closes [#3407](https://github.com/naver/billboard.js/issues/3407) [#3456](https://github.com/naver/billboard.js/issues/3456)
+* **point:** Fix rendering error when point.focus.only=true is set ([787fd15](https://github.com/naver/billboard.js/commit/787fd153aa8a440be0aa04fca73e8f3f8442a652)), closes [#3406](https://github.com/naver/billboard.js/issues/3406)
+* **shape:** Fix circleY() undefined error ([d245853](https://github.com/naver/billboard.js/commit/d2458534e56c8c428c012486a74c73bc96433199)), closes [#3388](https://github.com/naver/billboard.js/issues/3388)
+* **subchart, zoom:** Fix returning domain value ([321510b](https://github.com/naver/billboard.js/commit/321510b5458aa8551a32e1c906b046fff01dc4d9)), closes [#3347](https://github.com/naver/billboard.js/issues/3347)
+* **subchart:** Fix handlebar position ([83ef6d0](https://github.com/naver/billboard.js/commit/83ef6d034a7b3fad43290f7f076ad73757ee1b81)), closes [#3358](https://github.com/naver/billboard.js/issues/3358)
+* **title:** fix title text center align ([b0fc214](https://github.com/naver/billboard.js/commit/b0fc2148ab09ec5a6fd41c3cb44d866ed906ec2f)), closes [#3363](https://github.com/naver/billboard.js/issues/3363)
+* **tooltip:** Fix tooltip.format.value call ([2e88484](https://github.com/naver/billboard.js/commit/2e88484a34d4f2a08bacdd117a4c208aa215fefa)), closes [#3371](https://github.com/naver/billboard.js/issues/3371)
+* **tooltip:** Fix tootip display on tooltip.init ([52083bf](https://github.com/naver/billboard.js/commit/52083bfccf69fa5c6d25fa25982c5dc20fe1a353)), closes [#3369](https://github.com/naver/billboard.js/issues/3369)
+* **tooltip:** Fix wrong .tooltip.show() on rotated axis ([9b90c81](https://github.com/naver/billboard.js/commit/9b90c81845cc1b3e312d7fa0b2427cda8ec1ddd4)), closes [#3476](https://github.com/naver/billboard.js/issues/3476)
+* **tooltip:** Fix wrong tooltip position with padding option ([041e144](https://github.com/naver/billboard.js/commit/041e144a57cb7d874a49d834abc85d0bd87747f4)), closes [#3473](https://github.com/naver/billboard.js/issues/3473)
+* **zoom:** Fix initial error empty data with zoom ([a94d09c](https://github.com/naver/billboard.js/commit/a94d09caddb6f4c51767578d46e97bb40a07197d)), closes [#3470](https://github.com/naver/billboard.js/issues/3470)
+
+
+### Features
+
+* **api:** Intent to ship subchart method ([ac9e229](https://github.com/naver/billboard.js/commit/ac9e229e30f9fdd37f85dece30485383520e80e0)), closes [#3342](https://github.com/naver/billboard.js/issues/3342)
+* **plugin:** Add nullString option ([29bdb0c](https://github.com/naver/billboard.js/commit/29bdb0cede20052d3511c1fcf593b015ea527916)), closes [#3412](https://github.com/naver/billboard.js/issues/3412) [#3413](https://github.com/naver/billboard.js/issues/3413)
+* **point:** Intent to ship point.radialGradient ([7b51fd6](https://github.com/naver/billboard.js/commit/7b51fd61fd7405644da10b100af106cdc95fe972)), closes [#3405](https://github.com/naver/billboard.js/issues/3405)
+* **regions:** Intent to ship regions.label ([0496ec6](https://github.com/naver/billboard.js/commit/0496ec68c960c577f1ffe4768b691b4897b8fc55)), closes [#3319](https://github.com/naver/billboard.js/issues/3319)
+* **theme:** Add new modern theme ([b0f1aa7](https://github.com/naver/billboard.js/commit/b0f1aa79f2b239832668da1607355b5cd5030402))
+* **tooltip:** Provide y position for tooltip position callback ([a793a2e](https://github.com/naver/billboard.js/commit/a793a2e5304ea98ad974b0e01c2b3b917e5ed978)), closes [#3434](https://github.com/naver/billboard.js/issues/3434)
+
+## [3.9.4](https://github.com/naver/billboard.js/compare/3.9.3...3.9.4) (2023-09-04)
+
+
+### Bug Fixes
+
+* **tooltip:** Fix error throw when tooltip.show=false is set ([4081a90](https://github.com/naver/billboard.js/commit/4081a9002af565ed1e8bc8c2435dadc78b4db1f8)), closes [#3396](https://github.com/naver/billboard.js/issues/3396)
+
+## [3.9.3](https://github.com/naver/billboard.js/compare/3.9.2...3.9.3) (2023-08-09)
+
+
+### Bug Fixes
+
+* **arc:** Fix shape rendering when data id equivalent of color string ([047d1db](https://github.com/naver/billboard.js/commit/047d1db68bd75efd8402a7a83aa7a04405745880)), closes [#3321](https://github.com/naver/billboard.js/issues/3321)
+
+## [3.9.2](https://github.com/naver/billboard.js/compare/3.9.1...3.9.2) (2023-08-04)
+
+
+### Bug Fixes
+
+* **line:** Fix step line path rendering on Windows ([b2633b2](https://github.com/naver/billboard.js/commit/b2633b2d5fa5b722da66edfcde3aece4771a7300)), closes [#3295](https://github.com/naver/billboard.js/issues/3295)
+* **load:** Enhance tooltip update on dynamic load ([1df1bd9](https://github.com/naver/billboard.js/commit/1df1bd94f0eb6a256864a7097663ed76a7f48627)), closes [#3305](https://github.com/naver/billboard.js/issues/3305)
+
+## [3.9.1](https://github.com/naver/billboard.js/compare/3.9.0...3.9.1) (2023-07-17)
+
+
+### Bug Fixes
+
+* **point:** Fix point sensitivity pointe ([a47e091](https://github.com/naver/billboard.js/commit/a47e0913db94ae21b3e36c3ed06346d8d2e5d977)), closes [#3293](https://github.com/naver/billboard.js/issues/3293)
+* **tooltip:** Fix tooltip positioning ([cfec99f](https://github.com/naver/billboard.js/commit/cfec99f715b92abda119b44875591917563e4802)), closes [#3291](https://github.com/naver/billboard.js/issues/3291)
+
+# [3.9.0](https://github.com/naver/billboard.js/compare/3.8.2...3.9.0) (2023-07-03)
+
+
+### Bug Fixes
+
+* **export:** Fix Plugin class import ([24c0976](https://github.com/naver/billboard.js/commit/24c09763be16d15cec0df6159760725075e45a96)), closes [#3221](https://github.com/naver/billboard.js/issues/3221)
+* **shape:** Fix shape rendering issue on Windows ([cf1b484](https://github.com/naver/billboard.js/commit/cf1b484382705c71b5b30f49ee228dc4c92f6564)), closes [#3222](https://github.com/naver/billboard.js/issues/3222)
+* **tooltip:** Fix tooltip overflow when right side edge is hovered ([9ce900d](https://github.com/naver/billboard.js/commit/9ce900d39acd930de9f13920782834ff17e9d1a6)), closes [#3254](https://github.com/naver/billboard.js/issues/3254)
+
+
+### Features
+
+* **arc:** Intent to ship arc.needle ([04e90aa](https://github.com/naver/billboard.js/commit/04e90aac2ed7322be42b38f9bcef46722a1ddf43)), closes [#3205](https://github.com/naver/billboard.js/issues/3205)
+* **bar:** Intent to ship bar.front ([f7e0d80](https://github.com/naver/billboard.js/commit/f7e0d8023cef4bab0f0895077f819d051738a861)), closes [#2965](https://github.com/naver/billboard.js/issues/2965)
+* **data:** Intent to ship data.labels.position function ([59be3ec](https://github.com/naver/billboard.js/commit/59be3ecad45adbf7d044d1c63352ded92221bbe9)), closes [#3237](https://github.com/naver/billboard.js/issues/3237)
+* **legend:** Intent to ship legend.item.interaction.dblclick ([18f5c4a](https://github.com/naver/billboard.js/commit/18f5c4a19478514a473bce86e65e85dc4005e9f1)), closes [#1404](https://github.com/naver/billboard.js/issues/1404)
+* **legend:** Intent to ship legent.item.interaction ([af87d10](https://github.com/naver/billboard.js/commit/af87d10b252c3f573a1d1af5167cc8abb3d6b958)), closes [#1598](https://github.com/naver/billboard.js/issues/1598)
+* **point:** Enhance point.sensitivity ([a537201](https://github.com/naver/billboard.js/commit/a5372013ab3f7d8af49ab82e7c161dbebc34ae97)), closes [#2568](https://github.com/naver/billboard.js/issues/2568)
+* **theme:** Intent to ship dark theme ([252a28e](https://github.com/naver/billboard.js/commit/252a28e62acea92808217a663c00999e6099e1a4)), closes [#3229](https://github.com/naver/billboard.js/issues/3229)
+
+## [3.8.2](https://github.com/naver/billboard.js/compare/3.8.1...3.8.2) (2023-05-18)
+
+
+### Bug Fixes
+
+* **api:** fix classname setting for  eventRect element ([0a2fbde](https://github.com/naver/billboard.js/commit/0a2fbde0ac6bb5f207466c13e7ce578f176ff235)), closes [#3203](https://github.com/naver/billboard.js/issues/3203) [#3218](https://github.com/naver/billboard.js/issues/3218)
+
+## [3.8.1](https://github.com/naver/billboard.js/compare/3.8.0...3.8.1) (2023-05-04)
+
+
+### Bug Fixes
+
+* **api:** fix tooltip work for .load() with xs key ([13b9da7](https://github.com/naver/billboard.js/commit/13b9da7b9e2ad4ef0f2b4d8ad3d0f4770a1e79e4)), closes [#3194](https://github.com/naver/billboard.js/issues/3194)
+* **api:** Fix tooltip.show() to work zoomed with xs option ([cf82289](https://github.com/naver/billboard.js/commit/cf8228987b509b5d636b3c7c5eaa1ad2a5cb836a)), closes [#3187](https://github.com/naver/billboard.js/issues/3187)
+
+# [3.8.0](https://github.com/naver/billboard.js/compare/3.7.5...3.8.0) (2023-04-13)
+
+
+### Bug Fixes
+
+* **data:** fix break when whole dataseries are null ([#3134](https://github.com/naver/billboard.js/issues/3134)) ([5d12c45](https://github.com/naver/billboard.js/commit/5d12c458d96e0346913cdae6e313a18996d92736)), closes [#3124](https://github.com/naver/billboard.js/issues/3124)
+* **grid:** fix redundant <rect> appends ([1039363](https://github.com/naver/billboard.js/commit/1039363a33989665392a249768ee6bc222c3b392)), closes [#3147](https://github.com/naver/billboard.js/issues/3147)
+* **options:** Fix handling for falsy data.types ([5eb731a](https://github.com/naver/billboard.js/commit/5eb731a2c7be81abae9109c1b485cdb6aa673477)), closes [#3125](https://github.com/naver/billboard.js/issues/3125)
+* **sparkline:** Fix to work point.focus.only option ([65b3c1c](https://github.com/naver/billboard.js/commit/65b3c1c3b8ac707fef4e3391b90dff6d0f7c0ba5)), closes [#3171](https://github.com/naver/billboard.js/issues/3171)
+
+
+### Features
+
+* **api:** Enhance resizeAfter for .load/unload APIs ([33bbca4](https://github.com/naver/billboard.js/commit/33bbca4a82fe18e7824613ae6a2c3ab3b9ba55f9)), closes [#3157](https://github.com/naver/billboard.js/issues/3157)
+* **axis:** Intent to ship axis.x.inverted ([e193c0f](https://github.com/naver/billboard.js/commit/e193c0f712ecca1fa129beaf38b485bb1db1da8c)), closes [#3137](https://github.com/naver/billboard.js/issues/3137)
+* **package:** extends root div interface for styling ([0a1fe08](https://github.com/naver/billboard.js/commit/0a1fe084c9a6264aba680c8b73da589e457e8baf)), closes [#3162](https://github.com/naver/billboard.js/issues/3162) [#3163](https://github.com/naver/billboard.js/issues/3163)
+* **padding:** Intent to ship padding='fit' ([d760a63](https://github.com/naver/billboard.js/commit/d760a6355cd6c40e09f0833093293de7cdb8e95f)), closes [#3118](https://github.com/naver/billboard.js/issues/3118)
+
+## [3.7.5](https://github.com/naver/billboard.js/compare/3.7.4...3.7.5) (2023-03-06)
+
+
+### Bug Fixes
+
+* **bar:** Fix broken bar shape transition with grouped radius option ([600df46](https://github.com/naver/billboard.js/commit/600df46ac3686ba373aff28a512e30e7f3e6dae0)), closes [#2642](https://github.com/naver/billboard.js/issues/2642)
+* **data:** Fix tooltip event bound when data.xSort=false set ([aa4afc3](https://github.com/naver/billboard.js/commit/aa4afc3d76b3d73293f8efa4afc54666ce3a9c23)), closes [#3100](https://github.com/naver/billboard.js/issues/3100)
+* **data:** mitigate bar/bubble ranged data to handle data length than needed ([51603ec](https://github.com/naver/billboard.js/commit/51603ec0e1574c90a38ca41712d413b04bc33be6)), closes [#3096](https://github.com/naver/billboard.js/issues/3096)
+
+## [3.7.4](https://github.com/naver/billboard.js/compare/3.7.3...3.7.4) (2023-02-06)
+
+
+### Bug Fixes
+
+* **gauge:** fix when has no data ([efe7435](https://github.com/naver/billboard.js/commit/efe7435b2b1dfd3f537541f1cf09c7dc553320bf)), closes [#3066](https://github.com/naver/billboard.js/issues/3066)
+* **react:** Fix props argument handlling ([fb38d30](https://github.com/naver/billboard.js/commit/fb38d30ba742ee9527a67893f5c4269b1cb5b906)), closes [#3075](https://github.com/naver/billboard.js/issues/3075)
+* **type:** fix to export option type definition ([e4f3a2f](https://github.com/naver/billboard.js/commit/e4f3a2f4c308db795573188a5276ae40bc69b123)), closes [#3077](https://github.com/naver/billboard.js/issues/3077)
+
+## [3.7.3](https://github.com/naver/billboard.js/compare/3.7.2...3.7.3) (2023-01-26)
+
+
+### Bug Fixes
+
+* **bar:** Fix bar radius on inverted axis ([21b7004](https://github.com/naver/billboard.js/commit/21b70042ac811a9942e897b128bf961306b19067)), closes [#3054](https://github.com/naver/billboard.js/issues/3054)
+* **data:** Fix ratio calculation ([519cd0d](https://github.com/naver/billboard.js/commit/519cd0de2d39bd52f32402e6ef43f7b9abe20624)), closes [#3055](https://github.com/naver/billboard.js/issues/3055)
+* **type:** align grid api with option interface ([b89b74a](https://github.com/naver/billboard.js/commit/b89b74ad3c6b3f39ee11811e7fefbc6ac6ec2f44)), closes [#3037](https://github.com/naver/billboard.js/issues/3037)
+
+## [3.7.2](https://github.com/naver/billboard.js/compare/3.7.1...3.7.2) (2023-01-19)
+
+
+### Bug Fixes
+
+* **api:** Fix tooltip.hide() error call for Arc types ([163495b](https://github.com/naver/billboard.js/commit/163495b7e809566f71f416951647b20f3417556a)), closes [#3038](https://github.com/naver/billboard.js/issues/3038)
+* **bar:** Fix drawing on inverted axis ([d25bf31](https://github.com/naver/billboard.js/commit/d25bf3100d02385d321b2db427db0f8419670a79)), closes [#3049](https://github.com/naver/billboard.js/issues/3049)
+* **type:** fix wrong .grid() API param type ([0ef8a51](https://github.com/naver/billboard.js/commit/0ef8a51f885ee40dd37a21b7c61ed96ccd4bc177)), closes [#3037](https://github.com/naver/billboard.js/issues/3037)
+
+## [3.7.1](https://github.com/naver/billboard.js/compare/3.7.0...3.7.1) (2023-01-13)
+
+
+### Bug Fixes
+
+* **internals:** Fix unexpected initClip() call ([162fbf7](https://github.com/naver/billboard.js/commit/162fbf7c9a2538f489fff66311727ea53b94c592)), closes [#3012](https://github.com/naver/billboard.js/issues/3012) [#3035](https://github.com/naver/billboard.js/issues/3035)
+
+# [3.7.0](https://github.com/naver/billboard.js/compare/3.6.3...3.7.0) (2023-01-11)
+
+
+### Bug Fixes
+
+* **axis:** Fix axis label overlap when has no data ([643357b](https://github.com/naver/billboard.js/commit/643357b5b150b6a9bfc4a8ffe80a891d87e4cdb8)), closes [#2974](https://github.com/naver/billboard.js/issues/2974)
+* **axis:** fix axis.y/y2.tick.format context error ([54ee419](https://github.com/naver/billboard.js/commit/54ee419bcd6976bd9dde3deead25879ef56ce1a3)), closes [#2976](https://github.com/naver/billboard.js/issues/2976)
+* **domain:** Fix wrong domain range setting ([b55b153](https://github.com/naver/billboard.js/commit/b55b1535a1cea08d377cb8aecaafc681723b4a1e)), closes [#2962](https://github.com/naver/billboard.js/issues/2962)
+* **options:** Fix data.regions path rendering for category axis ([249d0ac](https://github.com/naver/billboard.js/commit/249d0ac37a7ed488ef42acc2ee18d83aed11d990)), closes [#2950](https://github.com/naver/billboard.js/issues/2950)
+* **plugin:** Fix stanford scale to accept 0 as min value ([02c4270](https://github.com/naver/billboard.js/commit/02c427088c42c37537bb3b6809e92519e0b569c6)), closes [#2999](https://github.com/naver/billboard.js/issues/2999)
+* **selection:** Fix selection w/point.focus.only=true & selection.multiple=false ([af93a8a](https://github.com/naver/billboard.js/commit/af93a8a07993158aeff1474a3fe157d6e594750d)), closes [#2928](https://github.com/naver/billboard.js/issues/2928) [#3013](https://github.com/naver/billboard.js/issues/3013)
+* **types:** Add missing param definition for gauge.label.format ([d663532](https://github.com/naver/billboard.js/commit/d6635320b34c4aeceabe5f9c7e2275d50c6ef885)), closes [#2946](https://github.com/naver/billboard.js/issues/2946)
+* **types:** Fix to referenced but missing d3 types ([0b57454](https://github.com/naver/billboard.js/commit/0b57454958dc06f2db6d0cdd1f4db19a724a7f3f)), closes [#2954](https://github.com/naver/billboard.js/issues/2954) [#2961](https://github.com/naver/billboard.js/issues/2961)
+* **types:** Support dual module type.d in TS >= 4.7 ([143e491](https://github.com/naver/billboard.js/commit/143e491ec53c0e08e83e4c4a56f20e1ebfbca486)), closes [#2952](https://github.com/naver/billboard.js/issues/2952) [#2953](https://github.com/naver/billboard.js/issues/2953)
+
+
+### Features
+
+* **api:** Enhance .export() to preserve fontStyle ([0809ae7](https://github.com/naver/billboard.js/commit/0809ae716124df954219c5089fbc8a96924ea0ba)), closes [#2892](https://github.com/naver/billboard.js/issues/2892)
+* **arc:** Intent to ship arc.cornerRadius ([e8320cf](https://github.com/naver/billboard.js/commit/e8320cf7f863ea8ebf9671d9e9f2e40877be2d97)), closes [#2936](https://github.com/naver/billboard.js/issues/2936)
+* **tooltip:** Enhance passing ratio value for stacked area/bar ([9e7ff01](https://github.com/naver/billboard.js/commit/9e7ff01ce560d8a0986c72faff50f99de34bed29)), closes [#2921](https://github.com/naver/billboard.js/issues/2921)
+* **treemap:** Intent to ship treemap type ([9809ef1](https://github.com/naver/billboard.js/commit/9809ef1a74c65a50797ac60ffdb711a0bf85281b)), closes [#123](https://github.com/naver/billboard.js/issues/123) [#3002](https://github.com/naver/billboard.js/issues/3002) [#3004](https://github.com/naver/billboard.js/issues/3004) [#3006](https://github.com/naver/billboard.js/issues/3006) [#3007](https://github.com/naver/billboard.js/issues/3007) [#3008](https://github.com/naver/billboard.js/issues/3008)
+
+## [3.6.3](https://github.com/naver/billboard.js/compare/3.6.2...3.6.3) (2022-10-28)
+
+
+### Bug Fixes
+
+* **axis:** Fix translate NaN error ([b8396a0](https://github.com/naver/billboard.js/commit/b8396a077ce4e7c1e0e354e18911e9c6dfe007c8)), closes [#2924](https://github.com/naver/billboard.js/issues/2924)
+* **interaction:** Fix unset focused state ([14f6de6](https://github.com/naver/billboard.js/commit/14f6de6bfd7ad2f1f876013c0bd1353a95386dcd)), closes [#2927](https://github.com/naver/billboard.js/issues/2927)
+
+## [3.6.2](https://github.com/naver/billboard.js/compare/3.6.1...3.6.2) (2022-10-26)
+
+
+### Bug Fixes
+
+* **eventrect:** Fix eventReceiver coordinates ([6526c9e](https://github.com/naver/billboard.js/commit/6526c9e1d5061b8ff09d96d65a2fdcd3e58599d3)), closes [#2913](https://github.com/naver/billboard.js/issues/2913)
+
+## [3.6.1](https://github.com/naver/billboard.js/compare/3.6.0...3.6.1) (2022-10-21)
+
+
+### Bug Fixes
+
+* **interaction:** Fix incorrect data.onover/out event call ([1389d85](https://github.com/naver/billboard.js/commit/1389d8597e56a690d01f469a160c6b0bff8df1f1)), closes [#2901](https://github.com/naver/billboard.js/issues/2901)
+* **tooltip:** fix redundant onxxx callback calls ([85cdf36](https://github.com/naver/billboard.js/commit/85cdf36b8bfb6f211f1be152c3757fa3241dc982)), closes [#2901](https://github.com/naver/billboard.js/issues/2901)
+* **type:** add missing svg.classname type definition ([72e5c84](https://github.com/naver/billboard.js/commit/72e5c848925e7dc88aee7a6bc95824aa99a9c3c1)), closes [#2893](https://github.com/naver/billboard.js/issues/2893)
+
+# [3.6.0](https://github.com/naver/billboard.js/compare/3.5.1...3.6.0) (2022-09-29)
+
+
+### Bug Fixes
+
+* **area:** Fix unnecessary area element generation ([d43a1a7](https://github.com/naver/billboard.js/commit/d43a1a78d487d2a2b32091db677de34e5c9a99ff)), closes [#2826](https://github.com/naver/billboard.js/issues/2826)
+* **axis:** fix undefined error reading generatedTicks ([4f3c101](https://github.com/naver/billboard.js/commit/4f3c10174f2e9e3ba5ea3567c548dbbba35b3340)), closes [#2786](https://github.com/naver/billboard.js/issues/2786)
+* **data:** Fix idConverter error ([98f7103](https://github.com/naver/billboard.js/commit/98f71034e6be01933dc5a41b04e87e9010e9a6de)), closes [#2808](https://github.com/naver/billboard.js/issues/2808)
+* **gauge:** Fix size mismatch w/o gauge multi label text is hidden ([6ee8a1e](https://github.com/naver/billboard.js/commit/6ee8a1edcdf57882954bf43e12217a73c2b92d56)), closes [#2799](https://github.com/naver/billboard.js/issues/2799)
+* **grid:** Remove grid.y.ticks default value ([4818e44](https://github.com/naver/billboard.js/commit/4818e44f373f97f90eea6751d793629201619229)), closes [#2809](https://github.com/naver/billboard.js/issues/2809)
+* **legend:** Add default for legend.contents.template ([55fbb02](https://github.com/naver/billboard.js/commit/55fbb0217d1cd6c147b7ef28f0809e71619e3bde)), closes [#2780](https://github.com/naver/billboard.js/issues/2780)
+* **type:** Add missing polar module export ([a950abd](https://github.com/naver/billboard.js/commit/a950abdfcfc0ad78f04baa35c5f5026a8d0649d1)), closes [#2833](https://github.com/naver/billboard.js/issues/2833)
+* **typescript:** update entry point in tsconfig ([ab4d98d](https://github.com/naver/billboard.js/commit/ab4d98d3fa50b998c71c3444e2a886574550c666)), closes [#2855](https://github.com/naver/billboard.js/issues/2855)
+* **types:** Fix legend.item.tile.type literal type typo ([de9781f](https://github.com/naver/billboard.js/commit/de9781f29723fa841a2f936f038c0c0c4809c921))
+* **types:** Fix the type declarations for the y tick format ([1d378e0](https://github.com/naver/billboard.js/commit/1d378e05af25e33d6d50d92dea51db7fd6b411d7)), closes [#2790](https://github.com/naver/billboard.js/issues/2790)
+* **types:** Fix the type declarations for the y tick format ([#2865](https://github.com/naver/billboard.js/issues/2865)) ([2e38dee](https://github.com/naver/billboard.js/commit/2e38dee90bf66ea0ae4266c346d634eb81b57ac4))
+
+
+### Features
+
+* **api:** Enhance .config() to return generation options ([455944e](https://github.com/naver/billboard.js/commit/455944e75038a4c301763100bd6a8385b510a396)), closes [#2864](https://github.com/naver/billboard.js/issues/2864)
+* **options:** Intent to ship bar.linearGradient ([3a9989f](https://github.com/naver/billboard.js/commit/3a9989f7a05c1856ff20092f3af6df827d172b37)), closes [#397](https://github.com/naver/billboard.js/issues/397)
+* **options:** Intent to ship bar.overlap ([046aedb](https://github.com/naver/billboard.js/commit/046aedb08851834fc9b39b723747310078cd4bde)), closes [#2839](https://github.com/naver/billboard.js/issues/2839)
+* **options:** Intent to ship data.groupsZeroAs ([3de8e7a](https://github.com/naver/billboard.js/commit/3de8e7a6e1dd799fdf7f51e793d21df1124cdc0a)), closes [#2813](https://github.com/naver/billboard.js/issues/2813)
+* **options:** Intent to ship legend.item.tile.type ([c379c9f](https://github.com/naver/billboard.js/commit/c379c9ff612acd18b139aadcbdf69ab79770f5c5)), closes [#2874](https://github.com/naver/billboard.js/issues/2874)
+* **packages:** Intent to ship React wrapper ([4cef6ad](https://github.com/naver/billboard.js/commit/4cef6adac03deb79040f28addf0489badfd217c8)), closes [#2838](https://github.com/naver/billboard.js/issues/2838)
+
+## [3.5.1](https://github.com/naver/billboard.js/compare/3.5.0...3.5.1) (2022-07-14)
+
+
+### Bug Fixes
+
+* **options:** Fix possible memory leak for boost.useWorker ([394d1c3](https://github.com/naver/billboard.js/commit/394d1c356747ebf0328b1a1eda1323250238e01b)), closes [#2778](https://github.com/naver/billboard.js/issues/2778)
+* **types:** Fix the signature of the tick format callback for timeseries ([fb246bc](https://github.com/naver/billboard.js/commit/fb246bc92d328450b185314d5267dfc0862e55d3)), closes [#2769](https://github.com/naver/billboard.js/issues/2769)
+
+# [3.5.0](https://github.com/naver/billboard.js/compare/3.4.1...3.5.0) (2022-06-30)
+
+
+### Bug Fixes
+
+* **bar:** fix bar radius for zero value ([9aa7579](https://github.com/naver/billboard.js/commit/9aa7579b83843946806b1e4b8e5f8343a3fc82b4)), closes [#2642](https://github.com/naver/billboard.js/issues/2642)
+* **build:** Fix this keyword transpile ([b65531a](https://github.com/naver/billboard.js/commit/b65531ad84130151e7ba00575c92acda9c978b7a)), closes [#2671](https://github.com/naver/billboard.js/issues/2671) [#2664](https://github.com/naver/billboard.js/issues/2664) [#2665](https://github.com/naver/billboard.js/issues/2665) [#2666](https://github.com/naver/billboard.js/issues/2666) [#2667](https://github.com/naver/billboard.js/issues/2667)
+* **data:** Fix data label position on inverted axis ([b024d83](https://github.com/naver/billboard.js/commit/b024d834f4d51b06124dbfb0419d80b2a9f902af)), closes [#2700](https://github.com/naver/billboard.js/issues/2700)
+* **grid:** Fix y grid to show for log axis type ([d0b8cbd](https://github.com/naver/billboard.js/commit/d0b8cbda0d206f8a307112847ee8f07e9c658f6d)), closes [#2710](https://github.com/naver/billboard.js/issues/2710)
+* **option:** Fix onresize/onresized call context ([3ef9684](https://github.com/naver/billboard.js/commit/3ef968455d86df99177fd1d0d807cbbb53cd5de1)), closes [#2726](https://github.com/naver/billboard.js/issues/2726)
+* **plugin, type:** fix TextOverlap type definition ([80cc3b7](https://github.com/naver/billboard.js/commit/80cc3b711db9e480ced5d1ab16086e34b59e8437))
+* **plugin:** fix sparkline dimension & tooltip ([79e1ab7](https://github.com/naver/billboard.js/commit/79e1ab7c4325d0f1bca09d5f30a95c01a634ee88)), closes [#2682](https://github.com/naver/billboard.js/issues/2682)
+* **plugin:** fix stanford tooltip formatting ([9a87464](https://github.com/naver/billboard.js/commit/9a87464c5212e8d29c0a7b3d3d07729524aa911a)), closes [#2657](https://github.com/naver/billboard.js/issues/2657)
+* **resize:** Fix legend resize ([7df949b](https://github.com/naver/billboard.js/commit/7df949bb3541e9307a93e8a44e47a40da5d9a614)), closes [#2650](https://github.com/naver/billboard.js/issues/2650)
+* **scale:** fix getting tickOffset ([3091677](https://github.com/naver/billboard.js/commit/3091677dfb546503210f0c2a340ee20a9281bead)), closes [#2669](https://github.com/naver/billboard.js/issues/2669)
+* **size.axis:** fix truncated axis when has no data ([40f4b66](https://github.com/naver/billboard.js/commit/40f4b6623176c31fcc2620601a8e5ce10ef945ce)), closes [#2675](https://github.com/naver/billboard.js/issues/2675)
+* **types:** Fix `Chart.load({ json })` typing ([1bd4f4a](https://github.com/naver/billboard.js/commit/1bd4f4a1eb419b1575a9459dfde893471cd054d7)), closes [#2711](https://github.com/naver/billboard.js/issues/2711)
+* **types:** Fix the signature of the tick format callback for timeseries ([c9c76e5](https://github.com/naver/billboard.js/commit/c9c76e512769602100a4640f40e946d721a8f8f6)), closes [#2676](https://github.com/naver/billboard.js/issues/2676)
+* **types:** Fix the type for options.data.names ([e64f6bd](https://github.com/naver/billboard.js/commit/e64f6bdfc949852d6f01565bbaed16140f54edba)), closes [#2677](https://github.com/naver/billboard.js/issues/2677)
+* **types:** Fix types for the tooltip contents callback ([a0c0355](https://github.com/naver/billboard.js/commit/a0c03550555676c4046684488d06472df2fd3395)), closes [#2693](https://github.com/naver/billboard.js/issues/2693)
+* **zoom:** fix wheel zoom feeling "stuck" when panning past the edge ([50ed640](https://github.com/naver/billboard.js/commit/50ed64042fd5680f514f24598e7075eba3fe2186)), closes [#2588](https://github.com/naver/billboard.js/issues/2588) [#2648](https://github.com/naver/billboard.js/issues/2648)
+
+
+### Features
+
+* **area:** add option to render area below line ([cf60291](https://github.com/naver/billboard.js/commit/cf6029164be48c5fe96fce71917bc23e94335a43)), closes [#2740](https://github.com/naver/billboard.js/issues/2740) [#2741](https://github.com/naver/billboard.js/issues/2741)
+* **data:** Intent to ship data.labels.rotate ([7b7ee08](https://github.com/naver/billboard.js/commit/7b7ee0801a51072b7a31eb26eea6c92c39117e48)), closes [#2662](https://github.com/naver/billboard.js/issues/2662)
+* **option:** Intent to ship boost.useCssRule ([4a060d6](https://github.com/naver/billboard.js/commit/4a060d6de054ce1960814ba2ec320639ed0153f1)), closes [#2716](https://github.com/naver/billboard.js/issues/2716)
+* **option:** Intent to ship boost.useWorker ([eeaf8bd](https://github.com/naver/billboard.js/commit/eeaf8bd57cb3e8603e090cdbfed2b7d2d8d99ac3))
+* **resize:** Intent to ship resize.timer ([#2712](https://github.com/naver/billboard.js/issues/2712)) ([0a07de0](https://github.com/naver/billboard.js/commit/0a07de0ec0a74071f363853d718d15d590dd8666)), closes [#2650](https://github.com/naver/billboard.js/issues/2650)
+
 ## [3.4.1](https://github.com/naver/billboard.js/compare/3.4.0...3.4.1) (2022-04-14)
 
 

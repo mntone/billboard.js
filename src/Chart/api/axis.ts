@@ -2,18 +2,11 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {isValue, isDefined, isObjectType, isNumber} from "../../module/util";
+import {isDefined, isNumber, isObjectType, isValue} from "../../module/util";
 
-type AxisOption = {
-	x?: number | false;
-	y?: number | false;
-	y2?: number | false;
-} | number | false;
+type AxisOption = {x?: number | false, y?: number | false, y2?: number | false} | number | false;
 
-type RangeAxisOption = {
-	min? : AxisOption;
-	max?: AxisOption;
-};
+type RangeAxisOption = {min?: AxisOption, max?: AxisOption};
 
 /**
  * Set the min/max value
@@ -46,6 +39,8 @@ function setMinMax($$, type: "min" | "max", value: AxisOption): void {
 			});
 		}
 
+		$$.state.dirty.data = true;
+
 		$$.redraw({
 			withUpdateOrgXDomain: true,
 			withUpdateXDomain: true
@@ -77,6 +72,7 @@ function getMinMax($$, type: "min" | "max"): {x: number, y: number, y2: number} 
 const axis = {
 	/**
 	 * Get and set axis labels.
+	 * - **NOTE:** Only applicable for chart types which has x and y axes.
 	 * @function axis․labels
 	 * @instance
 	 * @memberof Chart
@@ -109,7 +105,11 @@ const axis = {
 				$$.axis.setLabelText(axisId, labels[axisId]);
 			});
 
-			$$.axis.updateLabels();
+			if ($$.state.isCanvasMode) {
+				$$.renderCanvasFrame?.(undefined, null, false);
+			} else {
+				$$.axis.updateLabels();
+			}
 		}
 
 		["x", "y", "y2"].forEach(v => {
@@ -126,6 +126,7 @@ const axis = {
 
 	/**
 	 * Get and set axis min value.
+	 * - **NOTE:** Only applicable for chart types which has x and y axes.
 	 * @function axis․min
 	 * @instance
 	 * @memberof Chart
@@ -153,7 +154,7 @@ const axis = {
 	 * chart.axis.min(-50);
 	 * chart.axis.min(false);
 	 */
-	min: function(min?: AxisOption): object|void {
+	min: function(min?: AxisOption): object | void {
 		const $$ = this.internal;
 
 		return isValue(min) || min === false ?
@@ -163,6 +164,7 @@ const axis = {
 
 	/**
 	 * Get and set axis max value.
+	 * - **NOTE:** Only applicable for chart types which has x and y axes.
 	 * @function axis․max
 	 * @instance
 	 * @memberof Chart
@@ -190,7 +192,7 @@ const axis = {
 	 * chart.axis.max(10);
 	 * chart.axis.max(false);
 	 */
-	max: function(max?: AxisOption): object|void {
+	max: function(max?: AxisOption): object | void {
 		const $$ = this.internal;
 
 		return isValue(max) || max === false ?
@@ -200,6 +202,7 @@ const axis = {
 
 	/**
 	 * Get and set axis min and max value.
+	 * - **NOTE:** Only applicable for chart types which has x and y axes.
 	 * @function axis․range
 	 * @instance
 	 * @memberof Chart
@@ -240,7 +243,7 @@ const axis = {
 	 * chart.axis.range({ min: -50, max: 1000 });
 	 * chart.axis.range({ min: false, max: false });
 	 */
-	range: function(range: RangeAxisOption): object|void {
+	range: function(range: RangeAxisOption): object | void {
 		const {axis} = this;
 
 		if (arguments.length) {

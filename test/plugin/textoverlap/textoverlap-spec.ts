@@ -3,8 +3,9 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, describe, expect, it} from "vitest";
 import util from "../../assets/util";
+import {$TEXT} from "../../../src/config/classes";
 import TextOverlap from "../../../src/Plugin/textoverlap";
 
 describe("PLUGIN: TEXTOVERLAP", () => {
@@ -19,14 +20,18 @@ describe("PLUGIN: TEXTOVERLAP", () => {
             type: "line",
             labels: true
         },
-        plugins: [
-            new TextOverlap()
-        ],
         axis: {
             y: {
                 show: false
             }
-        }
+        },
+        plugins: [
+            new TextOverlap({                
+                // selector: ".bb-texts text",
+                // extent: 8,
+                // area: 3
+            })
+        ]
     };
 
 	beforeEach(() => {
@@ -37,11 +42,11 @@ describe("PLUGIN: TEXTOVERLAP", () => {
         const {texts} = chart.$.text;
 
         chart.data().forEach((v, i) => {
-            let x;
-            let y;
+            let x = i;
+            let y = i;
 
-            texts.filter(`.bb-text-${i}`).each(function(d, j) {
-                if (x === undefined) {
+            texts.filter(`.${$TEXT.text}-${i}`).each(function(d, j) {
+                if (x === i) {
                     x = +this.getAttribute("x");
                     y = +this.getAttribute("y");
                 } else {
@@ -57,6 +62,7 @@ describe("PLUGIN: TEXTOVERLAP", () => {
     it("set options extent & area options", () => {
         args.plugins = [
             new TextOverlap({
+                selector: ".bb-texts text",
                 extent: 5,
                 area: 0.35
             })
@@ -67,13 +73,13 @@ describe("PLUGIN: TEXTOVERLAP", () => {
         const expected = [
             {data1: "", data2: "none", data3: ""},
             {data1: "", data2: "", data3: ""},
-            {data1: "none", data2: "none", data3: ""}
+            {data1: "none", data2: "", data3: ""}
         ];
 
         const {texts} = chart.$.text;
 
         chart.data().forEach((v, i) => {
-            texts.filter(`.bb-text-${i}`).each(function(d) {
+            texts.filter(`.${$TEXT.text}-${i}`).each(function(d) {
                 expect(this.style.display).to.be.equal(expected[d.index][d.id]);
             });
         });

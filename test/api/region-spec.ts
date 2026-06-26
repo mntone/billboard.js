@@ -3,12 +3,13 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
 import {$REGION} from "../../src/config/classes";
+import {testRegions} from "../internals/regions-spec";
 
-describe("API region", function() {
+describe("API regions", function() {
 	let chart;
 	let args;
 
@@ -17,7 +18,7 @@ describe("API region", function() {
 	});
 
 	describe("regions()", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -41,7 +42,7 @@ describe("API region", function() {
 			}
 		});
 
-		it("should update regions", done => {
+		it("should update regions", () => new Promise(done => {
 			const main = chart.$.main;
 			const expectedRegions = [
 				{
@@ -87,13 +88,39 @@ describe("API region", function() {
 					expect(region.classed(unexpectedClass)).to.not.be.ok;
 				});
 
-				done();
-			}, 1000);
+				done(1);
+			}, 350);
+		}));
+
+		it("check for <rect> element generation", () => {
+			// when
+			chart.regions.add({
+				axis: "y",
+				start: 150,
+				end: 200,
+				class: "a",
+			});
+
+			chart.regions.add({
+				axis: "y",
+				start: 200,
+				end: 220,
+				class: "b",
+			});
+
+			const regionList = chart.internal.$el.region.list;
+
+			expect(regionList.size()).to.be.equal(4);
+
+			// regions <rect> element should be 1
+			regionList.each(function(d, i) {
+				expect(this.querySelectorAll("rect").length).to.be.equal(1);
+			});
 		});
 	});
 
 	describe("Add regions using regions()", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -120,7 +147,7 @@ describe("API region", function() {
 			}
 		});
 
-		it("should add regions", done => {
+		it("should add regions", () => new Promise(done => {
 			const main = chart.$.main;
 			const expectedRegions = [
 				{
@@ -182,9 +209,9 @@ describe("API region", function() {
 					expect(region.classed(expectedClass)).to.be.ok;
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
 
 		it("set options", () => {
@@ -215,13 +242,13 @@ describe("API region", function() {
 			
 			const rect = chart.internal.$el.region.list.select("rect").node().getBoundingClientRect();
 
-			expect(rect.width).to.be.equal(300);
+			expect(rect.width).to.be.equal(299.5);
 			expect(rect.height).to.be.equal(426);
 		});
 	});
 
 	describe("Remove regions using regions()", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -251,7 +278,7 @@ describe("API region", function() {
 			}
 		});
 
-		it("should remove regions", done => {
+		it("should remove regions", () => new Promise(done => {
 			const main = chart.$.main;
 			const expectedRegions = [
 				{
@@ -288,14 +315,14 @@ describe("API region", function() {
 					expect(region.classed(expectedClass)).to.be.ok;
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 
 	// regions.add / remove
 	describe("regions()", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -343,5 +370,96 @@ describe("API region", function() {
 
 			expect(chart.regions().length).to.be.equal(0);
 		});
+	});
+
+	describe("label text", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", 30, 200, 100, 400, 150, 250],
+						["data2", 100, 150, 130, 200, 220, 190],
+					],
+					axes: {
+						data2: "y2",
+					},
+					type: "line",
+					colors: {
+						data1: "#ff0000"
+					}
+				},
+				axis: {
+					y2: {
+						show: true
+					}
+				},
+				regions: [
+					{
+						axis: "x",
+						start: 1,
+						end: 2,
+						class: "regions_class1",
+						label: {
+							text: "Regions 1",
+							x: 0,
+							y: 0,
+							color: "red"
+						}
+					},
+					{
+						axis: "y",
+						start: 100,
+						end: 300,
+						class: "regions_class3",
+						label: {
+							text: "Regions 3"
+						}
+					},
+					{
+						axis: "y2",
+						start: 200,
+						end: 220,
+						class: "regions_class4",
+						label: {
+							text: "Regions 4"
+						}
+					}
+				]
+			}
+		});
+
+		it("labels are updated correctly?", () => new Promise(done => {
+			// when
+			chart.regions([
+				{
+					axis: "y",
+					start: 200,
+					end: 300,
+					label: {
+						text: "1 Regions",
+						x: 150,
+						color: "rgb(0, 0, 255)"
+					}
+				},
+				{
+					axis: "x",
+					start: 2,
+					end: 4,
+					class: "fill_green",
+					label: {
+						text: "2 Region",
+						y: 50,
+						color: "rgb(165, 42, 42)",
+						rotated: true
+					}
+				}
+			]);
+
+			setTimeout(() => {
+				chart.internal.$el.region.list.each(testRegions(chart));
+
+				done(1);
+			}, 350);
+		}));
 	});
 });

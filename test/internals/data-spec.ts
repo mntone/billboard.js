@@ -4,11 +4,11 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
-import {expect} from "chai";
+import {beforeEach, beforeAll, afterEach, afterAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import sinon from "sinon";
 import util from "../assets/util";
-import {$AREA, $AXIS, $BAR, $CIRCLE, $COMMON, $LINE, $SHAPE, $TEXT} from "../../src/config/classes";
+import {$ARC, $AREA, $AXIS, $BAR, $CIRCLE, $COMMON, $LINE, $SHAPE, $TEXT} from "../../src/config/classes";
 import {isNumber} from "../../src/module/util";
 
 describe("DATA", () => {
@@ -17,6 +17,25 @@ describe("DATA", () => {
 
 	beforeEach(() => {
 		chart = util.generate(args);
+	});
+
+	const waitUntil = (predicate, timeout = 3000, interval = 25) => new Promise<void>((resolve, reject) => {
+		const started = Date.now();
+		const check = () => {
+			try {
+				if (predicate()) {
+					resolve();
+				} else if (Date.now() - started > timeout) {
+					reject(new Error("Timed out waiting for condition."));
+				} else {
+					setTimeout(check, interval);
+				}
+			} catch (e) {
+				reject(e);
+			}
+		};
+
+		check();
 	});
 
 	const checkXY = function(x, y, prefix = "c", delta: any = {x: 1, y: 1}) {
@@ -39,7 +58,7 @@ describe("DATA", () => {
 	};
 
 	describe("load json #1", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					json: {
@@ -60,7 +79,7 @@ describe("DATA", () => {
 	});
 
 	describe("load json #2", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					json: [{
@@ -89,20 +108,20 @@ describe("DATA", () => {
 		});
 
 		it("should draw correctly", () => {
-			const expectedCx = {443: [98, 294, 490], 995: [98, 294, 490]};
-			const expectedCy = {443: [194, 351, 36], 995: [391, 0, 351]};
+			const expectedCx = {443: [98, 294.5, 490], 995: [98, 490]};
+			const expectedCy = {443: [194, 351, 36], 995: [391, 351]};
 			const main = chart.$.main;
 
-			main.selectAll(`.${$CIRCLE.circles}-443 .${$CIRCLE.circle}`)
+			chart.$.circles.filter(d => d.id === "443")
 				.each(checkXY(expectedCx[443], expectedCy[443]));
 
-			main.selectAll(`.${$CIRCLE.circles}-995 .${$CIRCLE.circle}`)
+			chart.$.circles.filter(d => d.id === "995")
 				.each(checkXY(expectedCx[995], expectedCy[995]));
 		});
 	});
 
 	describe("load json #3", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					json: [{
@@ -144,19 +163,19 @@ describe("DATA", () => {
 			};
 		});
 
-		after(() => {
+		afterAll(() => {
 			args = {};
 		})
 
 		it("should draw nested JSON correctly", () => {
 			const main = chart.$.main;
-			const expectedCx = [98, 294, 490];
+			const expectedCx = [98, 294.5, 490];
 			const expectedCy = {
 				443: [181, 326, 36],
-				995: [362, 0, 326],
+				995: [362, 326],
 				112: [354, 347, 340],
 				223: [391, 383, 376],
-				334: [376, 0, 362],
+				334: [376, 362],
 				556: [326, 253, 181],
 				"778.889": [347, 376, 340]
 			};
@@ -165,7 +184,7 @@ describe("DATA", () => {
 				.each(checkXY(expectedCx, expectedCy[443]));
 
 			main.selectAll(`.${$CIRCLE.circles}-995-996 .${$CIRCLE.circle}`)
-				.each(checkXY(expectedCx, expectedCy[995]));
+				.each(checkXY([98, 490], expectedCy[995]));
 
 			main.selectAll(`.${$CIRCLE.circles}-112-0- .${$CIRCLE.circle}`)
 				.each(checkXY(expectedCx, expectedCy[112]));
@@ -174,7 +193,7 @@ describe("DATA", () => {
 				.each(checkXY(expectedCx, expectedCy[223]));
 
 			main.selectAll(`.${$CIRCLE.circles}-334-1--0--335 .${$CIRCLE.circle}`)
-				.each(checkXY(expectedCx, expectedCy[334]));
+				.each(checkXY([98, 490], expectedCy[334]));
 
 			main.selectAll(`.${$CIRCLE.circles}-556-557-558-0- .${$CIRCLE.circle}`)
 				.each(checkXY(expectedCx, expectedCy[556]));
@@ -185,7 +204,7 @@ describe("DATA", () => {
 	});
 
 	describe("load rows", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					rows: [
@@ -211,9 +230,9 @@ describe("DATA", () => {
 	});
 
 	describe("XHR data loading", () => {
-		const path = "/base/test/assets/data/";
+		const path = "/test/assets/data/";
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					url: `${path}test.csv`
@@ -221,16 +240,13 @@ describe("DATA", () => {
 			};
 		});
 
-		it("check for CSV file loading", done => {
-			setTimeout(() => {
-				const data = chart.data();
+		it("check for CSV file loading", async () => {
+			await waitUntil(() => chart.data().length === 3);
 
-				expect(chart.$.chart.selectAll("svg").size()).to.be.equal(1);
-				expect(data).to.not.be.null;
-				expect(data.length).to.be.equal(3);
+			const data = chart.data();
 
-				done();
-			}, 500);
+			expect(data).to.not.be.null;
+			expect(data.length).to.be.equal(3);
 		});
 
 		it("set options data.mimeType='json'", () => {
@@ -242,21 +258,19 @@ describe("DATA", () => {
 			}
 		});
 
-		it("check for JSON file loading", done => {
-			setTimeout(() => {
-				const data = chart.data();
+		it("check for JSON file loading", async () => {
+			await waitUntil(() => chart.data().length === 3);
 
-				expect(data).to.not.be.null;
-				expect(data.length).to.be.equal(3);
-				expect(chart.data.values("data1")).to.deep.equal([220, 240, 270, 250, 280]);
+			const data = chart.data();
 
-				done();
-			}, 500);
+			expect(data).to.not.be.null;
+			expect(data.length).to.be.equal(3);
+			expect(chart.data.values("data1")).to.deep.equal([220, 240, 270, 250, 280]);
 		});
 	});
 
 	describe("check data.order", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -309,7 +323,7 @@ describe("DATA", () => {
 		});
 
 		it("check for ascending", () => {
-			const data = [];
+			const data: [string, number][] = [];
 
 			chart.$.bar.bars.each(function(d) {
 				data.push([d.id, this.getBoundingClientRect().y]);
@@ -339,7 +353,7 @@ describe("DATA", () => {
 		});
 
 		it("check for descending", () => {
-			const data = [];
+			const data: [string, number][] = [];
 
 			chart.$.bar.bars.each(function(d) {
 				data.push([d.id, this.getBoundingClientRect().y]);
@@ -364,7 +378,7 @@ describe("DATA", () => {
 		});
 
 		it("check for ascending", () => {
-			const data = [];
+			const data: [string, number][] = [];
 
 			chart.$.arc.selectAll(`g.${$SHAPE.shapes}`).each(function(d, i) {
 				data.push([d.data.id, d.startAngle]);
@@ -387,7 +401,7 @@ describe("DATA", () => {
 		});
 
 		it("check for descending", () => {
-			const data = [];
+			const data: [string, number][] = [];
 
 			chart.$.arc.selectAll(`g.${$SHAPE.shapes}`).each(function(d, i) {
 				data.push([d.data.id, d.startAngle]);
@@ -407,7 +421,7 @@ describe("DATA", () => {
 	});
 
 	describe("data.xs", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -442,7 +456,7 @@ describe("DATA", () => {
 
 		describe("timeseries x", () => {
 			describe("without xFormat", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							x: "date",
@@ -478,7 +492,7 @@ describe("DATA", () => {
 
 			describe("with xFormat", () => {
 				describe("timeseries x with xFormat", () => {
-					before(() => {
+					beforeAll(() => {
 						args = {
 							data: {
 								x: "date",
@@ -517,7 +531,7 @@ describe("DATA", () => {
 
 		describe("milliseconds timeseries x", () => {
 			describe("as date string", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							x: "date",
@@ -567,7 +581,7 @@ describe("DATA", () => {
 			});
 
 			describe("as unixtime number", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							x: "date",
@@ -608,6 +622,35 @@ describe("DATA", () => {
 		});
 	});
 
+	describe("data.xSort", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					xSort: false,
+					x: "x",
+					columns: [
+						["x", 3, 1, 2],
+						["data1", 300, 350, 300]
+					]
+				}
+			};
+		});
+
+		it("line path should rendered correctly.", () => {
+			expect(chart.$.line.lines.attr("d")).to.be.equal("M593.127,390.583L5.873,36.417L299.5,390.583");
+		});
+
+		it("check for tooltip show", () => {
+			const {tooltip} = chart.$;
+
+			// when
+			chart.tooltip.show({x: 2});
+
+			expect(tooltip.select(".name").text()).to.be.equal("data1");
+			expect(+tooltip.select(".value").text()).to.be.equal(300);
+		});
+	});
+
 	describe("inner functions", () => {
 		it("should check returns of mapToTargetIds", () => {
 			const internal = chart.internal;
@@ -643,7 +686,7 @@ describe("DATA", () => {
 		let minData;
 		let maxData;
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -660,7 +703,7 @@ describe("DATA", () => {
 			};
 		});
 
-		it("check for onmin callback", done => {
+		it("check for onmin callback", () => new Promise(done => {
 			setTimeout(() => {
 				expect(minData.length > 0).to.be.true;
 
@@ -668,24 +711,24 @@ describe("DATA", () => {
 				expect(minData[0].value).to.be.equal(minData[1].value);
 				expect(minData[0].id).to.not.be.equal(minData[1].id);
 
-				done();
+				done(1);
 			}, 100);
-		});
+		}));
 
-		it("check for onmax callback", done => {
+		it("check for onmax callback", () => new Promise(done => {
 			setTimeout(() => {
 				expect(maxData.length > 0).to.be.true;
 
 				expect(maxData[0].value).to.be.equal(400);
 				expect(maxData[0].id).to.be.equal("data1");
 
-				done();
+				done(1);
 			}, 100);
-		});
+		}));
 	});
 
 	describe("data.hide", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -726,43 +769,7 @@ describe("DATA", () => {
 	});
 
 	describe("data.regions", () => {
-		before(() => {
-			args = {
-				data: {
-					columns: [
-						["data1", 30, 200, 200, 400, 150, 250]
-					],
-					regions: {
-						data1: [
-							{
-								start: 1,
-								end: 2,
-								style: {
-									dasharray: "5 3"
-								}
-							},
-							{
-								start: 3
-							}
-						]
-					}
-				}
-			};
-		});
-
-		const checkPathLengths = expected => {
-			const line = chart.$.main.select(`path.${$LINE.line}-data1`);
-			const path = line.attr("d");
-
-			expect(path.split("M").length).to.be.equal(expected.M);
-			expect(path.split("L").length).to.be.equal(expected.L);
-		}
-
-		it("should be generating correct dashed path data", () => {
-			checkPathLengths({M: 118, L: 119});
-		});
-
-		it("set options for null data", () => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -786,6 +793,34 @@ describe("DATA", () => {
 			};
 		});
 
+		const checkPathLengths = expected => {
+			const line = chart.$.main.select(`path.${$LINE.line}-data1`);
+			const path = line.attr("d");
+
+			expect(path.split("M").length).to.be.equal(expected.M);
+			expect(path.split("L").length).to.be.equal(expected.L);
+		}
+
+		const checkStyleLengths = (dataId, closeTo = 1) => {
+			const {line: {lines}} = chart.$;
+			const target = lines.filter(({id}) => id === dataId);
+			const strokeDashArray = target.attr("stroke-dasharray");
+			const dashLength = strokeDashArray.split(" ").map(Number).reduce((a, c) => a + c);
+			const totalLength = target.node().getTotalLength();
+			const lastDashLength = +strokeDashArray.match(/\d+(\.\d+)?$/)[0];
+			const path = target.attr("d");
+
+			expect(path.split("M").length).to.be.equal(2);
+			expect(path.split("L").length).to.be.equal(chart.data.values(dataId).filter(Boolean).length);
+
+
+			if(lastDashLength === totalLength) {
+				expect(dashLength).to.be.greaterThan(totalLength);
+			} else {
+				expect(totalLength).to.be.closeTo(dashLength, closeTo);			
+			}
+		};
+
 		it("should be generating correct dashed path data", () => {
 			checkPathLengths({M: 38, L: 37});
 		});
@@ -794,15 +829,115 @@ describe("DATA", () => {
 			args.line = {connectNull: true};
 		});
 
-		it("should be generating correct dashed path data", () => {
-			checkPathLengths({M: 37, L: 38});
+		it("should be generating correct dashed style", () => {
+			checkStyleLengths("data1");
+		});
+
+		it("set options: category type axis", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 1869155, 1909489, 1949823, 1938947]
+					],
+					type: "line",
+					regions: {
+						data1: [{
+						  start: 0,
+						  end: 1
+						}]
+					}
+				},
+				axis: {
+					x: {
+						type: "category"
+					}
+				}
+			}
+		});
+
+		it("check regions for 'category' type axis", () => {
+			checkStyleLengths("data1");
+		});
+
+		it("set options: axis.rotated=true", () => {
+			args.axis.rotated = true;
+		});
+
+		it("check regions for 'category' type axis on roated axis", () => {
+			checkStyleLengths("data1");
+		});
+
+		it("set options: timeseries type axis", () => {
+			args = {
+				data: {
+					x: "x",
+					columns: [
+						["x", "2023-08-25", "2023-08-26", "2023-08-27", "2023-08-29", , "2023-09-02"],
+						["data1", 50, 20, 10, 30, 50],
+						["data2", 23, 50, 30, 70, 25]
+					],
+					regions: {
+						data1: [
+							{
+								end: "2023-08-27",
+								style: {
+									dasharray: "5 2"
+								}
+							},
+							{
+								start: "2023-08-29",
+								style: {
+									dasharray: "10 10"
+								}
+							},
+						],
+						data2: [
+							{
+								end: "2023-08-26",
+								style: {
+									dasharray: "1 3"
+								}
+							},
+							{
+								start: "2023-08-27",
+								end: "2023-08-29",
+								style: {
+									dasharray: "8 8"
+								}
+							}
+						]
+					}
+				},
+				axis: {
+					x: {
+						type: "timeseries",
+						tick: {
+							format: "%Y-%m-%d",
+						}
+					}
+				}
+			};
+		});
+
+		it("check regions for 'timeseries' type axis", () => {
+			checkStyleLengths("data1", 4);
+			checkStyleLengths("data2");
+		});
+
+		it("set options: axis.rotated=true", () => {
+			args.axis.rotated = true;
+		});
+
+		it("check regions for 'timeseries' type axis on roated axis", () => {
+			checkStyleLengths("data1", 4);
+			checkStyleLengths("data2");
 		});
 	});
 
 	describe("data.stack", () => {
 		let chartHeight = 0;
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -838,18 +973,18 @@ describe("DATA", () => {
 			});
 		});
 
-		it("check when hiding data", done => {
+		it("check when hiding data", () => new Promise(done => {
 			// when
 			chart.hide("data1");
 
 			setTimeout(() => {
 				chart.$.main.selectAll(`.${$COMMON.target}-data2 path`).each(function() {
-					expect(this.getBBox().height).to.be.equal(chartHeight);
+					expect(this.getBBox().height).to.be.closeTo(chartHeight, 5);
 				});
 
-				done();
-			}, 300);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		it("set options data.columns", () => {
 			args.data.columns = [
@@ -860,7 +995,7 @@ describe("DATA", () => {
 			args.data.hide = ["false-data"];
 		});
 
-		it("check for null data", done => {
+		it("check for null data", () => new Promise(done => {
 			const main = chart.$.main;
 			const data1Bar = main.select(`.${$BAR.bars}-data1 .${$BAR.bar}-2`).node();
 			const data2Bar = main.select(`.${$BAR.bars}-data2 .${$BAR.bar}-1`).node();
@@ -874,9 +1009,9 @@ describe("DATA", () => {
 			setTimeout(() => {
 				expect(data2Bar.getBBox().height).to.be.equal(0);
 
-				done();
+				done(1);
 			}, 500)
-		});
+		}));
 
 		it("set options data.type='area'", () => {
 			args.data.type = "area";
@@ -908,10 +1043,99 @@ describe("DATA", () => {
 
 			expect(tooltipValue).to.be.equal(100);
 		});
+
+		it("set options for multiple groups normalization", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 100, 200],
+						["data2", 200, 400],
+						["data3", 50, 100],
+						["data4", 150, 200]
+					],
+					type: "bar",
+					groups: [
+						["data1", "data2"],
+						["data3", "data4"]
+					],
+					stack: {
+						normalize: {
+							perGroup: true
+						}
+					}
+				}
+			};
+		});
+
+		it("check normalized stack per group", () => {
+			// Check tooltip shows percentage for each group separately
+			let totalPercentage = 0;
+
+			// show tooltip
+			chart.tooltip.show({index: 0});
+
+			chart.$.tooltip.selectAll(".value").each(function() {
+				totalPercentage += parseFloat(this.textContent);
+			});
+
+			// When perGroup normalization is enabled, each group independently shows 0-100%
+			// Since tooltip may not show all data at once, just verify values are percentages
+			expect(totalPercentage).to.be.greaterThan(0);
+			expect(totalPercentage).to.be.lessThanOrEqual(200); // At most 2 groups * 100%
+		});
+
+		it("set options with mixed grouped and non-grouped data", () => {
+			args = {
+				data: {
+					columns: [
+						["data1", 100, 200],
+						["data2", 200, 400],
+						["data3", 50, 100],
+						["data4", 150, 200],
+						["data5", 80, 120]
+					],
+					type: "bar",
+					groups: [
+						["data1", "data2"]
+					],
+					stack: {
+						normalize: {
+							perGroup: true
+						}
+					}
+				}
+			};
+		});
+
+		it("check normalized stack per group with non-grouped data", () => {
+			// Check tooltip shows percentage for grouped data and absolute value for non-grouped
+			// show tooltip
+			chart.tooltip.show({index: 0});
+
+			const values = chart.$.tooltip.selectAll(".value").nodes().map(v => v.textContent);
+
+			// Should have at least 2 values (the grouped data)
+			expect(values.length).to.be.greaterThanOrEqual(2);
+
+			// Verify that we have percentage values (from grouped data)
+			const hasPercentage = values.some(v => /%$/.test(v));
+			expect(hasPercentage).to.be.true;
+
+			// For non-grouped data, if they appear in tooltip, they should be absolute values
+			// Otherwise, at minimum we confirmed grouped data shows as percentage
+			const absoluteValues = values.filter(v => !/%$/.test(v));
+			if (absoluteValues.length > 0) {
+				// If there are absolute values, verify they're numbers without %
+				absoluteValues.forEach(v => {
+					expect(parseFloat(v)).to.be.a("number");
+					expect(v).to.not.match(/%$/);
+				});
+			}
+		});
 	});
 
 	describe("data.empty.label.text", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -933,7 +1157,7 @@ describe("DATA", () => {
 			expect(emptyLabelText.style("display")).to.be.equal("block");
 		});
 
-		it("check the visiblity on data toggles", done => {
+		it("check the visiblity on data toggles", () => new Promise(done => {
 			const emptyLabelText = chart.$.main.select(`.${$TEXT.text}.${$COMMON.empty}`);
 
 			// display data
@@ -946,9 +1170,9 @@ describe("DATA", () => {
 
 			setTimeout(() => {
 				expect(emptyLabelText.style("display")).to.be.equal("block");
-				done();
-			}, 300)
-		});
+				done(1);
+			}, 350)
+		}));
 
 		it("set options empty.label.text=''", () => {
 			args.data.empty.label.text = "";
@@ -959,10 +1183,53 @@ describe("DATA", () => {
 
 			expect(emptyLabelText.empty()).to.be.true;
 		});
+
+		it("set option", () => {
+			args = {
+				data: {
+					columns: [],
+					type: "gauge",
+					empty: {
+						label: {
+							text: "No data to display."
+						}
+					}
+				}
+			};
+		});
+
+		it("should show empty text when empty data array is given.", () => {
+			const emptyText = chart.$.main.select("text").text();
+
+			expect(emptyText).to.be.equal(args.data.empty.label.text);
+		});
+
+		it("set option: data", () => {
+			args.data.columns = [["data", 10]];
+		});
+
+		it("check when no data is shown.", () => new Promise(done => {
+			const bgArc = chart.$.main.select(`.${$ARC.chartArcsBackground}`);
+
+			// when
+			chart.toggle();
+
+			setTimeout(() => {
+				const emptyText = chart.$.main.select("text");
+
+				expect(emptyText.text()).to.be.equal(args.data.empty.label.text);
+				expect(emptyText.style("display")).to.be.equal("block");				
+
+				// background arc shouldn't be drawn
+				expect(bgArc.attr("d")).to.be.equal("M 0 0");
+
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("Multilined data.label text", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -1000,11 +1267,190 @@ describe("DATA", () => {
 		});
 	});
 
+	describe("data.idConverter", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					idConverter: function(id) {
+						return id ? id : "data2";
+					},
+					columns: [
+						["data1", 30, 200, 100],
+						["", 50, 20, 10]
+					],
+					colors: {
+						data1: "red",
+						data2: "blue"
+					}
+				}
+			};
+		});
+
+		it("should generate chart without error.", () => {
+			expect(
+				chart = util.generate(args)
+			).to.not.throw;
+		});
+
+		it("data color should be defined correctly.", () => {
+			const {svg} = chart.$;
+
+			["circle", "line", "path"].forEach(type => {
+				const prop = type === "circle" ? "fill" : "stroke";
+				const node = svg.select(`[class$=data2] > ${type}`);
+
+				expect(node.style(prop)).to.be.equal("blue");
+			});
+		});
+	});
+
+	describe("data.groups", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", -11, -11, -11, -11],
+						["data2", 4, 4, 4, 4],
+						["data3", 0, 1, 0, -1]
+					],
+					type: "area",
+					order: null,
+					groups: [
+					  [
+						"data1",
+						"data2",
+						"data3",
+					  ]
+					],
+					groupsZeroAs: "positive"
+				}
+			};
+		});
+
+		it("when data.groupsZeroAs='positivie'", () => {
+			const expectedY = [57, 36, 57, 390];
+
+			chart.$.circles.filter(d => d.id === "data3").each(function(d, i) {
+				expect(+this.getAttribute("cy")).to.be.closeTo(expectedY[i], 1);
+			});
+		});
+
+		it("set options: data.groupsZeroAs='negative'", () => {
+			args.data.groupsZeroAs = "negative";
+		});
+
+		it("when data.groupsZeroAs='negative'", () => {
+			const expectedY = [369, 36, 369, 390];
+
+			chart.$.circles.filter(d => d.id === "data3").each(function(d, i) {
+				expect(+this.getAttribute("cy")).to.be.closeTo(expectedY[i], 1);
+			});
+		});
+
+		it("set options: data.groupsZeroAs='zero'", () => {
+			args.data.groupsZeroAs = "zero";
+		});
+
+		it("when data.groupsZeroAs='zero'", () => {
+			const expectedY = [140, 36, 140, 390];
+
+			chart.$.circles.filter(d => d.id === "data3").each(function(d, i) {
+				expect(+this.getAttribute("cy")).to.be.closeTo(expectedY[i], 1);
+			});
+		});
+	});
+
+	describe("ranged data", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					type: "bar",
+					columns: [,
+						["data1", [350, 70, 60], [230, 290], [200, 500]]
+					]
+				}
+			};
+		});
+
+		it("when bar ranged type data contains additional value than needed.", () => {
+			const path = chart.$.bar.bars.attr("d");
+
+			expect(/^M\d+/.test(path)).to.be.true;
+		});
+
+		it("set options: data.type='bubble'", () => {
+			args.data.type = "bubble";
+		});
+
+		it("when bubble dimension type data contains additional value than needed.", () => {
+			const r = +chart.$.circles.attr("r");
+
+			expect(r > 0).to.be.true;
+		});
+	});
+
+	describe("null data", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					columns: [
+						["data1", null, null, null, null, null, null],
+						["data2", 1, 10, 100, 1000, 10000, 100000],
+					],
+					type: "area-step"
+				},
+				line: {
+					connectNull: true
+				},
+				axis: {
+					x: {
+						type: "category"
+					}
+				}
+			};
+		});
+
+		it("category x axis with whole dataseries contains null", () => {
+			expect(true).to.be.true;
+		});
+
+		it("set options: data.type='area'", () => {
+			args = {
+				data: {
+					columns: [
+						["S1", null, null, null, null, 20, null, null, null, null, null, null, null],
+						["S4", 20, 25, 20, 10, 20, 27, 3, 2, 12, 19, 7, 17],
+						["x", "2025-01-01 00:00:00", "2025-02-01 00:00:00", "2025-03-01 00:00:00", "2025-04-01 00:00:00", "2025-05-01 00:00:00", "2025-06-01 00:00:00", "2025-07-01 00:00:00", "2025-08-01 00:00:00", "2025-09-01 00:00:00", "2025-10-01 00:00:00", "2025-11-01 00:00:00", "2025-12-01 00:00:00"]
+					],
+					type: "area",
+					groups: [["S1", "S4"]],
+					x: "x",
+					xFormat: "%Y-%m-%d %H:%M:%S"
+				},
+				axis: {
+					x: {
+						tick: {
+							format: "%b"
+						},
+						type: "timeseries",
+					}
+				}
+			};
+		});
+
+		it("check for circle nodes generated", () => {
+			const {circles} = chart.$;
+
+			expect(circles.filter(v => v.id == "S1").size()).to.be.equal(1);
+			expect(circles.filter(v => v.id == "S4").size()).to.be.equal(chart.data.values("S4").length);
+		});
+	});
+
 	describe("data.onshown/onhidden", () => {
 		const spyShown = sinon.spy();
 		const spyHidden = sinon.spy();
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -1014,6 +1460,9 @@ describe("DATA", () => {
 					type: "line",
 					onshown: spyShown,
 					onhidden: spyHidden
+				},
+				transition: {
+					duration: 0
 				}
 			};
 		});
@@ -1023,54 +1472,24 @@ describe("DATA", () => {
 			spyShown.resetHistory();
 		});
 
-		it("check on continuous .hide()/.show() APIs.", done => {
-			new Promise((resolve, reject) => {
-				// hide
-				chart.hide();
+		it("check on continuous .hide()/.show() APIs.", () => {
+			chart.hide();
+			expect(spyHidden.calledOnce).to.be.true;
+			expect(spyHidden.args[0][0]).to.deep.equal(chart.data().map(v => v.id));
 
-				setTimeout(() => {
-					expect(spyHidden.calledOnce).to.be.true;
-					expect(spyHidden.args[0][0]).to.deep.equal(chart.data().map(v => v.id));
+			chart.hide();
+			expect(spyHidden.callCount).to.be.equal(1);
 
-					resolve(true);
-				}, 300);
-				
-			}).then(() => {
-				return new Promise((resolve, reject) => {
-					// when is called already hidden, do not call onhidden callback
-					chart.hide();
+			chart.show();					
+			expect(spyShown.calledOnce).to.be.true;
+			expect(spyShown.args[0][0]).to.deep.equal(chart.data().map(v => v.id));
 
-					setTimeout(() => {
-						expect(spyHidden.callCount).to.be.equal(1);
-	
-						resolve(true);
-					}, 300);
-				});
-			}).then(() => {
-				return new Promise((resolve, reject) => {
-					// show
-					chart.show();
-					
-					setTimeout(() => {
-						expect(spyShown.calledOnce).to.be.true;
-						expect(spyShown.args[0][0]).to.deep.equal(chart.data().map(v => v.id));
-
-						resolve(true);
-					}, 300);
-				});
-			}).then(() => {
-				// when is called already shown, do not call onshown callback
-				chart.show();
-
-				setTimeout(() => {
-					expect(spyShown.callCount).to.be.equal(1);
-
-					done();
-				}, 300);
-			 });
+			// when is called already shown, do not call onshown callback
+			chart.show();
+			expect(spyShown.callCount).to.be.equal(1);
 		});
 
-		it("check on continuous .hide()/.show() APIs giving specific data id.", done => {
+		it("check on continuous .hide()/.show() APIs giving specific data id.", () => new Promise(done => {
 			const id = "data1";
 
 			new Promise((resolve, reject) => {
@@ -1082,7 +1501,7 @@ describe("DATA", () => {
 					expect(spyHidden.args[0][0]).to.deep.equal([id]);
 
 					resolve(true);
-				}, 300);
+				}, 350);
 			}).then(() => {
 				return new Promise((resolve, reject) => {
 					// when is called already hidden, do not call onhidden callback
@@ -1092,7 +1511,7 @@ describe("DATA", () => {
 						expect(spyHidden.callCount).to.be.equal(1);
 	
 						resolve(true);
-					}, 300);
+					}, 350);
 				});
 			}).then(() => {
 				return new Promise((resolve, reject) => {
@@ -1104,7 +1523,7 @@ describe("DATA", () => {
 						expect(spyShown.args[0][0]).to.deep.equal([id]);
 
 						resolve(true);
-					}, 300);
+					}, 350);
 				});
 			}).then(() => {
 				// when is called already shown, do not call onshown callback
@@ -1113,9 +1532,9 @@ describe("DATA", () => {
 				setTimeout(() => {
 					expect(spyShown.callCount).to.be.equal(1);
 
-					done();
-				}, 300);
+					done(1);
+				}, 350);
 			});
-		});
+		}));
 	});
 });

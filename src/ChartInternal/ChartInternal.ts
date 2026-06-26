@@ -3,22 +3,36 @@
  * billboard.js project is licensed under the MIT license
  * @ignore
  */
-import {
-	timeParse as d3TimeParse,
-	timeFormat as d3TimeFormat,
-	utcParse as d3UtcParse,
-	utcFormat as d3UtcFormat
-} from "d3-time-format";
 import {select as d3Select} from "d3-selection";
-import {d3Selection} from "../../types/types";
-import {checkModuleImport} from "../module/error";
-import {$COMMON, $CIRCLE, $TEXT} from "../config/classes";
-import Store from "../config/Store/Store";
+import {
+	timeFormat as d3TimeFormat,
+	timeParse as d3TimeParse,
+	utcFormat as d3UtcFormat,
+	utcParse as d3UtcParse
+} from "d3-time-format";
+import type {d3Selection, d3Transition} from "../../types/types";
+import {$CIRCLE, $COMMON, $TEXT} from "../config/classes";
 import Options from "../config/Options/Options";
+import Store from "../config/Store/Store";
 import {document, window} from "../module/browser";
 import Cache from "../module/Cache";
+import {checkModuleImport} from "../module/error";
 import {generateResize} from "../module/generator";
-import {capitalize, extend, notEmpty, convertInputType, getOption, getRandom, isFunction, isObject, isString, callFn, sortValue} from "../module/util";
+import {
+	callFn,
+	capitalize,
+	convertInputType,
+	extend,
+	getOption,
+	getRandom,
+	hasStyle,
+	isBoolean,
+	isFunction,
+	isObject,
+	isString,
+	notEmpty,
+	sortValue
+} from "../module/util";
 
 // data
 import dataConvert from "./data/convert";
@@ -29,21 +43,61 @@ import dataLoad from "./data/load";
 import interaction from "./interactions/interaction";
 
 // internals
-import classModule from "./internals/class";
 import category from "./internals/category"; // used to retrieve radar Axis name
+import classModule from "./internals/class";
 import color from "./internals/color";
 import domain from "./internals/domain";
 import format from "./internals/format";
 import legend from "./internals/legend";
 import redraw from "./internals/redraw";
 import scale from "./internals/scale";
-import shape from "./shape/shape";
 import size from "./internals/size";
+import style from "./internals/style";
 import text from "./internals/text";
 import title from "./internals/title";
 import tooltip from "./internals/tooltip";
 import transform from "./internals/transform";
-import type from "./internals/type";
+import typeInternals from "./internals/type";
+import shape from "./shape/shape";
+
+/**
+ * Get SVG-only chart type reason for canvas render fallback.
+ * @param {object} $$ ChartInternal instance
+ * @returns {string|null} Unsupported chart type reason
+ * @private
+ */
+function getUnsupportedCanvasRenderType($$): string | null {
+	if ($$.hasArcType()) {
+		return "arc charts";
+	}
+
+	if ($$.hasType("funnel")) {
+		return "funnel chart";
+	}
+
+	return null;
+}
+
+/**
+ * Fall back to SVG when canvas mode is requested for unsupported chart types.
+ * @param {object} $$ ChartInternal instance
+ * @private
+ */
+function fallbackUnsupportedCanvasRenderMode($$): void {
+	const {config} = $$;
+	const unsupportedType = config.render_mode === "canvas" ?
+		getUnsupportedCanvasRenderType($$) :
+		null;
+
+	if (!unsupportedType) {
+		return;
+	}
+
+	window.console?.warn?.(
+		`[billboard.js] render.mode='canvas' is ignored for ${unsupportedType}; falling back to SVG.`
+	);
+	config.render_mode = "svg";
+}
 
 /**
  * Internal chart class.
@@ -53,7 +107,7 @@ import type from "./internals/type";
  * @private
  */
 export default class ChartInternal {
-	public api;	// API interface
+	public api; // API interface
 	public config; // config object
 	public cache; // cache instance
 	public $el; // elements
@@ -125,7 +179,8 @@ export default class ChartInternal {
 	 * @returns {d3Selection}
 	 * @private
 	 */
-	$T(selection: SVGElement | d3Selection, force?: boolean, name?: string): d3Selection {
+	$T(selection: SVGElement | d3Selection | d3Transition, force?: boolean,
+		name?: string): d3Selection {
 		const {config, state} = this;
 		const duration = config.transition_duration;
 		const subchart = config.subchart_show;
@@ -148,6 +203,7 @@ export default class ChartInternal {
 				state.rendered &&
 				!subchart;
 
+			// @ts-ignore
 			t = (transit ? t.transition(name).duration(duration) : t) as d3Selection;
 		}
 
@@ -173,46 +229,64 @@ export default class ChartInternal {
 	}
 
 	init(): void {
-		const $$ = <any> this;
+		const $$ = <any>this;
 		const {config, state, $el} = $$;
+		const {boost_useCssRule, bindto} = config;
 
 		checkModuleImport($$);
+		fallbackUnsupportedCanvasRenderMode($$);
 
-		state.hasAxis = !$$.hasArcType();
+		const hasArcType = $$.hasArcType();
 		state.hasRadar = !state.hasAxis && $$.hasType("radar");
+		state.hasFunnel = !state.hasAxis && $$.hasType("funnel");
+		state.hasTreemap = !state.hasAxis && $$.hasType("treemap");
+		state.hasAxis = !hasArcType && !state.hasFunnel && !state.hasTreemap;
 
-		// when 'padding=false' is set, disable axes and subchart. Because they are useless.
-		if (config.padding === false) {
-			config.axis_x_show = false;
-			config.axis_y_show = false;
-			config.axis_y2_show = false;
-			config.subchart_show = false;
+		// datetime to be used for uniqueness
+		state.datetimeId = `bb-${+new Date() * (getRandom() as number)}`;
+
+		if (boost_useCssRule) {
+			// append style element
+			const styleEl = document.createElement("style");
+
+			// styleEl.id = styleId;
+			styleEl.type = "text/css";
+			document.head.appendChild(styleEl);
+
+			state.style = {
+				rootSelector: `.${state.datetimeId}`,
+				sheet: styleEl.sheet
+			};
+
+			// used on .destroy()
+			$el.style = styleEl;
 		}
 
-		$$.initParams();
-
-		const bindto = {
-			element: config.bindto,
+		const bindConfig = {
+			element: bindto,
 			classname: "bb"
 		};
 
-		if (isObject(config.bindto)) {
-			bindto.element = config.bindto.element || "#chart";
-			bindto.classname = config.bindto.classname || bindto.classname;
+		if (isObject(bindto)) {
+			bindConfig.element = bindto.element || "#chart";
+			bindConfig.classname = bindto.classname || bindConfig.classname;
 		}
 
 		// select bind element
-		$el.chart = isFunction(bindto.element.node) ?
-			config.bindto.element : d3Select(bindto.element || []);
+		$el.chart = isFunction(bindConfig.element.node) ?
+			bindto.element :
+			d3Select(bindConfig.element || []);
 
 		if ($el.chart.empty()) {
 			$el.chart = d3Select(document.body.appendChild(document.createElement("div")));
 		}
 
 		$el.chart.html("")
-			.classed(bindto.classname, true)
+			.classed(bindConfig.classname, true)
+			.classed(state.datetimeId, boost_useCssRule)
 			.style("position", "relative");
 
+		$$.initParams();
 		$$.initToRender();
 	}
 
@@ -222,11 +296,11 @@ export default class ChartInternal {
 	 * @private
 	 */
 	initToRender(forced?: boolean): void {
-		const $$ = <any> this;
+		const $$ = <any>this;
 		const {config, state, $el: {chart}} = $$;
-		const isHidden = () => chart.style("display") === "none" || chart.style("visibility") === "hidden";
+		const isHidden = () => hasStyle(chart, {display: "none", visibility: "hidden"});
 
-		const isLazy = config.render.lazy || isHidden();
+		const isLazy = config.render.lazy === false ? false : config.render.lazy || isHidden();
 		const MutationObserver = window.MutationObserver;
 
 		if (isLazy && MutationObserver && config.render.observe !== false && !forced) {
@@ -242,25 +316,34 @@ export default class ChartInternal {
 		}
 
 		if (!isLazy || forced) {
-			const convertedData = $$.convertData(config, $$.initWithData);
-
-			convertedData && $$.initWithData(convertedData);
-			$$.afterInit();
+			$$.convertData(config, res => {
+				$$.initWithData(res);
+				$$.afterInit();
+			});
 		}
 	}
 
 	initParams(): void {
-		const $$ = <any> this;
+		const $$ = <any>this;
 		const {config, format, state} = $$;
-		const isRotated = config.axis_rotated;
 
-		// datetime to be used for uniqueness
-		state.datetimeId = `bb-${+new Date() * (getRandom() as number)}`;
+		if (config.render_mode === "canvas") {
+			$$.prepareCanvasConfig?.();
+		}
 
+		// color settings
 		$$.color = $$.generateColor();
 		$$.levelColor = $$.generateLevelColor();
 
-		if ($$.hasPointType()) {
+		// when 'padding=false' is set, disable axes and subchart. Because they are useless.
+		if (config.padding === false) {
+			config.axis_x_show = false;
+			config.axis_y_show = false;
+			config.axis_y2_show = false;
+			config.subchart_show = false;
+		}
+
+		if (config.render_mode !== "canvas" && ($$.hasPointType() || $$.hasLegendDefsPoint?.())) {
 			$$.point = $$.generatePoint();
 		}
 
@@ -271,11 +354,12 @@ export default class ChartInternal {
 			format.dataTime = config.data_xLocaltime ? d3TimeParse : d3UtcParse;
 			format.axisTime = config.axis_x_localtime ? d3TimeFormat : d3UtcFormat;
 
-			const isDragZoom = $$.config.zoom_enabled && $$.config.zoom_type === "drag";
+			const isDragZoom = config.zoom_enabled && config.zoom_type === "drag";
 
 			format.defaultAxisTime = d => {
 				const {x, zoom} = $$.scale;
-				const isZoomed = isDragZoom ? zoom :
+				const isZoomed = isDragZoom ?
+					zoom :
 					zoom && x.orgDomain().toString() !== zoom.domain().toString();
 
 				const specifier: string = (d.getMilliseconds() && ".%L") ||
@@ -283,24 +367,24 @@ export default class ChartInternal {
 					(d.getMinutes() && "%I:%M") ||
 					(d.getHours() && "%I %p") ||
 					(d.getDate() !== 1 && "%b %d") ||
-					(isZoomed && d.getDate() === 1 && "%b\'%y") ||
+					(isZoomed && d.getDate() === 1 && "%b'%y") ||
 					(d.getMonth() && "%-m/%-d") || "%Y";
 
 				return format.axisTime(specifier)(d);
 			};
 		}
 
-		state.isLegendRight = config.legend_position === "right";
-		state.isLegendInset = config.legend_position === "inset";
+		const {legend_position, legend_inset_anchor, axis_rotated} = config;
 
-		state.isLegendTop = config.legend_inset_anchor === "top-left" ||
-			config.legend_inset_anchor === "top-right";
-
-		state.isLegendLeft = config.legend_inset_anchor === "top-left" ||
-			config.legend_inset_anchor === "bottom-left";
+		state.isLegendRight = legend_position === "right";
+		state.isLegendInset = legend_position === "inset";
+		state.isLegendTop = legend_inset_anchor === "top-left" ||
+			legend_inset_anchor === "top-right";
+		state.isLegendLeft = legend_inset_anchor === "top-left" ||
+			legend_inset_anchor === "bottom-left";
 
 		state.rotatedPadding.top = $$.getResettedPadding(state.rotatedPadding.top);
-		state.rotatedPadding.right = isRotated && !config.axis_x_show ? 0 : 30;
+		state.rotatedPadding.right = axis_rotated && !config.axis_x_show ? 0 : 30;
 
 		state.inputType = convertInputType(
 			config.interaction_inputType_mouse,
@@ -309,11 +393,12 @@ export default class ChartInternal {
 	}
 
 	initWithData(data): void {
-		const $$ = <any> this;
+		const $$ = <any>this;
 		const {config, scale, state, $el, org} = $$;
-		const {hasAxis} = state;
+		const {hasAxis, hasFunnel, hasTreemap} = state;
 		const hasInteraction = config.interaction_enabled;
 		const hasPolar = $$.hasType("polar");
+		const labelsBGColor = config.data_labels_backgroundColors;
 
 		// for arc type, set axes to not be shown
 		// $$.hasArcType() && ["x", "y", "y2"].forEach(id => (config[`axis_${id}_show`] = false));
@@ -334,15 +419,13 @@ export default class ChartInternal {
 		// Set targets to hide if needed
 		if (config.data_hide) {
 			$$.addHiddenTargetIds(
-				config.data_hide === true ?
-					$$.mapToIds($$.data.targets) : config.data_hide
+				config.data_hide === true ? $$.mapToIds($$.data.targets) : config.data_hide
 			);
 		}
 
 		if (config.legend_hide) {
 			$$.addHiddenLegendIds(
-				config.legend_hide === true ?
-					$$.mapToIds($$.data.targets) : config.legend_hide
+				config.legend_hide === true ? $$.mapToIds($$.data.targets) : config.legend_hide
 			);
 		}
 
@@ -351,25 +434,66 @@ export default class ChartInternal {
 		$$.updateScales(true);
 
 		// retrieve scale after the 'updateScales()' is called
-		const {x, y, y2, subX, subY, subY2} = scale;
+		if (hasAxis) {
+			const {x, y, y2, subX, subY, subY2} = scale;
 
-		// Set domains for each scale
-		if (x) {
-			x.domain(sortValue($$.getXDomain($$.data.targets)));
-			subX.domain(x.domain());
+			// Set domains for each scale
+			if (x) {
+				x.domain(sortValue($$.getXDomain($$.data.targets), !config.axis_x_inverted));
+				subX.domain(x.domain());
 
-			// Save original x domain for zoom update
-			org.xDomain = x.domain();
+				// Save original x domain for zoom update
+				org.xDomain = x.domain();
+			}
+
+			if (y) {
+				y.domain($$.getYDomain($$.data.targets, "y"));
+				subY.domain(y.domain());
+			}
+
+			if (y2) {
+				y2.domain($$.getYDomain($$.data.targets, "y2"));
+				subY2 && subY2.domain(y2.domain());
+			}
 		}
 
-		if (y) {
-			y.domain($$.getYDomain($$.data.targets, "y"));
-			subY.domain(y.domain());
-		}
+		if (config.render_mode === "canvas") {
+			if (!$$.initCanvas) {
+				throw Error(
+					"[billboard.js] Please import and call canvas() to use render.mode='canvas'."
+				);
+			}
 
-		if (y2) {
-			y2.domain($$.getYDomain($$.data.targets, "y2"));
-			subY2 && subY2.domain(y2.domain());
+			// Bind resize event before tooltip init because tooltip position registers resize hooks.
+			$$.bindResize();
+			$$.initCanvas();
+
+			config.tooltip_show && $$.initTooltip();
+
+			$$.callPluginHook("$init");
+
+			// oninit callback
+			callFn(config.oninit, $$.api);
+
+			$$.redraw({
+				withTransition: false,
+				withTransform: true,
+				withUpdateXDomain: true,
+				withUpdateOrgXDomain: true,
+				withTransitionForAxis: false,
+				initializing: true
+			});
+
+			// data.onmin/max callback
+			if (config.data_onmin || config.data_onmax) {
+				const minMax = $$.getMinMaxData();
+
+				callFn(config.data_onmin, $$.api, minMax.min);
+				callFn(config.data_onmax, $$.api, minMax.max);
+			}
+
+			state.rendered = true;
+			return;
 		}
 
 		// -- Basic Elements --
@@ -380,19 +504,31 @@ export default class ChartInternal {
 		if (hasInteraction && state.inputType) {
 			const isTouch = state.inputType === "touch";
 			const {onclick, onover, onout} = config;
+			const preventDefault = config.interaction_inputType_touch?.preventDefault;
+			const isPrevented = (isBoolean(preventDefault) && preventDefault) || false;
+			const preventThreshold = (!isNaN(preventDefault) && preventDefault) || null;
+			const touchOption = isTouch ?
+				{
+					passive: !isPrevented && preventThreshold === null
+				} :
+				undefined;
 
 			$el.svg
 				.on("click", onclick?.bind($$.api) || null)
-				.on(isTouch ? "touchstart" : "mouseenter", onover?.bind($$.api) || null)
+				.on(isTouch ? "touchstart" : "mouseenter", onover?.bind($$.api) || null,
+					touchOption)
 				.on(isTouch ? "touchend" : "mouseleave", onout?.bind($$.api) || null);
 		}
 
 		config.svg_classname && $el.svg.attr("class", config.svg_classname);
 
 		// Define defs
-		const hasColorPatterns = (isFunction(config.color_tiles) && $$.patterns);
+		const hasColorPatterns = isFunction(config.color_tiles) && $$.patterns;
 
-		if (hasAxis || hasColorPatterns || config.data_labels_backgroundColors || hasPolar) {
+		if (
+			hasAxis || hasColorPatterns || hasPolar || hasTreemap ||
+			labelsBGColor || $$.hasLegendDefsPoint?.()
+		) {
 			$el.defs = $el.svg.append("defs");
 
 			if (hasAxis) {
@@ -402,7 +538,7 @@ export default class ChartInternal {
 			}
 
 			// Append data background color filter definition
-			$$.generateDataLabelBackgroundColorFilter();
+			$$.generateTextBGColorFilter(labelsBGColor);
 
 			// set color patterns
 			if (hasColorPatterns) {
@@ -418,7 +554,7 @@ export default class ChartInternal {
 		// Define regions
 		const main = $el.svg.append("g")
 			.classed($COMMON.main, true)
-			.attr("transform", $$.getTranslate("main"));
+			.attr("transform", hasFunnel || hasTreemap ? null : $$.getTranslate("main"));
 
 		$el.main = main;
 
@@ -426,8 +562,9 @@ export default class ChartInternal {
 		config.subchart_show && $$.initSubchart();
 
 		config.tooltip_show && $$.initTooltip();
+
 		config.title_text && $$.initTitle();
-		config.legend_show && $$.initLegend();
+		!hasTreemap && config.legend_show && $$.initLegend();
 
 		// -- Main Region --
 
@@ -440,31 +577,32 @@ export default class ChartInternal {
 		}
 
 		if (hasAxis) {
-			// Regions
-			config.regions.length && $$.initRegion();
+			// Regions (optional module — initRegion installed by regions resolver)
+			config.regions.length && $$.initRegion?.();
 
 			// Add Axis here, when clipPath is 'false'
 			!config.clipPath && $$.axis.init();
 		}
 
 		// Define g for chart area
-		main.append("g").attr("class", $COMMON.chart)
-			.attr("clip-path", state.clip.path);
+		main.append("g")
+			.classed($COMMON.chart, true)
+			.attr("clip-path", hasAxis ? state.clip.path : null);
 
 		$$.callPluginHook("$init");
+
+		$$.initChartElements();
 
 		if (hasAxis) {
 			// Cover whole with rects for events
 			hasInteraction && $$.initEventRect?.();
 
-			// Grids
-			$$.initGrid();
+			// Grids (optional module — initGrid installed by grid resolver)
+			$$.initGrid?.();
 
 			// Add Axis here, when clipPath is 'true'
 			config.clipPath && $$.axis?.init();
 		}
-
-		$$.initChartElements();
 
 		// Set targets
 		$$.updateTargets($$.data.targets);
@@ -504,26 +642,36 @@ export default class ChartInternal {
 	 * @private
 	 */
 	initChartElements(): void {
-		const $$ = <any> this;
-		const {hasAxis, hasRadar} = $$.state;
+		const $$ = <any>this;
+		const {hasAxis, hasRadar, hasTreemap} = $$.state;
 		const types: string[] = [];
 
 		if (hasAxis) {
-			["bar", "bubble", "candlestick", "line"].forEach(v => {
-				const name = capitalize(v);
+			const shapes = ["bar", "bubble", "candlestick", "line"];
 
-				if ((v === "line" && $$.hasTypeOf(name)) || $$.hasType(v)) {
+			if ($$.config.bar_front) {
+				shapes.push(shapes.shift() as string);
+			}
+
+			for (const shape of shapes) {
+				const name = capitalize(shape);
+				if ((shape === "line" && $$.hasTypeOf(name)) || $$.hasType(shape)) {
 					types.push(name);
 				}
-			});
+			}
+		} else if (hasTreemap) {
+			types.push("Treemap");
+		} else if ($$.hasType("funnel")) {
+			types.push("Funnel");
 		} else {
 			const hasPolar = $$.hasType("polar");
+			const hasGauge = $$.hasType("gauge");
 
 			if (!hasRadar) {
 				types.push("Arc", "Pie");
 			}
 
-			if ($$.hasType("gauge")) {
+			if (hasGauge) {
 				types.push("Gauge");
 			} else if (hasRadar) {
 				types.push("Radar");
@@ -532,11 +680,13 @@ export default class ChartInternal {
 			}
 		}
 
-		types.forEach(v => {
-			$$[`init${v}`]();
-		});
+		for (const type of types) {
+			$$[`init${type}`]();
+		}
 
-		notEmpty($$.config.data_labels) && !$$.hasArcType(null, ["radar"]) && $$.initText();
+		if (notEmpty($$.config.data_labels) && !$$.hasArcType(null, ["radar"])) {
+			$$.initText();
+		}
 	}
 
 	/**
@@ -545,20 +695,35 @@ export default class ChartInternal {
 	 */
 	setChartElements(): void {
 		const $$ = this;
-		const {$el: {
-			chart, svg, defs, main, tooltip, legend, title, grid,
-			arcs: arc,
-			circle: circles,
-			bar: bars,
-			candlestick,
-			line: lines,
-			area: areas,
-			text: texts
-		}} = $$;
+		const {
+			$el: {
+				chart,
+				svg,
+				defs,
+				main,
+				tooltip,
+				legend,
+				title,
+				canvas,
+				eventOverlay,
+				grid,
+				needle,
+				arcs: arc,
+				circle: circles,
+				bar: bars,
+				candlestick,
+				line: lines,
+				area: areas,
+				text: texts
+			}
+		} = $$;
 
+		// public
 		$$.api.$ = {
 			chart,
 			svg,
+			canvas,
+			eventOverlay,
 			defs,
 			main,
 			tooltip,
@@ -570,6 +735,7 @@ export default class ChartInternal {
 			bar: {bars},
 			candlestick,
 			line: {lines, areas},
+			needle,
 			text: {texts}
 		};
 	}
@@ -607,29 +773,29 @@ export default class ChartInternal {
 	 * @private
 	 */
 	updateTargets(targets): void {
-		const $$ = <any> this;
-		const {hasAxis, hasRadar} = $$.state;
-		const helper = type => $$[`updateTargetsFor${type}`](
-			targets.filter($$[`is${type}Type`].bind($$))
-		);
+		const $$ = <any>this;
+		const {hasAxis, hasFunnel, hasRadar, hasTreemap} = $$.state;
+		const helper = type =>
+			$$[`updateTargetsFor${type}`](
+				targets.filter($$[`is${type}Type`].bind($$))
+			);
 
 		// Text
 		$$.updateTargetsForText(targets);
 
 		if (hasAxis) {
-			["bar", "candlestick", "line"].forEach(v => {
-				const name = capitalize(v);
-
-				if ((v === "line" && $$.hasTypeOf(name)) || $$.hasType(v)) {
+			const shapes = ["bar", "candlestick", "line"];
+			for (const shape of shapes) {
+				const name = capitalize(shape);
+				if ((shape === "line" && $$.hasTypeOf(name)) || $$.hasType(shape)) {
 					helper(name);
 				}
-			});
+			}
 
 			// Sub Chart
-			$$.updateTargetsForSubchart &&
-				$$.updateTargetsForSubchart(targets);
+			$$.updateTargetsForSubchart?.(targets);
 
-		// Arc, Polar, Radar
+			// Arc, Polar, Radar
 		} else if ($$.hasArcType(targets)) {
 			let type = "Arc";
 
@@ -640,6 +806,10 @@ export default class ChartInternal {
 			}
 
 			helper(type);
+		} else if (hasFunnel) {
+			helper("Funnel");
+		} else if (hasTreemap) {
+			helper("Treemap");
 		}
 
 		// Point types
@@ -659,7 +829,7 @@ export default class ChartInternal {
 	 * @private
 	 */
 	filterTargetsToShowAtInit(hasPointType: boolean = false): void {
-		const $$ = <any> this;
+		const $$ = <any>this;
 		const {$el: {svg}, $T} = $$;
 		let selector = `.${$COMMON.target}`;
 
@@ -668,8 +838,7 @@ export default class ChartInternal {
 		}
 
 		$T(svg.selectAll(selector)
-			.filter(d => $$.isTargetToShow(d.id))
-		).style("opacity", null);
+			.filter(d => $$.isTargetToShow(d.id))).style("opacity", null);
 	}
 
 	getWithOption(options) {
@@ -689,56 +858,81 @@ export default class ChartInternal {
 			Y: true
 		};
 
-		Object.keys(withOptions).forEach(key => {
-			let defVal = withOptions[key];
-
-			if (isString(defVal)) {
-				defVal = withOptions[defVal];
-			}
-
-			withOptions[key] = getOption(options, `with${key}`, defVal);
-		});
+		for (const [key, defVal] of Object.entries(withOptions)) {
+			const value = isString(defVal) ? withOptions[defVal] : defVal;
+			withOptions[key] = getOption(options, `with${key}`, value);
+		}
 
 		return withOptions;
 	}
 
 	initialOpacity(d): null | "0" {
-		const $$ = <any> this;
+		const $$ = <any>this;
 		const {withoutFadeIn} = $$.state;
 
-		const r = $$.getBaseValue(d) !== null &&
-			withoutFadeIn[d.id] ? null : "0";
-
-		return r;
+		return $$.getBaseValue(d) !== null && withoutFadeIn[d.id] ? null : "0";
 	}
 
 	bindResize(): void {
-		const $$ = <any> this;
-		const {config, state} = $$;
-		const resizeFunction = generateResize();
-		const list: Function[] = [];
+		const $$ = <any>this;
+		const {$el, config, state} = $$;
+		const resizeFunction = generateResize(config.resize_timer);
+		const {resize_auto} = config;
+		const list: (() => void)[] = [];
 
-		list.push(() => callFn(config.onresize, $$, $$.api));
+		list.push(() => callFn(config.onresize, $$.api));
 
-		if (config.resize_auto) {
+		if (/^(true|parent)$/.test(resize_auto)) {
 			list.push(() => {
+				// Skip resize if dimensions haven't changed
+				const prevWidth = state.current.width;
+				const prevHeight = state.current.height;
+
+				$$.setContainerSize();
+
+				if (
+					prevWidth === state.current.width &&
+					prevHeight === state.current.height
+				) {
+					return;
+				}
+
 				state.resizing = true;
+
+				// https://github.com/naver/billboard.js/issues/2650
+				if (config.legend_show) {
+					$$.updateSizes();
+					state.isCanvasMode ? $$.updateHtmlLegend?.() : $$.updateLegend();
+				}
+
 				$$.api.flush(false);
 			});
 		}
 
 		list.push(() => {
-			callFn(config.onresized, $$, $$.api);
+			callFn(config.onresized, $$.api);
 			state.resizing = false;
 		});
 
 		// add resize functions
 		list.forEach(v => resizeFunction.add(v));
-
 		$$.resizeFunction = resizeFunction;
 
 		// attach resize event
-		window.addEventListener("resize", $$.resizeFunction = resizeFunction);
+		if (resize_auto === "parent" && window.ResizeObserver) {
+			($$.resizeFunction.resizeObserver = new window.ResizeObserver(
+				$$.resizeFunction.bind($$)
+			))
+				.observe($el.chart.node().parentNode);
+		} else {
+			if (resize_auto === "parent") {
+				// ResizeObserver unavailable: parent-specific resize won't be detected
+				window.console?.warn?.(
+					"[billboard.js] resize.auto='parent' requires ResizeObserver; falling back to window resize."
+				);
+			}
+			window.addEventListener("resize", $$.resizeFunction);
+		}
 	}
 
 	/**
@@ -775,9 +969,10 @@ extend(ChartInternal.prototype, [
 	scale,
 	shape,
 	size,
+	style,
 	text,
 	title,
 	tooltip,
 	transform,
-	type
+	typeInternals
 ]);

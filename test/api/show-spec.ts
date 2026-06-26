@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, afterAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import util from "../assets/util";
 import {$BAR, $COMMON, $LINE, $LEGEND} from "../../src/config/classes";
@@ -16,6 +16,9 @@ describe("API show", () => {
 				["data1", 30, 200, 100, 400],
 				["data2", 500, 800, 500, 2000]
 			]
+		},
+		transition: {
+			duration: 150
 		}
 	};
 
@@ -24,7 +27,7 @@ describe("API show", () => {
 	});
 
 	describe("hide()", () => {
-		it("Hide partial data", done => {
+		it("Hide partial data", () => new Promise(done => {
 			const internal = chart.internal;
 			const {main} = chart.$;
 
@@ -38,11 +41,11 @@ describe("API show", () => {
 
 				expect(+internal.$el.svg.selectAll(`.${$LEGEND.legendItemHidden}`).size()).to.be.equal(1);
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("Hide all data", done => {
+		it("Hide all data", () => new Promise(done => {
 			const {main} = chart.$;
 
 			// hide all data
@@ -61,11 +64,11 @@ describe("API show", () => {
 					expect(+d3Select(this).style("opacity")).to.be.equal(0.15);
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("Hide all data with legend", done => {
+		it("Hide all data with legend", () => new Promise(done => {
 			// hide legend
 			chart.hide(null, {withLegend:true});
 
@@ -76,17 +79,17 @@ describe("API show", () => {
 						expect(+d3Select(this).style("opacity")).to.be.closeTo(0.15, 0.15);
 					});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		// https://github.com/naver/billboard.js/issues/1758
-		it("hidden target display should be 'none' when is hidden", done => {
-			before(() => {
+		it("hidden target display should be 'none' when is hidden", () => new Promise(done => {
+			beforeAll(() => {
 				args.data.type = "bar";
 			});
 
-			after(() => {
+			afterAll(() => {
 				args.data.type = "line";
 			});
 
@@ -97,9 +100,9 @@ describe("API show", () => {
 				expect(
 					chart.$.main.select(`.${$COMMON.target}-data1`).style("display")
 				).to.be.equal("none");
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
 		it("legend items should be hidden", () => {
 			const {legend} = chart.$;
@@ -114,7 +117,7 @@ describe("API show", () => {
 	});
 
 	describe("show()", () => {
-		it("Show partial data", done => {
+		it("Show partial data", () => new Promise(done => {
 			const internal = chart.internal;
 			const {main} = chart.$;
 
@@ -129,11 +132,11 @@ describe("API show", () => {
 
 				expect(+internal.$el.svg.selectAll(`.${$LEGEND.legendItemHidden}`).size()).to.be.equal(1);
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 400);
+		}));
 
-		it("Show all data", done => {
+		it("Show all data", () => new Promise(done => {
 			const internal = chart.internal;
 			const {main} = chart.$;
 			let legend;
@@ -160,11 +163,11 @@ describe("API show", () => {
 					expect(d3Select(this).style("opacity")).to.be.equal("");
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("Show all data using 'withLegend' option", done => {
+		it("Show all data using 'withLegend' option", () => new Promise(done => {
 			const internal = chart.internal;
 			const {main} = chart.$;
 
@@ -187,13 +190,13 @@ describe("API show", () => {
 					expect(this.style.opacity).to.be.equal("");
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("toggle()", () => {
-		it("should be toggled hiding and showing data", done => {
+		it("should be toggled hiding and showing data", () => new Promise(done => {
 			const internal = chart.internal;
 			const {main} = chart.$;
 			let legend;
@@ -216,7 +219,7 @@ describe("API show", () => {
 
 				// show data
 				chart.toggle();
-			}, 100);
+			}, 350);
 
 			setTimeout(() => {
 				main.selectAll(`.${$LINE.chartLine}`).each(function() {
@@ -231,9 +234,9 @@ describe("API show", () => {
 					expect(d3Select(this).style("opacity")).to.be.equal("");
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 700);
+		}));
 	});
 
 	describe("check toggle interaction", () => {
@@ -261,12 +264,12 @@ describe("API show", () => {
 					}
 				},
 				transition: {
-					duration: 10
+					duration: 0
 				}
 			};
 		});
 
-		it("should correctly rendered having same width", done => {
+		it("should correctly rendered having same width", () => new Promise(done => {
 			const main = chart.$.main;
 			const barWidth = Math.round(util.getBBox(main.select(`.${$BAR.bars}-${ids[0]}`)).width);
 
@@ -278,8 +281,8 @@ describe("API show", () => {
 						expect(Math.round(util.getBBox(this).width)).to.be.equal(barWidth);
 					});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 });

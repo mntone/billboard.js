@@ -2,8 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {Chart} from "./chart";
-import {ChartOptions} from "./options";
+import {Chart} from "./chart.js";
+import {ChartOptions} from "./options.js";
 
 export const bb: {
 	/**
@@ -38,10 +38,12 @@ export function areaLineRange(): "area-line-range";
 export function areaSpline(): "area-spline";
 export function areaSplineRange(): "area-spline-range";
 export function areaStep(): "area-step";
+export function areaStepRange(): "area-step-range";
 export function bar(): "bar";
 export function bubble(): "bubble";
 export function candlestick(): "candlestick";
 export function donut(): "donut";
+export function funnel(): "funnel";
 export function gauge(): "gauge";
 export function line(): "line";
 export function pie(): "pie";
@@ -50,8 +52,19 @@ export function radar(): "radar";
 export function scatter(): "scatter";
 export function spline(): "spline";
 export function step(): "step";
+export function treemap(): "treemap";
 
 // interaction modules
 export function selection(): true;
 export function subchart(): true;
 export function zoom(): true;
+
+// render modules
+export function canvas(): "canvas";
+
+// optional API modules
+export function category(): Record<string, never>;
+export function exportApi(): Record<string, never>;
+export function flow(): Record<string, never>;
+export function grid(): Record<string, never>;
+export function regions(): Record<string, never>;

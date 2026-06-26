@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import util from "../../assets/util";
 import Stanford from "../../../src/Plugin/stanford/index";
 import CLASS from "../../../src/Plugin/stanford/classes";
@@ -49,7 +49,7 @@ describe("PLUGIN: STANFORD ELEMENTS", () => {
 		{x: 40, y: 15, content: "Hello World 2", class: "text2"},
 		{x: 5, y: 65, content: "Hello World 3"}
 	];
-	const args = {
+	let args: any = {
 		data: {
 			x: "x",
 			columns: [
@@ -85,5 +85,180 @@ describe("PLUGIN: STANFORD ELEMENTS", () => {
 		it("should create the stanford region text", () => {
 			expect(chart.$.main.selectAll(`.${CLASS.stanfordRegions} .${CLASS.stanfordRegion} text`).size()).to.be.equal(3);
 		});
+	});
+
+	describe("timseries axis", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					x: "Datetime",
+					columns: [
+						[
+						"Datetime",
+							new Date("2023-08-25"),
+							new Date("2023-08-26"),
+							new Date("2023-08-27")
+						],
+						[
+						"Pressure",
+							1,
+							2.04,
+							2.96
+						],
+					],
+					type: "scatter"
+				},
+				axis: {
+					x: {
+						label: "Datetime",
+						tick: {
+							format: '%d/%m/%y'
+						},
+						type: "timeseries"
+					}
+				},
+				plugins: [
+					new Stanford({
+						epochs: [
+							34.794, 34.787, 34.791
+						],
+						scale: {
+							min: 34.79,
+							max: 35.139,
+							width: 10
+						},
+						lines: [
+							{
+								x1: new Date("2023-08-25"),
+								y1: 1,
+								x2: new Date("2023-08-27"),
+								y2: 3,
+								class: "line"
+							}
+						]
+					})
+				]
+			};
+		});
+
+		it("check line position", () => new Promise(done => {
+			const {$el: {main}} = chart.internal;
+			const line = main.selectAll(".bb-stanford-line line");
+			const expected = [6, 543, 391, 30];
+
+			setTimeout(() => {
+				const pos = [
+					line.attr("x1"),
+					line.attr("x2"),
+					line.attr("y1"),
+					line.attr("y2")
+				].map(Number);
+				
+				expect(line.size()).to.be.equal(1);
+
+				pos.forEach((v, i) => {
+					expect(v).to.be.closeTo(expected[i], 10);
+				});
+
+				done(1);
+			}, 100);			
+		}));
+
+		it("set options: axis.rotated=true", () => {
+			args.axis.rotated = true;			
+		});
+
+		it("check rotated axis line position", () => new Promise(done => {
+			const {$el: {main}} = chart.internal;
+			const line = main.selectAll(".bb-stanford-line line");
+			const expected = [43, 476, 6, 421];
+
+			setTimeout(() => {
+				const pos = [
+					line.attr("x1"),
+					line.attr("x2"),
+					line.attr("y1"),
+					line.attr("y2")
+				].map(Number);
+				
+				expect(line.size()).to.be.equal(1);
+
+				pos.forEach((v, i) => {
+					expect(v).to.be.closeTo(expected[i], 3);
+				});
+
+				done(1);
+			}, 100);			
+		}));
+	});
+
+	describe("category axis", () => {
+		beforeAll(() => {
+			args = {
+				data: {
+					x: "x",
+					columns: [
+						["x", "a", "b", "c", "d"],
+						["Pressure", 1, 2.04, 2.96]
+					],
+					type: "scatter"
+				},
+				axis: {
+					_rotated: true,
+					x: {
+						label: "x",			
+						type: "category"
+					}
+				},
+				plugins: [
+					new Stanford({
+						epochs: [
+							34.794, 34.787, 34.791
+						],
+						scale: {
+							min: 34.79,
+							max: 35.139,
+							width: 10
+						},
+						lines: [
+							{
+								x1: 0,
+								y1: 1,
+								x2: 10,
+								y2: 2,
+								class: "line"
+							}
+						]
+					})
+				]
+			};
+		});
+
+		it("should render axis correctly", () => new Promise(done => {
+			const {$el: {main}} = chart.internal;
+			const line = main.selectAll(".bb-stanford-line line");
+			const expected = [69, 1437, 391, 210];
+
+			setTimeout(() => {
+				const pos = [
+					line.attr("x1"),
+					line.attr("x2"),
+					line.attr("y1"),
+					line.attr("y2")
+				].map(Number);
+				
+				expect(line.size()).to.be.equal(1);
+
+				pos.forEach((v, i) => {
+					expect(v).to.be.closeTo(expected[i], 3);
+				});
+
+				expect(chart.categories()).to.be.deep.equal(["a", "b", "c", "d"]);
+
+				done(1);
+			}, 350);
+
+			// setTimeout(done.bind(null, 1), 500);
+		}));
 	});
 });

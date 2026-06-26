@@ -23,7 +23,7 @@ export default {
 	 *      // hide all data points ('point.show=false' also has similar effect)
 	 *      point: false,
 	 *
-	 *      // show data points for only indicated datas
+	 *      // show data points for only indicated data
 	 *      point: [
 	 *          "data1", "data3"
 	 *      ],
@@ -31,5 +31,5 @@ export default {
 	 *      zerobased: false
 	 *  }
 	 */
-	scatter_zerobased: false,
+	scatter_zerobased: false
 };

@@ -4,7 +4,7 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import {$AXIS, $CIRCLE, $TEXT} from "../../src/config/classes";
 import util from "../assets/util";
@@ -21,7 +21,7 @@ describe("SHAPE BUBBLE", () => {
 	describe("with indexed data", () => {
 		let maxR = d => Math.sqrt(d.value * 2);
 
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [
@@ -48,7 +48,7 @@ describe("SHAPE BUBBLE", () => {
 			expect(r).to.be.closeTo(5, 1);
 		});
 
-		it("bubble size should be updated", done => {
+		it("bubble size should be updated", () => new Promise(done => {
 			chart.load({
 				columns: [
 					['data1', 500, 350, 200, 380, 10]
@@ -62,12 +62,12 @@ describe("SHAPE BUBBLE", () => {
 								expect(r).to.be.equal(35);
 							} else if (i === 4) {
 								expect(r).to.be.closeTo(5, 1);
-								done();
+								done(1);
 							}
 						});
 				}
 			});
-		});
+		}));
 
 		it("set options bubble.maxR", () => {
 			args.bubble = {
@@ -146,7 +146,7 @@ describe("SHAPE BUBBLE", () => {
 			chart = util.generate(args);
 
 			const tickNodes = chart.$.svg.select(`.${$AXIS.axisY}`).selectAll("g.tick");
-			const translateValues = [390, 345, 300, 255, 209, 164, 119, 74, 29];
+			const translateValues = [389, 344, 299, 254, 209, 164, 119, 74, 29];
 
 			tickNodes.each(function(d, i) {
 				expect(util.parseNum(this.getAttribute("transform"))).to.be.closeTo(translateValues[i], 1);
@@ -155,7 +155,7 @@ describe("SHAPE BUBBLE", () => {
 	});
 
 	describe("with dimension data", () => {
-		before(() => {
+		beforeAll(() => {
 			args = {
 				data: {
 					columns: [

@@ -18,54 +18,61 @@ export default {
 	 *   - **NOTE:** The overlapped data points will be displayed as grouped even if set false.
 	 * @property {boolean} [tooltip.linked=false] Set if tooltips on all visible charts with like x points are shown together when one is shown.
 	 * @property {string} [tooltip.linked.name=""] Groping name for linked tooltip.<br>If specified, linked tooltip will be groped interacting to be worked only with the same name.
-	 * @property {Function} [tooltip.format.title] Set format for the title of tooltip.<br>
+	 * @property {function} [tooltip.format.title] Set format for the title of tooltip.<br>
 	 *  Specified function receives x of the data point to show.
-	 * @property {Function} [tooltip.format.name] Set format for the name of each data in tooltip.<br>
+	 * @property {function} [tooltip.format.name] Set format for the name of each data in tooltip.<br>
 	 *  Specified function receives name, ratio, id and index of the data point to show. ratio will be undefined if the chart is not donut/pie/gauge.
-	 * @property {Function} [tooltip.format.value] Set format for the value of each data in tooltip.<br>
-	 *  Specified function receives name, ratio, id and index of the data point to show. ratio will be undefined if the chart is not donut/pie/gauge.
-	 *  If undefined returned, the row of that value will be skipped.
-	 * @property {Function} [tooltip.position] Set custom position function for the tooltip.<br>
+	 * @property {function} [tooltip.format.value] Set format for the value of each data value in tooltip. If undefined returned, the row of that value will be skipped to be called.
+	 *  - Will pass following arguments to the given function:
+	 *    - `value {string}`: Value of the data point. If data row contains multiple or ranged(ex. candlestick, area range, etc.) value, formatter will be called as value length.
+	 *    - `ratio {number}`: Ratio of the data point in the `pie/donut/gauge` and `area/bar` when contains grouped data. Otherwise is `undefined`.
+	 *    - `id {string}`: id of the data point
+	 *    - `index {number}`: Index of the data point
+	 * @property {function} [tooltip.position] Set custom position function for the tooltip.<br>
 	 *  This option can be used to modify the tooltip position by returning object that has top and left.
 	 *  - Will pass following arguments to the given function:
-	 *   - `data {Array}`: Current selected data array object.
-	 *   - `width {number}`: Width of tooltip.
-	 *   - `height {number}`: Height of tooltip.
-	 *   - `element {SVGElement}`: Tooltip event bound element
-	 *   - `pos {object}`: Current position of the tooltip.
-	 * @property {Function|object} [tooltip.contents] Set custom HTML for the tooltip.<br>
+	 *    - `data {Array}`: Current selected data array object.
+	 *    - `width {number}`: Width of tooltip.
+	 *    - `height {number}`: Height of tooltip.
+	 *    - `element {SVGElement}`: Tooltip event bound element
+	 *    - `pos {object}`: Current position of the tooltip.
+	 * @property {function|object} [tooltip.contents] Set custom HTML for the tooltip.<br>
 	 *  If tooltip.grouped is true, data includes multiple data points.<br><br>
 	 *  Specified function receives `data` array and `defaultTitleFormat`, `defaultValueFormat` and `color` functions of the data point to show.
 	 *  - **Note:**
+	 *    - Only common HTML tags are allowed to prevent XSS attacks. If creating charts from user input, it is recommended to sanitize input values to avoid potential vulnerabilities.<br><br>
 	 *    - defaultTitleFormat:
 	 *      - if `axis.x.tick.format` option will be used if set.
 	 *      - otherwise, will return function based on tick format type(category, timeseries).
 	 *    - defaultValueFormat:
-	 *	    - for Arc type (except gauge, radar), the function will return value from `(ratio * 100).toFixed(1)`.
-	 *	    - for Axis based types, will be used `axis.[y|y2].tick.format` option value if is set.
-	 *	    - otherwise, will parse value and return as number.
+	 * 	    - for Arc type (except gauge, radar), the function will return value from `(ratio * 100).toFixed(1)`.
+	 * 	    - for Axis based types, will be used `axis.[y|y2].tick.format` option value if is set.
+	 * 	    - otherwise, will parse value and return as number.
 	 * @property {string|HTMLElement} [tooltip.contents.bindto=undefined] Set CSS selector or element reference to bind tooltip.
 	 *  - **NOTE:** When is specified, will not be updating tooltip's position.
-	 * @property {string} [tooltip.contents.template=undefined] Set tooltip's template.<br><br>
+	 * @property {string} [tooltip.contents.template=undefined] Set tooltip's template.
+	 *  - **NOTE:** Only common HTML tags are allowed to prevent XSS attacks. If creating charts from user input, it is recommended to sanitize input values to avoid potential vulnerabilities.<br><br>
 	 *  Within template, below syntax will be replaced using template-like syntax string:
 	 *    - **{{ ... }}**: the doubly curly brackets indicate loop block for data rows.
 	 *    - **{=CLASS_TOOLTIP}**: default tooltip class name `bb-tooltip`.
 	 *    - **{=CLASS_TOOLTIP_NAME}**: default tooltip data class name (ex. `bb-tooltip-name-data1`)
 	 *    - **{=TITLE}**: title value.
 	 *    - **{=COLOR}**: data color.
+	 *    - **{=NAME}**: data id value.
 	 *    - **{=VALUE}**: data value.
+	 *  - **NOTE:** While basic XSS sanitization is applied, if you're allowing user-provided chart options in a service exposed to other users, you should implement additional security measures to prevent sophisticated XSS attacks.
 	 * @property {object} [tooltip.contents.text=undefined] Set additional text content within data loop, using template syntax.
 	 *  - **NOTE:** It should contain `{ key: Array, ... }` value
 	 *    - 'key' name is used as substitution within template as '{=KEY}'
 	 *    - The value array length should match with the data length
 	 * @property {boolean} [tooltip.init.show=false] Show tooltip at the initialization.
 	 * @property {number} [tooltip.init.x=0] Set x Axis index(or index for Arc(donut, gauge, pie) types) to be shown at the initialization.
-	 * @property {object} [tooltip.init.position={top: "0px",left: "50px"}] Set the position of tooltip at the initialization.
-	 * @property {Function} [tooltip.onshow] Set a callback that will be invoked before the tooltip is shown.
-	 * @property {Function} [tooltip.onhide] Set a callback that will be invoked before the tooltip is hidden.
-	 * @property {Function} [tooltip.onshown] Set a callback that will be invoked after the tooltip is shown
-	 * @property {Function} [tooltip.onhidden] Set a callback that will be invoked after the tooltip is hidden.
-	 * @property {string|Function|null} [tooltip.order=null] Set tooltip data display order.<br><br>
+	 * @property {object} [tooltip.init.position] Set the position of tooltip at the initialization.
+	 * @property {function} [tooltip.onshow] Set a callback that will be invoked before the tooltip is shown.
+	 * @property {function} [tooltip.onhide] Set a callback that will be invoked before the tooltip is hidden.
+	 * @property {function} [tooltip.onshown] Set a callback that will be invoked after the tooltip is shown
+	 * @property {function} [tooltip.onhidden] Set a callback that will be invoked after the tooltip is hidden.
+	 * @property {string|function|null} [tooltip.order=null] Set tooltip data display order.<br><br>
 	 *  **Available Values:**
 	 *  - `desc`: In descending data value order
 	 *  - `asc`: In ascending data value order
@@ -77,6 +84,7 @@ export default {
 	 * @see [Demo: Tooltip Grouping](https://naver.github.io/billboard.js/demo/#Tooltip.TooltipGrouping)
 	 * @see [Demo: Tooltip Format](https://naver.github.io/billboard.js/demo/#Tooltip.TooltipFormat)
 	 * @see [Demo: Linked Tooltip](https://naver.github.io/billboard.js/demo/#Tooltip.LinkedTooltips)
+	 * @see [Demo: Tooltip Position](https://naver.github.io/billboard.js/demo/#Tooltip.TooltipPosition)
 	 * @see [Demo: Tooltip Template](https://naver.github.io/billboard.js/demo/#Tooltip.TooltipTemplate)
 	 * @example
 	 *  tooltip: {
@@ -86,6 +94,9 @@ export default {
 	 *      format: {
 	 *          title: function(x) { return "Data " + x; },
 	 *          name: function(name, ratio, id, index) { return name; },
+	 *
+	 *          // If data row contains multiple or ranged(ex. candlestick, area range, etc.) value,
+	 *          // formatter will be called as value length times.
 	 *          value: function(value, ratio, id, index) { return ratio; }
 	 *      },
 	 *      position: function(data, width, height, element, pos) {
@@ -97,8 +108,31 @@ export default {
 	 *          //   x: Current mouse event x position,
 	 *          //   y: Current mouse event y position,
 	 *          //   xAxis: Current x Axis position (the value is given for axis based chart type only)
+	 *          //   yAxis: Current y Axis position value or function(the value is given for axis based chart type only)
 	 *          // }
-	 *          return {top: 0, left: 0}
+	 *
+	 *          // yAxis will work differently per data lengths
+	 *          // - a) Single data: `yAxis` will return `number` value
+	 *          // - b) Multiple data: `yAxis` will return a function with property value
+	 *
+	 *          // a) Single data:
+	 *          // Get y coordinate
+	 *          pos.yAxis; // y axis coordinate value of current data point
+	 *
+	 *          // b) Multiple data:
+	 *          // Get y coordinate of value 500, where 'data1' scales(y or y2).
+	 *          // When 'data.axes' option is used, data can bound to different axes.
+	 *          // - when "data.axes={data1: 'y'}", will return y value from y axis scale.
+	 *          // - when "data.axes={data1: 'y2'}", will return y value from y2 axis scale.
+	 *          pos.yAxis(500, "data1"); // will return y coordinate value of data1
+	 *
+	 *          pos.yAxis(500); // get y coordinate with value of 500, using y axis scale
+	 *          pos.yAxis(500, null, "y2"); // get y coordinate with value of 500, using y2 axis scale
+	 *
+	 *          return {
+	 *            top: 0,
+	 *            left: 0
+	 *          }
 	 *      },
 	 *
 	 *      contents: function(d, defaultTitleFormat, defaultValueFormat, color) {
@@ -152,10 +186,10 @@ export default {
 	 *      // show at the initialization
 	 *      init: {
 	 *          show: true,
-	 *          x: 2, // x Axis index(or index for Arc(donut, gauge, pie) types)
+	 *          x: 2, // x Axis index (or index for Arc(donut, gauge, pie) types)
 	 *          position: {
-	 *              top: "150px",
-	 *              left: "250px"
+	 *              top: "150px",  // specify as number or as string with 'px' unit string
+	 *              left: 250  // specify as number or as string with 'px' unit string
 	 *          }
 	 *      },
 	 *
@@ -200,24 +234,23 @@ export default {
 	tooltip_show: true,
 	tooltip_doNotHide: false,
 	tooltip_grouped: true,
-	tooltip_format_title: <(() => string)|undefined> undefined,
-	tooltip_format_name: <(() => string)|undefined> undefined,
-	tooltip_format_value: <(() => number)|undefined> undefined,
-	tooltip_position: <(() => {top: number; left: number;})|undefined> undefined,
-	tooltip_contents: <
-			(() => string)|{bindto: string; template: string; text?: {[key: string]: string[]}}
-		> {},
+	tooltip_format_title: <(() => string) | undefined>undefined,
+	tooltip_format_name: <(() => string) | undefined>undefined,
+	tooltip_format_value: <(() => number) | undefined>undefined,
+	tooltip_position: <(() => {top: number, left: number}) | undefined>undefined,
+	tooltip_contents: <(() => string) | {
+		bindto: string,
+		template: string,
+		text?: Record<string, string[]>
+	}>{},
 	tooltip_init_show: false,
 	tooltip_init_x: 0,
-	tooltip_init_position: {
-		top: "0px",
-		left: "50px"
-	},
+	tooltip_init_position: undefined,
 	tooltip_linked: false,
 	tooltip_linked_name: "",
 	tooltip_onshow: () => {},
 	tooltip_onhide: () => {},
 	tooltip_onshown: () => {},
 	tooltip_onhidden: () => {},
-	tooltip_order: <string|Function|null> null
+	tooltip_order: <string | Function | null>null
 };

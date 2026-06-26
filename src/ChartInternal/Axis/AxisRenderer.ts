@@ -4,29 +4,82 @@
  * @ignore
  */
 import {select as d3Select} from "d3-selection";
-import {d3Selection} from "../../../types/types";
+import type {d3Selection} from "../../../types/types";
+import {$COMMON} from "../../config/classes";
+import {AXIS_TICK_LENGTH, AXIS_TICK_PADDING, AXIS_TICK_SIZE} from "../../config/const";
+import {isArray, isFunction, isNumber, isString, toArray} from "../../module/util";
 import Helper from "./AxisRendererHelper";
-import {isArray, toArray, isFunction, isString, isNumber} from "../../module/util";
 
 export default class AxisRenderer {
 	private helper;
 	private config;
 	private params;
 	private g;
+	private generatedTicks: (Date | number)[] = [];
+
+	private canReuseTickTextOnResize(isLeftRight: boolean): boolean {
+		const {config, params} = this;
+		const {config: chartConfig, id, owner} = params;
+		const isX = /^(x|subX)$/.test(id);
+		const type = id === "subX" ? "x" : id;
+		const customTickFormat = id === "subX" ?
+			chartConfig.subchart_axis_x_tick_format || chartConfig.axis_x_tick_format :
+			chartConfig[`axis_${type}_tick_format`];
+		const categoryAutoWrap = params.tickMultiline && params.isCategory && !isLeftRight &&
+			!(params.tickWidth > 0);
+
+		return !!(
+			owner.state.resizing &&
+			!owner.state.flowing &&
+			!isFunction(chartConfig.axis_evalTextSize) &&
+			!customTickFormat &&
+			!params.tickTitle &&
+			!(isX && chartConfig.axis_x_tick_autorotate) &&
+			!categoryAutoWrap &&
+			config.withoutTransition
+		);
+	}
+
+	private canReuseTickNodesOnResize(tickNodes: d3Selection, ticks, isLeftRight: boolean,
+		tickShow): boolean {
+		if (
+			tickShow.tick || !tickShow.text || !this.canReuseTickTextOnResize(isLeftRight) ||
+			tickNodes.size() !== ticks.length
+		) {
+			return false;
+		}
+
+		const nodes = tickNodes.nodes();
+
+		for (let i = 0; i < ticks.length; i++) {
+			const current = (nodes[i] as any).__data__;
+			const next = ticks[i];
+
+			if (current instanceof Date || next instanceof Date) {
+				if (+current !== +next) {
+					return false;
+				}
+			} else if (current !== next) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	constructor(params: any = {}) {
 		const config = {
-			innerTickSize: 6,
-			outerTickSize: params.outerTick ? 6 : 0,
+			innerTickSize: AXIS_TICK_SIZE,
+			outerTickSize: params.outerTick ? AXIS_TICK_SIZE : 0,
 			orient: "bottom",
 			range: [],
 			tickArguments: null,
 			tickCentered: null,
 			tickCulling: true,
 			tickFormat: null,
-			tickLength: 9,
+			tickLength: AXIS_TICK_LENGTH,
 			tickOffset: 0,
-			tickPadding: 3,
+			tickPadding: AXIS_TICK_PADDING,
 			tickValues: null,
 			transition: null,
 			noTransition: params.noTransition
@@ -70,7 +123,8 @@ export default class AxisRenderer {
 		// // get the axis' tick position configuration
 		const id = params.id;
 		const tickTextPos = id && /^(x|y|y2)$/.test(id) ?
-			params.config[`axis_${id}_tick_text_position`] : {x: 0, y: 0};
+			params.config[`axis_${id}_tick_text_position`] :
+			{x: 0, y: 0};
 
 		// tick visiblity
 		const prefix = id === "subX" ? `subchart_axis_x` : `axis_${id}`;
@@ -79,6 +133,7 @@ export default class AxisRenderer {
 			tick: axisShow ? params.config[`${prefix}_tick_show`] : false,
 			text: axisShow ? params.config[`${prefix}_tick_text_show`] : false
 		};
+		const evalTextSize = params.config.axis_evalTextSize;
 
 		let $g;
 
@@ -90,8 +145,7 @@ export default class AxisRenderer {
 			$g = g;
 			this.__chart__ = scale1;
 
-			config.tickOffset = params.isCategory ?
-				Math.ceil((scale1(1) - scale1(0)) / 2) : 0;
+			config.tickOffset = params.isCategory ? (scale1(1) - scale1(0)) / 2 : 0;
 
 			// update selection - data join
 			const path = g.selectAll(".domain").data([0]);
@@ -111,121 +165,191 @@ export default class AxisRenderer {
 
 			if (tickShow.tick || tickShow.text) {
 				// count of tick data in array
-				const ticks = config.tickValues || helper.generateTicks(scale1, isLeftRight);
+				const ticks = config.tickValues ||
+					helper.generateTicks(scale1, isLeftRight || params.config.axis_rotated);
+
+				// set generated ticks
+				ctx.generatedTicks = ticks;
 
 				// update selection
-				let tick: d3Selection = g.selectAll(".tick")
-					.data(ticks, scale1);
+				let tick: d3Selection = g.selectAll(".tick");
+				const canReuseTickNodes = ctx.canReuseTickNodesOnResize(
+					tick,
+					ticks,
+					isLeftRight || params.config.axis_rotated,
+					tickShow
+				);
 
-				// enter selection
-				const tickEnter = tick
-					.enter()
-					.insert("g", ".domain")
-					.attr("class", "tick");
+				if (canReuseTickNodes) {
+					tickTransform(tick, scale1);
+				} else {
+					tick = tick.data(ticks, scale1);
 
-				// MEMO: No exit transition. The reason is this transition affects max tick width calculation because old tick will be included in the ticks.
-				const tickExit = tick.exit().remove();
+					// enter selection
+					const tickEnter = tick
+						.enter()
+						.insert("g", ".domain")
+						.attr("class", "tick");
 
-				// enter + update selection
-				tick = tickEnter.merge(tick);
+					// MEMO: No exit transition. The reason is this transition affects max tick width calculation because old tick will be included in the ticks.
+					const tickExit = tick.exit().remove();
 
-				tickShow.tick && tickEnter.append("line");
-				tickShow.text && tickEnter.append("text");
+					// enter + update selection
+					tick = tickEnter.merge(tick);
 
-				const sizeFor1Char = Helper.getSizeFor1Char(tick);
-				const counts: number[] = [];
+					tickShow.tick && tickEnter.append("line");
+					tickShow.text && tickEnter.append("text");
 
-				let tspan: d3Selection = tick.select("text")
-					.selectAll("tspan")
-					.data((d, index) => {
-						const split = params.tickMultiline ?
-							splitTickText(d, scale1, ticks, isLeftRight, sizeFor1Char.w) : (
-								isArray(helper.textFormatted(d)) ?
-									helper.textFormatted(d).concat() : [helper.textFormatted(d)]
-							);
+					const hasTickChange = !tickEnter.empty() || !tickExit.empty();
+					const reuseTickText = tickShow.text && !hasTickChange &&
+						ctx.canReuseTickTextOnResize(isLeftRight || params.config.axis_rotated);
+					let sizeFor1Char = {w: 0, h: 0};
+					let textUpdate = tick.selectAll("text.__bb-empty");
 
-						counts[index] = split.length;
+					if (tickShow.text && !reuseTickText) {
+						const tickText = tick.select("text");
+						const counts: number[] = [];
 
-						return split.map(splitted => ({index, splitted}));
-					});
+						textUpdate = tickText;
 
-				tspan.exit().remove();
+						if (isFunction(evalTextSize)) {
+							// set evalTextSize to dummy axis element to be used in .getMaxTickSize()
+							sizeFor1Char = evalTextSize.bind(ctx.params.owner.api)(tickText.node(),
+								id);
 
-				tspan = tspan
-					.enter()
-					.append("tspan")
-					.merge(tspan)
-					.text(d => d.splitted);
-
-				// set <tspan>'s position
-				tspan
-					.attr("x", isTopBottom ? 0 : tickLength * sign)
-					.attr("dx", (() => {
-						let dx = 0;
-
-						if (/(top|bottom)/.test(orient) && rotate) {
-							dx = 8 * Math.sin(Math.PI * (rotate / 180)) * (orient === "top" ? -1 : 1);
-						}
-
-						return dx + (tickTextPos.x || 0);
-					})())
-					.attr("dy", (d, i) => {
-						const defValue = ".71em";
-						let dy: number | string = 0;
-
-						if (orient !== "top") {
-							dy = sizeFor1Char.h;
-
-							if (i === 0) {
-								dy = isLeftRight ? -((counts[d.index] - 1) * (sizeFor1Char.h / 2) - 3) :
-									(tickTextPos.y === 0 ? defValue : 0);
+							if (this.classList.contains($COMMON.dummy)) {
+								this.sizeFor1Char = sizeFor1Char;
 							}
 						}
 
-						return isNumber(dy) && tickTextPos.y ?
-							dy + tickTextPos.y : dy || defValue;
-					});
+						if (!sizeFor1Char || sizeFor1Char.w === 0 || sizeFor1Char.h === 0) {
+							sizeFor1Char = ctx.helper.getSizeFor1Char(orient, tickText,
+								!!evalTextSize);
+						}
 
-				const lineUpdate = tick.select("line");
-				const textUpdate = tick.select("text");
+						let tspan: d3Selection = tickText
+							.selectAll("tspan")
+							.data((d, index) => {
+								let split;
 
-				tickEnter.select("line").attr(`${axisPx}2`, innerTickSize * sign);
-				tickEnter.select("text").attr(axisPx, tickLength * sign);
+								if (params.tickMultiline) {
+									split = splitTickText(d, scale1, ticks, isLeftRight,
+										sizeFor1Char.w);
+								} else {
+									const formatted = helper.textFormatted(d);
 
-				ctx.setTickLineTextPosition(lineUpdate, textUpdate);
+									split = isArray(formatted) ? formatted.concat() : [formatted];
+								}
 
-				// Append <title> for tooltip display
-				if (params.tickTitle) {
-					const title = textUpdate.select("title");
+								counts[index] = split.length;
 
-					(title.empty() ? textUpdate.append("title") : title)
-						.text(index => params.tickTitle[index]);
+								return split.map(splitted => ({index, splitted}));
+							});
+
+						tspan.exit().remove();
+
+						tspan = tspan
+							.enter()
+							.append("tspan")
+							.merge(tspan)
+							.text(d => d.splitted);
+
+						// set <tspan>'s position
+						tspan
+							.attr("x", isTopBottom ? 0 : tickLength * sign)
+							.attr("dx", (() => {
+								let dx = 0;
+
+								if (/(top|bottom)/.test(orient) && rotate) {
+									dx = 8 * Math.sin(Math.PI * (rotate / 180)) *
+										(orient === "top" ? -1 : 1);
+								}
+
+								return dx + (tickTextPos.x || 0);
+							})())
+							.attr("dy", (d, i) => {
+								const defValue = ".71em";
+								let dy: number | string = 0;
+
+								if (orient !== "top") {
+									dy = sizeFor1Char.h;
+
+									if (i === 0) {
+										dy = isLeftRight ?
+											-((counts[d.index] - 1) * (sizeFor1Char.h / 2) - 3) :
+											(tickTextPos.y === 0 ? defValue : 0);
+									}
+								}
+
+								return isNumber(dy) && tickTextPos.y ?
+									dy + tickTextPos.y :
+									dy || defValue;
+							});
+					}
+
+					const lineUpdate = tick.select("line");
+
+					tickEnter.select("line").attr(`${axisPx}2`, innerTickSize * sign);
+					tickEnter.select("text").attr(axisPx, tickLength * sign);
+
+					ctx.setTickLineTextPosition(lineUpdate, textUpdate, sizeFor1Char);
+
+					// Append <title> for tooltip display
+					if (params.tickTitle) {
+						const title = textUpdate.select("title");
+						const tickTitle = params.tickTitle;
+
+						(title.empty() ? textUpdate.append("title") : title)
+							.text(index => tickTitle[Number(index)]);
+					}
+
+					if (scale1.bandwidth) {
+						const x = scale1;
+						const dx = x.bandwidth() / 2;
+
+						scale0 = d => x(d) + dx;
+						scale1 = scale0;
+					} else if (scale0.bandwidth) {
+						scale0 = scale1;
+					} else {
+						tickTransform(tickExit, scale1);
+					}
+
+					// when .flow(), it should follow flow's transition config
+					// otherwise make to use ChartInternals.$T()
+					tick = params.owner.state.flowing ?
+						helper.transitionise(tick) :
+						params.owner.$T(tick);
+
+					tickTransform(tickEnter, scale0);
+					tickTransform(tick.style("opacity", null), scale1);
 				}
-
-				if (scale1.bandwidth) {
-					const x = scale1;
-					const dx = x.bandwidth() / 2;
-
-					scale0 = d => x(d) + dx;
-					scale1 = scale0;
-				} else if (scale0.bandwidth) {
-					scale0 = scale1;
-				} else {
-					tickTransform(tickExit, scale1);
-				}
-
-				// when .flow(), it should follow flow's transition config
-				// otherwise make to use ChartInternals.$T()
-				tick = params.owner.state.flowing ?
-					helper.transitionise(tick) :
-					params.owner.$T(tick);
-
-				tickTransform(tickEnter, scale0);
-				tickTransform(tick.style("opacity", null), scale1);
 			}
 		});
 
 		this.g = $g;
+	}
+
+	/**
+	 * Get generated ticks
+	 * @param {number} count Count of ticks
+	 * @returns {Array} Generated ticks
+	 * @private
+	 */
+	getGeneratedTicks(count: number): (Date | number)[] {
+		const len = this.generatedTicks?.length - 1;
+		let res = this.generatedTicks;
+
+		if (len > count) {
+			const interval = Math.round((len / count) + 0.1);
+
+			res = this.generatedTicks
+				.map((v, i) => (i % interval === 0 ? v : null))
+				.filter(v => v !== null)
+				.splice(0, count) as (Date | number)[];
+		}
+
+		return res;
 	}
 
 	/**
@@ -266,12 +390,16 @@ export default class AxisRenderer {
 	 * Set tick's line & text position
 	 * @param {d3.selection} lineUpdate Line selection
 	 * @param {d3.selection} textUpdate Text selection
+	 * @param {object} sizeFor1Char Size for 1 char
 	 * @private
 	 */
-	setTickLineTextPosition(lineUpdate, textUpdate): void {
+	setTickLineTextPosition(lineUpdate, textUpdate, sizeFor1Char): void {
 		const tickPos = this.getTickXY();
 		const {innerTickSize, orient, tickLength, tickOffset} = this.config;
+		const axisId = this.params.id;
 		const rotate = this.params.tickTextRotate;
+		const baseHeight = 6;
+		const charHeight = (sizeFor1Char.h / 2) - baseHeight;
 
 		const textAnchorForText = r => {
 			const value = ["start", "end"];
@@ -283,53 +411,73 @@ export default class AxisRenderer {
 		const textTransform = r => (r ? `rotate(${r})` : null);
 		const yForText = r => {
 			const r2 = r / (orient === "bottom" ? 15 : 23);
+			const y = r ? 11.5 - 2.5 * r2 * (r > 0 ? 1 : -1) : tickLength;
 
-			return r ? 11.5 - 2.5 * r2 * (r > 0 ? 1 : -1) : tickLength;
+			return y;
 		};
+
+		const {
+			config: {
+				axis_rotated: isRotated,
+				axis_x_tick_text_inner: inner
+			}
+		} = this.params.owner;
+
+		const tickLineInner = this.params.config[`axis_${axisId}_tick_inner`];
 
 		switch (orient) {
 			case "bottom":
 				lineUpdate
 					.attr("x1", tickPos.x)
 					.attr("x2", tickPos.x)
-					.attr("y2", this.getTickSize.bind(this));
+					.attr("y2", d => this.getTickSize.bind(this)(d) * (tickLineInner ? -1 : 1));
 
 				textUpdate
 					.attr("x", 0)
 					.attr("y", yForText(rotate))
-					.style("text-anchor", textAnchorForText(rotate))
+					.style("text-anchor", (d, i, {length}) => {
+						if (!isRotated && i === 0 && (inner === true || inner.first)) {
+							return "start";
+						} else if (
+							!isRotated && i === length - 1 && (inner === true || inner.last)
+						) {
+							return "end";
+						}
+
+						return textAnchorForText(rotate);
+					})
 					.attr("transform", textTransform(rotate));
 				break;
 			case "top":
 				lineUpdate
 					.attr("x2", 0)
-					.attr("y2", -innerTickSize);
+					.attr("y2", tickLineInner ? innerTickSize : -innerTickSize);
 
 				textUpdate
 					.attr("x", 0)
-					.attr("y", -yForText(rotate) * 2)
+					.attr("y", -(yForText(rotate) + charHeight + baseHeight))
 					.style("text-anchor", textAnchorForText(rotate))
 					.attr("transform", textTransform(rotate));
 				break;
 			case "left":
 				lineUpdate
-					.attr("x2", -innerTickSize)
+					.attr("x2", tickLineInner ? innerTickSize : -innerTickSize)
 					.attr("y1", tickPos.y)
 					.attr("y2", tickPos.y);
 
 				textUpdate
 					.attr("x", -tickLength)
-					.attr("y", tickOffset)
+					.attr("y", tickOffset + (isRotated ? charHeight / 4 : charHeight))
 					.style("text-anchor", "end");
 				break;
 			case "right":
 				lineUpdate
-					.attr("x2", innerTickSize)
+					.attr("x2", tickLineInner ? -innerTickSize : innerTickSize)
 					.attr("y2", 0);
 
 				textUpdate
 					.attr("x", tickLength)
-					.attr("y", 0)
+					.attr("y", charHeight)
 					.style("text-anchor", "start");
 		}
 	}
@@ -339,7 +487,8 @@ export default class AxisRenderer {
 		const {params} = this;
 		const tickText = this.helper.textFormatted(d);
 		const splitted = isString(tickText) && tickText.indexOf("\n") > -1 ?
-			tickText.split("\n") : [];
+			tickText.split("\n") :
+			[];
 
 		if (splitted.length) {
 			return splitted;
@@ -354,7 +503,12 @@ export default class AxisRenderer {
 		if (!tickWidth || tickWidth <= 0) {
 			tickWidth = isLeftRight ? 95 : (
 				params.isCategory ?
-					(Math.ceil(scale(ticks[1]) - scale(ticks[0])) - 12) : 110
+					(
+						params.isInverted ?
+							scale(ticks[0]) - scale(ticks[1]) :
+							scale(ticks[1]) - scale(ticks[0])
+					) - 12 :
+					110
 			);
 		}
 
@@ -404,11 +558,13 @@ export default class AxisRenderer {
 		}
 
 		this.config.orient = x in {
-			top: 1,
-			right: 1,
-			bottom: 1,
-			left: 1
-		} ? String(x) : "bottom";
+				top: 1,
+				right: 1,
+				bottom: 1,
+				left: 1
+			} ?
+			String(x) :
+			"bottom";
 
 		return this;
 	}
@@ -458,24 +614,29 @@ export default class AxisRenderer {
 		let interval;
 
 		if (this.params.isCategory) {
-			interval = tickOffset * 2;
-		} else {
-			const length = this.g.select("path.domain")
-				.node()
-				.getTotalLength() - outerTickSize * 2;
+			const scale = this.params.owner.scale.zoom ?? this.helper.scale;
 
-			interval = length / (size || this.g.selectAll("line").size());
+			interval = tickOffset * 2 || Math.abs(scale(1) - scale(0));
+		} else {
+			const scale = this.params.owner.scale.zoom ?? this.helper.scale;
+			const length = this.g ?
+				this.g.select("path.domain")
+					.node()
+					.getTotalLength() - outerTickSize * 2 :
+				Math.abs(scale.range()[1] - scale.range()[0]);
+
+			interval = length / (size || this.g?.selectAll("line").size() || 1);
 
 			// get the interval by its values
-			const intervalByValue = tickValues ? tickValues
-				.map((v, i, arr) => {
-					const next = i + 1;
+			if (tickValues) {
+				for (let i = 0; i < tickValues.length - 1; i++) {
+					const intervalByValue = scale(tickValues[i + 1]) - scale(tickValues[i]);
 
-					return next < arr.length ?
-						this.helper.scale(arr[next]) - this.helper.scale(v) : null;
-				}).filter(Boolean) : [];
-
-			interval = Math.min(...intervalByValue, interval);
+					if (intervalByValue && intervalByValue < interval) {
+						interval = intervalByValue;
+					}
+				}
+			}
 		}
 
 		return interval === Infinity ? 0 : interval;
@@ -505,7 +666,9 @@ export default class AxisRenderer {
 		return this;
 	}
 
-	tickValues(x?): AxisRenderer | (number|Date|string)[] {
+	tickValues(
+		x?: (number | Date | string)[] | Function
+	): AxisRenderer | (number | Date | string)[] {
 		const {config} = this;
 
 		if (isFunction(x)) {

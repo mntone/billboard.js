@@ -7,20 +7,55 @@
  * @private
  */
 /* eslint-disable no-new-func, no-undef */
-export {win as window, doc as document};
+/**
+ * Get global object
+ * @returns {object} window object
+ * @private
+ */
+function getGlobal() {
+	return (typeof globalThis === "object" && globalThis !== null && globalThis.Object === Object &&
+		globalThis) ||
+		(typeof self === "object" && self !== null && self.Object === Object && self) ||
+		Function("return this")();
+}
 
-const win = (() => {
-	const root = (typeof globalThis === "object" && globalThis !== null && globalThis.Object === Object && globalThis) ||
-		(typeof global === "object" && global !== null && global.Object === Object && global) ||
-		(typeof self === "object" && self !== null && self.Object === Object && self);
+/**
+ * Get fallback object
+ * @param {object} w global object
+ * @returns {Array} fallback object array
+ * @private
+ */
+export function getFallback(w?) {
+	const hasRAF = typeof w?.requestAnimationFrame === "function" &&
+		typeof w?.cancelAnimationFrame === "function";
+	const hasRIC = typeof w?.requestIdleCallback === "function" &&
+		typeof w?.cancelIdleCallback === "function";
+	const request = cb => setTimeout(cb, 1);
+	const cancel = id => clearTimeout(id);
 
-	return root || Function("return this")();
-})();
-/* eslint-enable no-new-func, no-undef */
+	return [
+		hasRAF ? w.requestAnimationFrame : request,
+		hasRAF ? w.cancelAnimationFrame : cancel,
+		hasRIC ? w.requestIdleCallback : request,
+		hasRIC ? w.cancelIdleCallback : cancel
+	];
+}
 
-// fallback for non-supported environments
-win.requestIdleCallback = win.requestIdleCallback || (cb => setTimeout(cb, 1));
-win.cancelIdleCallback = win.cancelIdleCallback || (id => clearTimeout(id));
-
+const win = getGlobal();
 const doc = win?.document;
 
+const [
+	requestAnimationFrame,
+	cancelAnimationFrame,
+	requestIdleCallback,
+	cancelIdleCallback
+] = getFallback(win);
+
+export {
+	cancelAnimationFrame,
+	cancelIdleCallback,
+	doc as document,
+	requestAnimationFrame,
+	requestIdleCallback,
+	win as window
+};

@@ -3,7 +3,7 @@
  * billboard.js project is licensed under the MIT license
  */
 /* eslint-disable */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import sinon from "sinon";
 import {parseDate} from "../../src/module/util";
 import util from "../assets/util";
@@ -15,7 +15,7 @@ describe("API zoom", function() {
 	describe("zoom line chart #1", () => {
 		const spy = sinon.spy();
 
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -34,10 +34,12 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("should be zoomed properly", done => {
+		it("should be zoomed properly", () => new Promise(done => {
 			const target = [3, 5];
 
 			chart.zoom(target);
+
+			expect(chart.zoom()).to.deep.equal(target);
 
 			setTimeout(() => {
 				const domain = chart.internal.scale.zoom.domain().map(Math.round);
@@ -49,11 +51,11 @@ describe("API zoom", function() {
 				expect(spy.called).to.be.true;
 				expect(spy.args[0][0].map(Math.round)).to.be.deep.equal(target);
 
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 
-		it("should be zoomed properly again", done => {
+		it("should be zoomed properly again", () => new Promise(done => {
 			const target = [1, 4];
 
 			chart.zoom(target);
@@ -64,9 +66,9 @@ describe("API zoom", function() {
 				expect(domain[0]).to.be.equal(target[0]);
 				expect(domain[1]).to.be.equal(target[1]);
 
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 
 		it("should be zoomed and showing focus grid properly when target contained minus value", () => {
 			const target = [-2, 3]; // zoom in cotaining minus value
@@ -87,7 +89,7 @@ describe("API zoom", function() {
 	});
 
 	describe("zoom line chart #2", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					x: "date",
@@ -107,10 +109,12 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("should be zoomed properly (new Date)", done => {
+		it("should be zoomed properly (new Date)", () => new Promise(done => {
 			const target = [new Date(2014, 7, 1), new Date(2014, 8, 1)];
 
 			chart.zoom(target);
+
+			expect(chart.zoom()).to.deep.equal(target);			
 
 			setTimeout(() => {
 				const domain = chart.internal.scale.zoom.domain();
@@ -122,11 +126,11 @@ describe("API zoom", function() {
 				expect(domain[1].getMonth()).to.be.equal(target[1].getMonth());
 				expect(domain[1].getDate()).to.be.equal(target[1].getDate());
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("should be zoomed properly (string)", done => {
+		it("should be zoomed properly (string)", () => new Promise(done => {
 			const target = ["2014-08-01", "2014-09-01"];
 
 			chart.zoom(target);
@@ -143,13 +147,13 @@ describe("API zoom", function() {
 				expect(domain[1].getMonth()).to.be.equal(targetDate[1].getMonth());
 				expect(domain[1].getDate()).to.be.equal(targetDate[1].getDate());
 
-				done();
+				done(1);
 			}, 500)
-		});
+		}));
 	});
 
 	describe("zoom category type", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -170,10 +174,12 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("should be zoomed properly", done => {
+		it("should be zoomed properly", () => new Promise(done => {
 			const target = [1,2];
 
 			chart.zoom(target);
+
+			expect(chart.zoom()).to.deep.equal(target);
 
 			setTimeout(() => {
 				const {internal} = chart;
@@ -183,7 +189,7 @@ describe("API zoom", function() {
 					.filter((v, i) => target.indexOf(i) !== -1);
 
 				const rectSize = rectlist[0].w;
-				const domain = internal.zoom.getDomain();
+				const domain = internal.zoom.getDomain().map(Math.floor);
 
 				expect(domain).to.deep.equal(target);
 
@@ -193,13 +199,13 @@ describe("API zoom", function() {
 					expect(x * i).to.be.closeTo(rectSize * i, 5);
 				});
 
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 	});
 
 	describe("zoom bar chart", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -215,9 +221,9 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("should be zoomed properly", done => {
+		it("should be zoomed properly", () => new Promise(done => {
 			const rectlist = chart.$.main.selectAll(`.${$EVENT.eventRect}`).nodes();
-			const rect = [];
+			const rect: number[] = [];
 
 			// when
 			chart.zoom([3, 5]);
@@ -234,13 +240,13 @@ describe("API zoom", function() {
 					rect.push(x + width);
 				});
 
-				done();
+				done(1);
 			}, 500)
-		});
+		}));
 	});
 
 	describe("unzoom", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -256,7 +262,7 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("should be unzoomed properly", done => {
+		it("should be unzoomed properly", () => new Promise(done => {
 			const internal = chart.internal;
 			const target = [1, 4];
 			const original = internal.scale.x.domain();
@@ -277,9 +283,9 @@ describe("API zoom", function() {
 				expect(domain[0]).to.be.equal(original[0]);
 				expect(domain[1]).to.be.equal(original[1]);
 
-				done();
+				done(1);
 			}, 350);
-		});
+		}));
 	});
 
 	describe("zoom.enable()", () => {
@@ -307,16 +313,14 @@ describe("API zoom", function() {
 
 			//const selector = `.${$EVENT.eventRect}-1`;
 			const xValue = coords[1].x;
-			const tickTransform = [];
+			const tickTransform: string[] = [];
 
 			main.selectAll(`.${$AXIS.axisX} .tick`).each(function() {
 				tickTransform.push(this.getAttribute("transform"));
 			});
 
 			// check the returned domain value
-			chart.zoom(domain).map(Math.round).forEach((v, i) => {
-				expect(v).to.not.equal(domain[i]);
-			});
+			expect(chart.zoom(domain)).to.be.undefined;
 
 			expect(coords[1].x).to.be.equal(xValue);
 
@@ -336,6 +340,36 @@ describe("API zoom", function() {
 		});
 	});
 
+	describe("zoom on non-axis chart", () => {
+		it("should not enable zoom for treemap", () => {
+			const treemapChart = util.generate({
+				data: {
+					columns: [
+						["data1", 30],
+						["data2", 50]
+					],
+					type: "treemap"
+				},
+				zoom: {
+					enabled: true
+				},
+				transition: {
+					duration: 0
+				}
+			});
+
+			expect(() => treemapChart.zoom()).to.not.throw();
+			expect(treemapChart.zoom()).to.be.undefined;
+
+			treemapChart.zoom.enable(true);
+
+			expect(treemapChart.internal.config.zoom_enabled).to.be.false;
+			expect(treemapChart.internal.zoom).to.be.undefined;
+
+			treemapChart.destroy();
+		});
+	});
+
 	describe("zoom.min/max/range()", () => {
 		chart = util.generate({
 			data: {
@@ -348,7 +382,7 @@ describe("API zoom", function() {
 			}
 		});
 
-		it("should be updated the minimum zoom range", done => {
+		it("should be updated the minimum zoom range", () => new Promise(done => {
 			const range = chart.zoom.min(-1);
 			const zoomRange = chart.zoom([-1, 1]);
 
@@ -356,11 +390,11 @@ describe("API zoom", function() {
 
 			setTimeout(() => {
 				expect(+chart.$.main.select(`.${$AXIS.axisX} .tick`).attr("transform").match(/\d+/)[0]).to.be.above(250);
-				done();
-			}, 300);
-		});
+				done(1);
+			}, 350);
+		}));
 
-		it("should be updated the maximum zoom range", done => {
+		it("should be updated the maximum zoom range", () => new Promise(done => {
 			const range = chart.zoom.max(6);
 			const zoomRange = chart.zoom([4, 6]);
 
@@ -369,12 +403,12 @@ describe("API zoom", function() {
 			setTimeout(() => {
 				const tick = chart.$.main.selectAll(`.${$AXIS.axisX} .tick`);
 
-				expect(+tick.filter(`:nth-child(${tick.size() + 1})`).attr("transform").match(/\d+/)[0]).to.be.below(500);
-				done();
-			}, 300);
-		});
+				expect(+tick.filter(`:nth-child(${tick.size()})`).attr("transform").match(/\d+/)[0]).to.be.below(500);
+				done(1);
+			}, 350);
+		}));
 
-		it("should be updated zoom range", done => {
+		it("should be updated zoom range", () => new Promise(done => {
 			const main = chart.$.main;
 			const range = chart.zoom.range({
 				min: -2,
@@ -395,14 +429,14 @@ describe("API zoom", function() {
 			setTimeout(() => {
 				const tick = main.selectAll(`.${$AXIS.axisX} .tick`);
 
-				expect(+tick.filter(`:nth-child(${tick.size() + 1})`).attr("transform").match(/\d+/)[0]).to.be.below(5);
-				done();
-			}, 300);
-		});
+				expect(+tick.filter(`:nth-child(${tick.size()})`).attr("transform").match(/\d+/)[0]).to.be.below(5);
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("bar's width based on ratio", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -421,8 +455,8 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("check bar's width for zoom in/out API call", done => {
-			const len = [];
+		it("check bar's width for zoom in/out API call", () => new Promise(done => {
+			const len: number[] = [];
 
 			chart.$.bar.bars.each(function() {
 				len.push(this.getTotalLength());
@@ -449,14 +483,14 @@ describe("API zoom", function() {
 						expect(this.getTotalLength()).to.be.closeTo(len[i], 2.5);
 					});
 
-					done();
-				}, 500);
+					done(1);
+				}, 350);
 			});
-		});
+		}));
 	});
 
 	describe("zoom for timeseries axis type", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					rows: [
@@ -480,7 +514,7 @@ describe("API zoom", function() {
 			});
 		});
 
-		it("should zoomed", done => {
+		it("should zoomed", () => new Promise(done => {
 			const range = ["2021-01-01", "2021-01-02"];
 
 			// when
@@ -491,9 +525,9 @@ describe("API zoom", function() {
 					expect(v).to.be.deep.equal(parseDate.call(chart.internal, range[i]));
 				});
 
-				done();
-			}, 500);
-		});
+				done(1);
+			}, 350);
+		}));
 	});
 
 	describe("zoom events", () => {
@@ -563,7 +597,7 @@ describe("API zoom", function() {
 	});
 
 	describe("zoom for timeseries axis type", () => {
-		before(() => {
+		beforeAll(() => {
 			chart = util.generate({
 				data: {
 					columns: [
@@ -627,5 +661,82 @@ describe("API zoom", function() {
 			expect($$.scale.x.domain()).to.be.deep.equal(x.domain());
 			expect($$.scale.zoom).to.be.null;		  	
 		});
+	});
+
+	describe("zoom extent", () => {
+		beforeAll(() => {
+			chart = util.generate({
+				data: {
+					json: [
+						{"date":"2023-09-30 00:00:00","ek_house":0},
+						{"date":"2023-10-14 00:00:00","ek_house":0},
+						{"date":"2023-10-21 00:00:00","ek_house":0},
+						{"date":"2023-10-28 00:00:00","ek_house":0},
+						{"date":"2023-11-04 00:00:00","ek_house":0},
+					],
+					keys: {
+						x: "date",
+						value: ["ek_house"],
+					},
+				},
+				axis: {
+					x: {
+						type: "timeseries",
+						tick: {
+							format: "%Y-%m-%d"
+						},
+					},
+					y: {
+						show: false
+					}
+				},
+				zoom: {
+					enabled: true
+				}
+			});
+		});
+
+		it("shouldn't throw error for timeseries x axis, when is given out of range.", () => new Promise(done => {
+			chart.zoom([1697701666380, 1697702008724]);
+			
+			setTimeout(() => {
+				chart.$.circles.each(function() {
+					expect(this.getAttribute("cx") !== "NaN").to.be.true;
+				});
+
+				done(1);
+			}, 350);
+		}));
+
+		it("shouldn't throw error for indexed x axis, when is given out of range.", () => new Promise(done => {
+			chart = util.generate({
+				data: {
+					columns: [
+						["data2", 130, 100, 140, 200, 150, 50, 120, 100, 80, 90]
+					],
+				},
+				zoom: {
+					enabled: true
+				},
+				axis: {
+					y: {
+						show: false
+					}
+				}
+			});
+
+			chart.zoom([
+				4.908784864317814,
+				4.908812566017803
+			]);
+
+			setTimeout(() => {
+				chart.$.circles.each(function() {
+					expect(this.getAttribute("cx") !== "NaN").to.be.true;
+				});
+
+				done(1);
+			}, 350);
+		}));
 	});
 });

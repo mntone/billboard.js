@@ -40,13 +40,13 @@ export default class Options {
 			 * Set category text format function.
 			 * @name categoryFormat
 			 * @memberof plugin-tableview
-			 * @type {Function}
+			 * @type {function}
 			 * @returns {string}
 			 * @default function(v) { // will return formatted value according x Axis type }}
 			 * @example
 			 *   categoryFormat: "#table-holder"
 			 */
-			categoryFormat: function(v: Date|number|string): string {
+			categoryFormat: function(v: Date | number | string): string {
 				let category = v;
 
 				if (this.$$.axis.isCategorized()) {
@@ -101,7 +101,34 @@ export default class Options {
 			 * @example
 			 *   legendToggleUpdate: false
 			 */
-			updateOnToggle: true
+			updateOnToggle: true,
+
+			/**
+			 * Set how null value to be shown.
+			 * @name nullString
+			 * @memberof plugin-tableview
+			 * @type {string}
+			 * @default "-"
+			 * @example
+			 *   nullString: "N/A"
+			 */
+			nullString: "-",
+
+			/**
+			 * Set number format function.
+			 * @name numberFormat
+			 * @memberof plugin-tableview
+			 * @type {function}
+			 * @returns {string}
+			 * @default function(v) { // will return formatted value according to locale settings }
+			 * @example
+			 *   numberFormat: function(v) {
+			 *     return v.toLocaleString();
+			 *   }
+			 */
+			numberFormat: function(v: number): string {
+				return v.toLocaleString();
+			}
 		};
 	}
 }

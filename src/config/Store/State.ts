@@ -39,22 +39,55 @@ export default class State {
 			xAxisHeight: 0,
 
 			hasAxis: false,
+			hasFunnel: false,
 			hasRadar: false,
+			hasTreemap: false,
+			isCanvasMode: false,
+			canvasShape: null,
+			canvasFocusKey: <string | null>null,
+			canvasSubchartBrushDragging: false,
+			canvasSubchartBrushMode: <"select" | "move" | "resize-start" | "resize-end" | null>null,
+			canvasSubchartBrushStart: <number | null>null,
+			canvasSubchartBrushOrigin: <[number, number] | null>null,
+			canvasSubchartBrushMoved: false,
+			canvasFlowFrame: <number | null>null,
+			canvasFlowFinish: <(() => void) | null>null,
+			canvasFocusMainRedraw: false,
+
+			// for data CSS rule index (used when boost.useCssRule is true)
+			cssRule: {},
+
+			// Data loading state (used in scale calculation)
+			loading: <"append" | "load" | undefined>undefined,
+
+			// Zoom/subchart domain (different from current.domain which is for rendering)
+			domain: <number[] | undefined>undefined,
 
 			current: {
+				// current domain value. Assigned when is zoom is called
+				domain: undefined,
+
 				// chart whole dimension
 				width: 0,
 				height: 0,
 				dataMax: 0,
 
-				maxTickWidths: {
-					x: {size: 0, ticks: <number[]> [], clipPath: 0, domain: ""},
-					y: {size: 0, domain: ""},
-					y2: {size: 0, domain: ""}
+				maxTickSize: {
+					x: {
+						width: 0,
+						height: 0,
+						ticks: <(number | string)[]>[],
+						clipPath: 0,
+						domain: ""
+					},
+					y: {width: 0, height: 0, domain: ""},
+					y2: {width: 0, height: 0, domain: ""}
 				},
 
 				// current used chart type list
-				types: <string[]> [],
+				types: <string[]>[],
+				needle: undefined, // arc needle current value
+				zoomDomain: null // zoomed domain value
 			},
 
 			// legend
@@ -66,6 +99,16 @@ export default class State {
 			legendItemWidth: 0,
 			legendItemHeight: 0,
 			legendHasRendered: false,
+			canvasInlineStyle: {
+				minHeight: ""
+			},
+			canvasSelection: new Set<string>(),
+			canvasSelectionDragStart: <number[] | null>null,
+			canvasSelectionDragIncluded: new Set<string>(),
+			canvasSelectionDragging: false,
+			canvasSelectionDragMoved: false,
+			canvasSelectionDragMoveHandler: null,
+			canvasSelectionDragEndHandler: null,
 
 			eventReceiver: {
 				currentIdx: -1, // current event interaction index
@@ -107,7 +150,7 @@ export default class State {
 				pathGrid: ""
 			},
 
-			// status
+			// state
 			event: null, // event object
 			dragStart: null,
 			dragging: false,
@@ -124,28 +167,61 @@ export default class State {
 			hasPositiveValue: true,
 
 			orgAreaOpacity: "0.2",
+			orgConfig: {}, // user original genration config
 
-			// ID strings
-			hiddenTargetIds: <string[]> [],
-			hiddenLegendIds: <string[]> [],
-			focusedTargetIds: <string[]> [],
-			defocusedTargetIds: <string[]> [],
+			// ID strings (Set for O(1) lookup — see isTargetToShow, classFocused, etc.)
+			hiddenTargetIds: new Set<string>(),
+			hiddenLegendIds: new Set<string>(),
+			focusedTargetIds: new Set<string>(),
+			defocusedTargetIds: new Set<string>(),
 
 			// value for Arc
 			radius: 0,
-			innerRadius: <{[key: string]: number}|number> 0,
-			outerRadius: <{[key: string]: number}|number|undefined> undefined,
+			innerRadius: <Record<string, number> | number>0,
+			outerRadius: <Record<string, number> | number | undefined>undefined,
 			innerRadiusRatio: 0,
 			gaugeArcWidth: 0,
 			radiusExpanded: 0,
 
 			// xgrid attribute
 			xgridAttr: {
-				x1: <number | null> null,
-				x2: <number | null> null,
-				y1: <number | null> null,
-				y2: <number | null> null
-			}
+				x1: <number | null>null,
+				x2: <number | null>null,
+				y1: <number | null>null,
+				y2: <number | null>null
+			},
+
+			// RAF batching for zoom/drag interactions
+			pendingRaf: <number | null>null,
+			rafBatchQueue: <Array<() => void>>[],
+
+			// Dirty flags for selective redraw
+			dirty: {
+				data: false, // data changed (load/unload)
+				visibility: false, // show/hide toggled
+				size: false // dimensions changed
+			},
+
+			// Performance: generation counters for cache invalidation
+			redrawGeneration: 0, // increments every redraw (for per-redraw caches)
+			dataGeneration: 0, // increments on data/visibility changes (for data-dependent caches)
+
+			// Performance: cached values for reuse within redraw cycle
+			_targetsToShow: <any[] | null>null,
+			_cachedDrawShape: <any>null,
+			_canvasVisibleRangeCache: <Map<string, any> | null>null,
+			_canvasXDataTickCache: <any>null,
+			_canvasXTickValuesCache: <Map<string, any> | null>null,
+			_eventRectFingerprint: <string | null>null,
+
+			// Performance: throttle tooltip position updates on mousemove
+			_lastTooltipMouse: <number[] | null>null,
+
+			// Performance: cached grid focus D3 selection
+			_gridFocusEl: <any>null,
+
+			// Performance: generateClass() result cache (series IDs are fixed per chart)
+			generateClassCache: new Map<string, string>()
 		};
 	}
 }

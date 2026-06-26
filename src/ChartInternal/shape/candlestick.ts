@@ -3,25 +3,19 @@
  * billboard.js project is licensed under the MIT license
  */
 import {select as d3Select} from "d3-selection";
-import {$CANDLESTICK, $COMMON} from "../../config/classes";
-import {getRandom, isArray, isNumber, isObject} from "../../module/util";
-
-type CandlestickData = {
-	open: number;
-	high: number;
-	low: number;
-	close: number;
-	volume?: number;
-}
+import {$CANDLESTICK} from "../../config/classes";
+import {getRandom, isObject} from "../../module/util";
+import shapeCandlestickCommon from "./core/candlestick";
+import {initShapeElement, updateTargetsForShape} from "./shape";
 
 export default {
-	initCandlestick(): void {
-		const {$el} = this;
+	...shapeCandlestickCommon,
 
-		$el.candlestick = $el.main.select(`.${$COMMON.chart}`)
-			// should positioned at the beginning of the shape node to not overlap others
-			.append("g")
-			.attr("class", $CANDLESTICK.chartCandlesticks);
+	initCandlestick(): void {
+		initShapeElement.call(this, {
+			elKey: "candlestick",
+			className: $CANDLESTICK.chartCandlesticks
+		});
 	},
 
 	/**
@@ -31,23 +25,15 @@ export default {
 	 * @private
 	 */
 	updateTargetsForCandlestick(targets): void {
-		const $$ = this;
-		const {$el} = $$;
-		const classChart = $$.getChartClass("Candlestick");
-		const classFocus = $$.classFocus.bind($$);
-
-		if (!$el.candlestick) {
-			$$.initCandlestick();
-		}
-
-		const mainUpdate = $$.$el.main.select(`.${$CANDLESTICK.chartCandlesticks}`)
-			.selectAll(`.${$CANDLESTICK.chartCandlestick}`)
-			.data(targets)
-			.attr("class", d => classChart(d) + classFocus(d));
-
-		mainUpdate.enter().append("g")
-			.attr("class", classChart)
-			.style("pointer-events", "none");
+		updateTargetsForShape.call(this, targets, {
+			type: "Candlestick",
+			elKey: "candlestick",
+			containerClass: $CANDLESTICK.chartCandlesticks,
+			itemClass: $CANDLESTICK.chartCandlestick,
+			initFn: this.initCandlestick,
+			withFocus: false,
+			withStyles: false
+		}).style("pointer-events", "none");
 	},
 
 	/**
@@ -79,10 +65,6 @@ export default {
 		candlestickEnter.append("line");
 		candlestickEnter.append("path");
 
-		if (!$root.candlestick) {
-			$root.candlestick = {};
-		}
-
 		$root.candlestick = candlestick.merge(candlestickEnter)
 			.style("opacity", initialOpacity);
 	},
@@ -91,7 +73,7 @@ export default {
 	 * Get draw function
 	 * @param {object} indices Indice data
 	 * @param {boolean} isSub Subchart draw
-	 * @returns {Function}
+	 * @returns {function}
 	 * @private
 	 */
 	generateDrawCandlestick(indices, isSub) {
@@ -130,17 +112,19 @@ export default {
 
 			// set line position
 			const line = g.select("line");
-			const pos = isRotated ? {
-				x1: points[2][1],
-				x2: points[2][2],
-				y1: points[2][0],
-				y2: points[2][0]
-			} : {
-				x1: points[2][0],
-				x2: points[2][0],
-				y1: points[2][1],
-				y2: points[2][2]
-			};
+			const pos = isRotated ?
+				{
+					x1: points[2][1],
+					x2: points[2][2],
+					y1: points[2][0],
+					y2: points[2][0]
+				} :
+				{
+					x1: points[2][0],
+					x2: points[2][0],
+					y1: points[2][1],
+					y2: points[2][2]
+				};
 
 			for (const x in pos) {
 				line.attr(x, pos[x]);
@@ -149,73 +133,8 @@ export default {
 	},
 
 	/**
-	 * Generate shape drawing points
-	 * @param {object} indices Indice data
-	 * @param {boolean} isSub Subchart draw
-	 * @returns {Function}
-	 */
-	generateGetCandlestickPoints(indices, isSub = false): (d, i) => number[][] {
-		const $$ = this;
-		const {config} = $$;
-
-		const axis = isSub ? $$.axis.subX : $$.axis.x;
-		const targetsNum = $$.getIndicesMax(indices) + 1;
-		const barW = $$.getBarW("candlestick", axis, targetsNum);
-		const x = $$.getShapeX(barW, indices, !!isSub);
-		const y = $$.getShapeY(!!isSub);
-		const shapeOffset = $$.getShapeOffset($$.isBarType, indices, !!isSub);
-		const yScale = $$.getYScaleById.bind($$);
-
-		return (d, i) => {
-			const y0 = yScale.call($$, d.id, isSub)($$.getShapeYMin(d.id));
-			const offset = shapeOffset(d, i) || y0; // offset is for stacked bar chart
-			const width = isNumber(barW) ? barW : barW[d.id] || barW._$width;
-			const value = $$.getCandlestickData(d);
-			let points;
-
-			if (value) {
-				const posX = {
-					start: x(d),
-					end: 0
-				};
-
-				posX.end = posX.start + width;
-
-				const posY = {
-					start: y(value.open),
-					end: y(value.close)
-				};
-				const posLine = {
-					x: posX.start + (width / 2),
-					high: y(value.high),
-					low: y(value.low)
-				};
-
-				// fix posY not to overflow opposite quadrant
-				if (config.axis_rotated && (
-					(d.value > 0 && posY.start < y0) || (d.value < 0 && y0 < posY.start)
-				)) {
-					posY.start = y0;
-				}
-
-				posY.start -= (y0 - offset);
-
-				points = [
-					[posX.start, posY.start],
-					[posX.end, posY.end],
-					[posLine.x, posLine.low, posLine.high]
-				];
-			} else {
-				points = [[0, 0], [0, 0], [0, 0, 0]];
-			}
-
-			return points;
-		};
-	},
-
-	/**
 	 * Redraw function
-	 * @param {Function} drawFn Retuned functino from .generateDrawCandlestick()
+	 * @param {function} drawFn Retuned functino from .generateDrawCandlestick()
 	 * @param {boolean} withTransition With or without transition
 	 * @param {boolean} isSub Subchart draw
 	 * @returns {Array}
@@ -223,7 +142,7 @@ export default {
 	redrawCandlestick(drawFn, withTransition?: boolean, isSub = false) {
 		const $$ = this;
 		const {$el, $T} = $$;
-		const {candlestick} = (isSub ? $el.subchart : $el);
+		const {candlestick} = isSub ? $el.subchart : $el;
 		const rand = getRandom(true);
 
 		return [
@@ -235,34 +154,5 @@ export default {
 				})
 				.style("opacity", null)
 		];
-	},
-
-	/**
-	 * Get candlestick data as object
-	 * @param {object} param Data object
-	 * @param {Array|object} param.value Data value
-	 * @returns {object|null} Converted data object
-	 * @private
-	 */
-	getCandlestickData({value}): CandlestickData | null {
-		let d;
-
-		if (isArray(value)) {
-			const [open, high, low, close, volume = false] = value;
-
-			d = {open, high, low, close};
-
-			if (volume !== false) {
-				d.volume = volume;
-			}
-		} else if (isObject(value)) {
-			d = {...value};
-		}
-
-		if (d) {
-			d._isUp = d.close >= d.open;
-		}
-
-		return d || null;
 	}
 };

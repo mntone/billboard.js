@@ -2,7 +2,7 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {bb} from "./bb";
+import {bb} from "./bb.js";
 
 export default bb;
 export as namespace bb;
@@ -15,24 +15,36 @@ export {
 	areaSpline,
 	areaSplineRange,
 	areaStep,
+	areaStepRange,
 	bar,
 	bubble,
 	candlestick,
 	donut,
+	funnel,
 	gauge,
 	line,
 	pie,
+	polar,
 	radar,
 	scatter,
 	spline,
 	step,
+	treemap,
 
 	// interaction modules
 	selection,
 	subchart,
-	zoom
-} from "./bb";
-export * from "./axis";
-export * from "./chart";
-export * from "./options";
-export * from "./types";
+	zoom,
+
+	// optional API modules
+	category,
+	exportApi,
+	flow,
+	grid,
+	regions
+} from "./bb.js";
+export * from "./axis.js";
+export * from "./chart.js";
+export * from "./options.js";
+export * from "./options.shape.js";
+export * from "./types.js";

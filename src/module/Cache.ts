@@ -2,8 +2,8 @@
  * Copyright (c) 2017 ~ present NAVER Corp.
  * billboard.js project is licensed under the MIT license
  */
-import {isValue, toArray} from "./util";
-import {DataRow} from "../../types/types";
+import type {DataRow} from "../../types/types";
+import {isString} from "./util";
 
 /**
  * Constant for cache key
@@ -12,31 +12,45 @@ import {DataRow} from "../../types/types";
  */
 export const KEY = {
 	bubbleBaseLength: "$baseLength",
+	bubbleMaxValue: "$bubbleMaxValue",
 	colorPattern: "__colorPattern__",
 	dataMinMax: "$dataMinMax",
 	dataTotalSum: "$dataTotalSum",
 	dataTotalPerIndex: "$totalPerIndex",
+	domainMinMax: "$domainMinMax",
+	filteredTargets: "$filteredTargets",
+	filteredNullish: "$filteredNullish",
+	svgLeft: "$svgLeft",
+	valuesByX: "$valuesByX",
 	legendItemTextBox: "legendItemTextBox",
+	legendItemMap: "$legendItemMap",
 	radarPoints: "$radarPoints",
+	radarTextWidth: "$radarTextWidth",
 	setOverOut: "setOverOut",
 	callOverOutForTouch: "callOverOutForTouch",
-	textRect: "textRect"
+	textRect: "textRect",
+	shapeOffset: "$shapeOffset",
+	maxTickSize: "$maxTickSize",
+	maxDataCountTarget: "$maxDataCountTarget",
+	valuesXIndexMap: "$valuesXIndexMap"
 };
 
 export default class Cache {
-	private cache = {};
+	private cache = new Map<string, any>();
 
 	/**
 	 * Add cache
 	 * @param {string} key Cache key
-	 * @param {*} value Value to be stored
+	 * @param {string|number|boolean|object|Array|function|null|undefined} value Value to be stored
 	 * @param {boolean} isDataType Weather the cache is data typed '{id:'data', id_org: 'data', values: [{x:0, index:0,...}, ...]}'
-	 * @returns {*} Added data value
+	 * @returns {string|number|boolean|object|Array|function|null|undefined} Added data value
 	 * @private
 	 */
 	add(key: string, value, isDataType = false) {
-		this.cache[key] = isDataType ? this.cloneTarget(value) : value;
-		return this.cache[key];
+		const v = isDataType ? this.cloneTarget(value) : value;
+
+		this.cache.set(key, v);
+		return v;
 	}
 
 	/**
@@ -45,47 +59,74 @@ export default class Cache {
 	 * @private
 	 */
 	remove(key: string | string[]) {
-		toArray(key).forEach(v => delete this.cache[v]);
+		const keys = isString(key) ? [key] : key;
+
+		for (let i = 0; i < keys.length; i++) {
+			this.cache.delete(keys[i]);
+		}
 	}
 
 	/**
 	 * Get cahce
 	 * @param {string|Array} key Cache key
 	 * @param {boolean} isDataType Weather the cache is data typed '{id:'data', id_org: 'data', values: [{x:0, index:0,...}, ...]}'
-	 * @returns {*}
+	 * @returns {string|number|boolean|object|Array|function|null} Cached value
 	 * @private
 	 */
-	get(key: string, isDataType = false): any | null {
-		if (isDataType) {
+	get(key: string | string[], isDataType = false): any | null {
+		// when is isDataType, key should be string array
+		if (isDataType && Array.isArray(key)) {
 			const targets: any[] = [];
 
 			for (let i = 0, id; (id = key[i]); i++) {
-				if (id in this.cache) {
-					targets.push(this.cloneTarget(this.cache[id]));
+				if (this.cache.has(id)) {
+					targets.push(this.cache.get(id));
 				}
 			}
 
 			return targets;
 		} else {
-			const value = this.cache[key];
-
-			return isValue(value) ? value : null;
+			// use .has() so stored falsy values (false, "", 0) aren't reported as a miss
+			return this.cache.has(key as string) ? this.cache.get(key as string) : null;
 		}
+	}
+
+	/**
+	 * Check if cache key exists
+	 * @param {string} key Cache key
+	 * @returns {boolean} True if key exists in cache
+	 * @private
+	 */
+	has(key: string): boolean {
+		return this.cache.has(key);
+	}
+
+	/**
+	 * Get all cache keys
+	 * @returns {string[]} Array of cache keys
+	 * @private
+	 */
+	getKeys(): string[] {
+		return Array.from(this.cache.keys());
 	}
 
 	/**
 	 * Reset cached data
 	 * @param {boolean} all true: reset all data, false: reset only '$' prefixed key data
+	 * @param {string[]} excludePrefixes Keys starting with any of these prefixes are preserved
 	 * @private
 	 */
-	reset(all?: boolean): void {
-		const $$ = this;
-
-		for (const x in $$.cache) {
-			// reset the prefixed '$' key(which is internal use data) only.
-			if (all || /^\$/.test(x)) {
-				$$.cache[x] = null;
-			}
+	reset(all?: boolean, excludePrefixes?: string[]): void {
+		if (all) {
+			this.cache.clear();
+		} else {
+			this.cache.forEach((_, x) => {
+				if (/^\$/.test(x)) {
+					if (!excludePrefixes?.some(prefix => x.startsWith(prefix))) {
+						this.cache.delete(x);
+					}
+				}
+			});
 		}
 	}
 
@@ -95,7 +136,6 @@ export default class Cache {
 	 * @returns {object}
 	 * @private
 	 */
-	// eslint-disable-next-line camelcase
 	cloneTarget(target: DataRow): DataRow {
 		return {
 			id: target.id,

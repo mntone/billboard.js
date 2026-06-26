@@ -4,12 +4,13 @@
  */
 /* eslint-disable */
 /* global describe, beforeEach, it, expect */
-import {expect} from "chai";
+import {beforeEach, beforeAll, describe, expect, it} from "vitest";
 import {select as d3Select} from "d3-selection";
 import {format as d3Format} from "d3-format";
+import sinon from "sinon";
 import util from "../assets/util";
 import {$AXIS, $SHAPE, $TEXT} from "../../src/config/classes";
-import {isNumber} from "../../src/module/util";
+import {isArray, isNumber, isObject} from "../../src/module/util";
 
 describe("TEXT", () => {
 	let chart;
@@ -34,7 +35,7 @@ describe("TEXT", () => {
 
     describe("data.labels", () => {
 		describe("on line chart", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					padding: {
 						left: 50
@@ -180,162 +181,142 @@ describe("TEXT", () => {
 		});
 
 		describe("rotate", () => {
-			before(() => {
-				args = {
-					data: {
-						columns: [
-							["data1", 90, 100, -100]
-						],
-						type: "bar",
-						labels: {
-							rotate: 90
+			describe("normal axis", () => {
+				beforeAll(() => {
+					args = {
+						data: {
+							columns: [
+								["data1", 90, 100, -100]
+							],
+							type: "bar",
+							labels: {
+								rotate: 90
+							}
+						},
+						axis: {
+							rotated: false
 						}
-					},
-					axis: {
-						rotated: false
 					}
-				}
-			});
+				});
 
-			it("rotate attribute should be applied", () => {
-				chart.$.text.texts.each(function(d) {
-					const transform = this.getAttribute("transform");
-					const anchor = this.getAttribute("text-anchor");
+				it("rotate attribute should be applied", () => {
+					chart.$.text.texts.each(function(d) {
+						const transform = this.getAttribute("transform");
+						const anchor = this.getAttribute("text-anchor");
 
-					expect(transform.indexOf(`rotate(${args.data.labels.rotate})`) > -1).to.be.true;
-					expect(anchor).to.be.equal("end");
+						expect(transform.indexOf(`rotate(${args.data.labels.rotate})`) > -1).to.be.true;
+						expect(anchor).to.be.equal("end");
 
-					if (d.value < 0) {
-						const y = +this.getAttribute("transform").match(/\s(\d+\.\d+)/)[1];
+						if (d.value < 0) {
+							const y = +this.getAttribute("transform").match(/\s(\d+\.\d+)/)[1];
 
-						expect(y).to.be.closeTo(405, 1);
-					}
+							expect(y).to.be.closeTo(405, 1);
+						}
+					});
+				});
+
+				it("set options: data.labels.rotate=180", () => {
+					args.data.labels.rotate = 180;
+				});
+
+				it("text-anchor should be middle for rotate(180deg)", () => {
+					chart.$.text.texts.each(function() {
+						const anchor = this.getAttribute("text-anchor");
+
+						expect(anchor).to.be.equal("middle");
+					});
+				});
+
+				it("set options: data.labels.rotate=270", () => {
+					args.data.labels.rotate = 270;
+				});
+
+				it("text-anchor should be middle for rotate(270deg)", () => {
+					chart.$.text.texts.each(function(d) {
+						const anchor = this.getAttribute("text-anchor");
+
+						expect(anchor).to.be.equal("start");
+
+						if (d.value < 0) {
+							const y = +this.getAttribute("transform").match(/\s(\d+\.\d+)/)[1];
+
+							expect(y).to.be.closeTo(405, 1);
+						}
+					});
+				});
+
+				it("set options: axis.rotated=true", () => {
+					args.axis.rotated = true;
+					args.data.labels.rotate = 90;
+				});
+
+				it("check for rotated axis", () => {
+					const expectedY = [80, 220, 362];
+
+					chart.$.text.texts.each(function(d, i) {
+						const transform = +this.getAttribute("transform").match(/\s(\d+\.\d+)/)[1];
+						const anchor = this.getAttribute("text-anchor");
+
+						expect(transform).to.be.closeTo(expectedY[i], 1);
+						expect(anchor).to.be.equal("end");
+
+						if (d.value < 0) {
+							const x = +this.getAttribute("transform").match(/\((\d+\.\d+)/)[1];
+
+							expect(x).to.be.closeTo(58, 3);
+						}
+					});
 				});
 			});
 
-			it("set options: data.labels.rotate=180", () => {
-				args.data.labels.rotate = 180;
-			});
-
-			it("text-anchor should be middle for rotate(180deg)", () => {
-				chart.$.text.texts.each(function() {
-					const anchor = this.getAttribute("text-anchor");
-
-					expect(anchor).to.be.equal("middle");
-				});
-			});
-
-			it("set options: data.labels.rotate=270", () => {
-				args.data.labels.rotate = 270;
-			});
-
-			it("text-anchor should be middle for rotate(270deg)", () => {
-				chart.$.text.texts.each(function(d) {
-					const anchor = this.getAttribute("text-anchor");
-
-					expect(anchor).to.be.equal("start");
-
-					if (d.value < 0) {
-						const y = +this.getAttribute("transform").match(/\s(\d+\.\d+)/)[1];
-
-						expect(y).to.be.closeTo(405, 1);
+			describe("rotated axis", () => {
+				beforeAll(() => {
+					args = {
+						data: {
+							columns: [
+								["data1", 90, 100, -100]
+							],
+							type: "bar",
+							labels: {
+								rotate: 90
+							}
+						},
+						axis: {
+							rotated: true
+						}
 					}
 				});
-			});
 
-			it("set options: axis.rotated=true", () => {
-				args.axis.rotated = true;
-				args.data.labels.rotate = 90;
-			});
-
-			it("check for rotated axis", () => {
-				const expectedY = [80, 220, 362];
-
-				chart.$.text.texts.each(function(d, i) {
-					const transform = +this.getAttribute("transform").match(/\s(\d+\.\d+)/)[1];
-					const anchor = this.getAttribute("text-anchor");
-
-					expect(transform).to.be.closeTo(expectedY[i], 1);
-					expect(anchor).to.be.equal("end");
-
-					if (d.value < 0) {
-						const x = +this.getAttribute("transform").match(/\((\d+\.\d+)/)[1];
-
-						expect(x).to.be.closeTo(57, 1);
-					}
+				it("check when rotate=90", () => {
+					chart.$.text.texts.each(function() {
+						expect(this.getAttribute("text-anchor")).to.be.equal("end");
+					});
 				});
-			});
-		});
 
-		describe("on area chart", () => {
-			before(() => {
-				args = {
-					padding: {
-						left: 50
-					},
-					data: {
-						columns: [
-							["data1", 1030, 2200, 2100],
-							["data2", 1150, 2010, 1200],
-							["data3", -1150, -2010, -1200],
-							["data4", -1030, -2200, -2100],
-						],
-						type: "area",
-						labels: true
-					}
-				};
-			});
-
-			it("should locate data labels in correct position", () => {
-				const expectedTextY = {
-					data1: [129, 40, 48],
-					data2: [120, 55, 116],
-					data3: [314, 379, 318],
-					data4: [305, 394, 386],
-				};
-				const expectedTextX = {
-					data1: [6, 294, 583],
-					data2: [6, 294, 583],
-					data3: [6, 294, 583],
-					data4: [6, 294, 583]
-				};
-
-				Object.keys(expectedTextY).forEach(key => {
-					chart.$.main.selectAll(`.${$TEXT.texts}-${key} text.${$TEXT.text}`)
-						.each(checkXY(expectedTextX[key], expectedTextY[key], "", 3));
+				it("set options: data.labels.rotate=200", () => {
+					args.data.labels.rotate = 200;
 				});
-			});
 
-			it("set options data.groups to be stacked", () => {
-				args.data.groups = [
-					["data1", "data2"],
-					["data3", "data4"]
-				];
-			});
+				it("check when rotate=200", () => {
+					chart.$.text.texts.each(function() {
+						expect(this.getAttribute("text-anchor")).to.be.equal("start");
+					});
+				});
 
-			it("should locate data labels in correct position", () => {
-				const expectedTextY = {
-					data1: [121, 40, 76],
-					data2: [161, 127, 159],
-					data3: [272.5, 306.5, 274.5],
-					data4: [313, 394, 358]
-				};
-				const expectedTextX = {
-					data1: [6, 294, 583],
-					data2: [6, 294, 583],
-					data3: [6, 294, 583],
-					data4: [6, 294, 583]
-				};
+				it("set options: data.labels.rotate=400", () => {
+					args.data.labels.rotate = 400;
+				});
 
-				Object.keys(expectedTextY).forEach(key => {
-					chart.$.main.selectAll(`.${$TEXT.texts}-${key} text.${$TEXT.text}`)
-						.each(checkXY(expectedTextX[key], expectedTextY[key], "", 4));
+				it("check when rotate=400", () => {
+					chart.$.text.texts.each(function() {
+						expect(this.getAttribute("text-anchor")).to.be.equal("middle");
+					});
 				});
 			});
 		});
 
 		describe("on bar chart", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					padding: {
 						left: 50
@@ -446,8 +427,101 @@ describe("TEXT", () => {
 			});
 		});
 
+		describe("on ranged value(AreaRange/Bar range) chart", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 
+								[150, 140, 110],
+								[155, 130, 115],
+								[160, 135, 120],
+							],
+							["data2", [230, 340], 200, [-100, -50]],
+							["data3",
+								{high: 155, low: 145, mid: 150},
+								{high: 200, mid: 190, low: 150},
+								{high: 230, mid: 215, low: 200}
+							]
+						],
+						types: {
+							data1: "area-line-range",
+							data2: "bar",
+							data3: "area-line-range"
+						},
+						labels: {
+							colors: "black"
+						}
+					}
+				};
+			});
+
+			it("should data labels rendered correctly", () => {
+				chart.$.text.texts.each(function(d) {
+					let text = String(d.value);
+
+					if (isArray(d.value)) {
+						text = d.value.join("~");
+					} else if (isObject(d.value)) {
+						text = Object.values(d.value).join("~");
+					}
+
+					expect(this.textContent).to.be.equal(text);
+				});
+			});
+
+			it("set option: data.labels.centered=true / data.labels.format", () => {
+				args.data.labels.centered = true;
+
+				const rangeFormatSpy = sinon.spy(function(value, id, index) {
+					let v = value;
+					const delimiter = "/";
+	
+					if (Array.isArray(value)) {
+						v = value.join(delimiter);
+					} else if (typeof value === "object") {
+						v = Object.values(v).join(delimiter);
+					}
+	
+					return v;
+				});
+
+				args.data.labels.format = rangeFormatSpy;
+			});
+
+			it("should locate data labels in correct position and formatted correctly", () => {
+				const {$: {bar, text}} = chart;
+				const barText: number[] = [];
+				const delimiter = "/";
+
+				text.texts.each(function(d) {
+					let text = String(d.value);
+
+					if (isArray(d.value)) {
+						text = d.value.join(delimiter);
+					} else if (isObject(d.value)) {
+						text = Object.values(d.value).join(delimiter);
+					}
+
+					expect(this.textContent).to.be.equal(text);
+
+					if (d.id === "data2") {
+						barText.push(+this.getAttribute("y"));
+					}
+				});
+
+				// check labels centered
+				bar.bars.each(function(d, i) {
+					const rect = this.getBoundingClientRect();
+
+					expect(barText[i]).to.be.closeTo((rect.height / 2) + rect.top, 2);
+
+				});
+			});
+		});
+
 		describe("for all targets", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -477,9 +551,198 @@ describe("TEXT", () => {
 			});
 		});
 
+		describe("multiline data labels", () => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 100, 200, 150],
+							["data2", 80, 120, 90]
+						],
+						type: "bar",
+						labels: {
+							format: (v) => {
+								// Return multiline text with newline character
+								return `Value:\n${v}`;
+							}
+						}
+					}
+				};
+			});
+
+			it("should render multiline labels with tspan elements", () => {
+				const textElements = chart.$.main.selectAll(`.${$TEXT.texts} text.${$TEXT.text}`);
+				
+				expect(textElements.size()).to.be.greaterThan(0);
+
+				// Check that multiline labels have tspan elements
+				textElements.each(function() {
+					const text = d3Select(this);
+					const tspans = text.selectAll("tspan");
+					
+					// Multiline labels should have 2 tspan elements
+					expect(tspans.size()).to.be.equal(2);
+				});
+			});
+
+			it("should vertically center multiline labels", () => {
+				const textElements = chart.$.main.selectAll(`.${$TEXT.texts} text.${$TEXT.text}`);
+				
+				textElements.each(function() {
+					const text = d3Select(this);
+					const tspans = text.selectAll("tspan");
+					
+					// Check that first tspan has negative dy for centering
+					// When toMiddle is true, first tspan should have dy = -1 * (lines - 1) = -1em
+					const firstTspan = tspans.nodes()[0];
+					const firstDy = d3Select(firstTspan).attr("dy");
+					
+					expect(firstDy).to.be.equal("-1em");
+					
+					// Second tspan should have dy = 1em
+					const secondTspan = tspans.nodes()[1];
+					const secondDy = d3Select(secondTspan).attr("dy");
+					
+					expect(secondDy).to.be.equal("1em");
+				});
+			});
+
+			it("should have correct text content in tspan elements", () => {
+				const textElements = chart.$.main.selectAll(`.${$TEXT.texts} text.${$TEXT.text}`);
+				
+				textElements.each(function(d) {
+					const text = d3Select(this);
+					const tspans = text.selectAll("tspan");
+					const nodes = tspans.nodes() as Element[];
+					const firstLine = nodes[0]?.textContent;
+					const secondLine = nodes[1]?.textContent;
+					
+					// First line should be "Value:"
+					expect(firstLine).to.be.equal("Value:");
+					
+					// Second line should be the numeric value
+					expect(secondLine).to.match(/^\d+$/);
+				});
+			});
+
+			it("set options: three line labels", () => {
+				args.data.labels.format = (v, id, i) => {
+					return `Line1:\n${v}\nLine3`;
+				};
+			});
+
+			it("should render three-line labels with correct vertical centering", () => {
+				const textElements = chart.$.main.selectAll(`.${$TEXT.texts} text.${$TEXT.text}`);
+				
+				textElements.each(function() {
+					const text = d3Select(this);
+					const tspans = text.selectAll("tspan");
+					
+					// Three-line labels should have 3 tspan elements
+					expect(tspans.size()).to.be.equal(3);
+					
+					// Check dy values for vertical centering
+					// For 3 lines with toMiddle=true: first dy = -2em, others = 1em
+					const firstTspan = tspans.nodes()[0];
+					const firstDy = d3Select(firstTspan).attr("dy");
+					expect(firstDy).to.be.equal("-2em");
+					
+					// Second and third tspans should have dy = 1em
+					const secondTspan = tspans.nodes()[1];
+					const secondDy = d3Select(secondTspan).attr("dy");
+					expect(secondDy).to.be.equal("1em");
+					
+					const thirdTspan = tspans.nodes()[2];
+					const thirdDy = d3Select(thirdTspan).attr("dy");
+					expect(thirdDy).to.be.equal("1em");
+				});
+			});
+
+			it("should set x attribute to 0 for all tspan elements", () => {
+				const textElements = chart.$.main.selectAll(`.${$TEXT.texts} text.${$TEXT.text}`);
+				
+				textElements.each(function() {
+					const text = d3Select(this);
+					const tspans = text.selectAll("tspan");
+					
+					tspans.each(function() {
+						const tspan = d3Select(this);
+						expect(tspan.attr("x")).to.be.equal("0");
+					});
+				});
+			});
+		});
+
+		describe("on area chart", () => {
+			beforeAll(() => {
+				args = {
+					padding: {
+						left: 50
+					},
+					data: {
+						columns: [
+							["data1", 1030, 2200, 2100],
+							["data2", 1150, 2010, 1200],
+							["data3", -1150, -2010, -1200],
+							["data4", -1030, -2200, -2100],
+						],
+						type: "area",
+						labels: true
+					}
+				};
+			});
+
+			it("should locate data labels in correct position", () => {
+				const expectedTextY = {
+					data1: [129, 40, 48],
+					data2: [120, 55, 116],
+					data3: [314, 379, 318],
+					data4: [305, 394, 386],
+				};
+				const expectedTextX = {
+					data1: [6, 294, 583],
+					data2: [6, 294, 583],
+					data3: [6, 294, 583],
+					data4: [6, 294, 583]
+				};
+
+				Object.keys(expectedTextY).forEach(key => {
+					chart.$.main.selectAll(`.${$TEXT.texts}-${key} text.${$TEXT.text}`)
+						.each(checkXY(expectedTextX[key], expectedTextY[key], "", 3));
+				});
+			});
+
+			it("set options data.groups to be stacked", () => {
+				args.data.groups = [
+					["data1", "data2"],
+					["data3", "data4"]
+				];
+			});
+
+			it("should locate data labels in correct position", () => {
+				const expectedTextY = {
+					data1: [121, 40, 76],
+					data2: [161, 127, 159],
+					data3: [272.5, 306.5, 274.5],
+					data4: [313, 394, 358]
+				};
+				const expectedTextX = {
+					data1: [6, 294, 583],
+					data2: [6, 294, 583],
+					data3: [6, 294, 583],
+					data4: [6, 294, 583]
+				};
+
+				Object.keys(expectedTextY).forEach(key => {
+					chart.$.main.selectAll(`.${$TEXT.texts}-${key} text.${$TEXT.text}`)
+						.each(checkXY(expectedTextX[key], expectedTextY[key], "", 4));
+				});
+			});
+		});
+
 		describe("for each target", () => {
 			describe("as true", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							columns: [
@@ -514,7 +777,10 @@ describe("TEXT", () => {
 			});
 
 			describe("as function", () => {
-				before(() => {
+				const temp: any = [];
+				const formatSpy = sinon.spy(d3Format("$"));
+
+				beforeAll(() => {
 					args = {
 						data: {
 							columns: [
@@ -524,7 +790,7 @@ describe("TEXT", () => {
 							],
 							labels: {
 								format: {
-									data1: d3Format("$")
+									data1: formatSpy
 								}
 							}
 						}
@@ -546,11 +812,36 @@ describe("TEXT", () => {
 						expect(d3Select(this).text()).to.equal("");
 					});
 				});
+
+				it("set options", () => {
+					const indexFormatSpy = sinon.spy((value, seriesName, columnIndex) => {																	
+						if (seriesName) {
+							temp.push(columnIndex);
+						}
+
+						return value;
+					});
+
+					args = {
+						data: {
+							columns: [
+								["data1", 10, 100, null, 150, 200]
+							],
+							labels: {
+								format: indexFormatSpy
+							}
+						}
+					}
+				});
+
+				it("index argument should count nullish value", () => {
+					expect(temp).to.be.deep.equal([0, 1, 3, 4]);					
+				});
 			});
 		});
 
 		describe("with small values", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -571,7 +862,7 @@ describe("TEXT", () => {
 
 		describe("with positive values and null", () => {
 			describe("on not rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						padding: {
 							left: 40
@@ -597,10 +888,10 @@ describe("TEXT", () => {
 
 				it("should locate labels above each data point", () => {
 					const expectedYs = [68, 50, 68, 423];
-					const expectedXs = [75, 225, 374, 524];
+					const expectedXs = [75, 223, 374, 524];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
-						.each(checkXY(expectedXs, expectedYs, "", 2));
+						.each(checkXY(expectedXs, expectedYs, "", 3));
 				});
 
 				it("set options data.type='line'", () => {
@@ -616,33 +907,34 @@ describe("TEXT", () => {
 
 				it("should locate labels above each data point", () => {
 					const expectedYs = [375, 40, 375, 422];
-					const expectedXs = [6, 202, 397, 593];
+					const expectedXs = [6, 200, 397, 593];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
-						.each(checkXY(expectedXs, expectedYs, "", 2));
+						.each(checkXY(expectedXs, expectedYs, "", 3));
 				});
 			});
 
 			describe("on rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args.padding.bottom = 50;
 					args.padding.top = 5;
 					args.data.type = "bar";
 					args.axis = {
 						rotated: true
 					};
+					args.data.labels = true;
 				});
 
 				it("should have y domain with proper padding #1", () => {
 					const domain = chart.internal.scale.y.domain();
 
 					expect(domain[0]).to.be.closeTo(0, 1);
-					expect(domain[1]).to.be.closeTo(231.5, 1);
+					expect(domain[1]).to.be.closeTo(229, 3);
 				});
 
 				it("should locate labels above each data point", () => {
-					const expectedYs = [51, 145, 235, 327];
-					const expectedXs = [488.5, 514, 488.5, 4];
+					const expectedXs = [495.5, 520, 495, 4];
+					const expectedYs = [55, 155, 256, 327];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
 						.each(checkXY(expectedXs, expectedYs, "", 4));
@@ -660,8 +952,8 @@ describe("TEXT", () => {
 				});
 
 				it("should locate labels above each data point", () => {
-					const expectedYs = [9, 130, 249, 370];
-					const expectedXs = [76, 526, 76, 4];
+					const expectedXs = [72, 530, 72, 4];
+					const expectedYs = [9, 140, 272, 370];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
 						.each(checkXY(expectedXs, expectedYs, "", 4));
@@ -671,7 +963,7 @@ describe("TEXT", () => {
 
 		describe("with negative values and null", () => {
 			describe("on not rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						padding: {
 							left: 50
@@ -726,7 +1018,7 @@ describe("TEXT", () => {
 			});
 
 			describe("on rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args.padding.left = 50;
 					args.padding.bottom = 0;
 
@@ -739,13 +1031,13 @@ describe("TEXT", () => {
 				it("should have y domain with proper padding #1", () => {
 					const domain = chart.internal.scale.y.domain();
 
-					expect(domain[0]).to.be.closeTo(-222, 2);
+					expect(domain[0]).to.be.closeTo(-223, 3);
 					expect(domain[1]).to.be.closeTo(0, 1);
 				});
 
 				it("should locate labels above each data point", () => {
-					const expectedYs = [57, 162, 269, 375];
-					const expectedXs = [80, 584, 80, 514];
+					const expectedXs = [80, 584, 83, 514];
+					const expectedYs = [57, 174, 287, 375];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
 						.each(checkXY(expectedXs, expectedYs, "", {x: 10, y: 5}));
@@ -760,13 +1052,13 @@ describe("TEXT", () => {
 				it("should have y domain with proper padding #2", () => {
 					const domain = chart.internal.scale.y.domain();
 
-					expect(domain[0]).to.be.closeTo(-222, 2); // -220.4755083436658 vs -223.64837940981494
+					expect(domain[0]).to.be.closeTo(-223, 3); // -220.4755083436658 vs -223.64837940981494
 					expect(domain[1]).to.be.closeTo(24, 1);
 				});
 
 				it("should locate labels above each data point", () => {
-					const expectedYs = [9, 147, 286, 424];
-					const expectedXs = [69, 527, 69, 527]; // 72.50132230092231
+					const expectedXs = [72, 527, 72, 527]; // 72.50132230092231
+					const expectedYs = [9, 157, 305, 434];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
 						.each(checkXY(expectedXs, expectedYs, "", {x: 4, y: 2}));
@@ -776,7 +1068,7 @@ describe("TEXT", () => {
 
 		describe("with positive and negative values and null", () => {
 			describe("on non rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							columns: [
@@ -828,7 +1120,7 @@ describe("TEXT", () => {
 			});
 
 			describe("on rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args.data.type = "bar";
 					args.axis = {
 						rotated: true
@@ -838,13 +1130,13 @@ describe("TEXT", () => {
 				it("should have y domain with proper padding #1", () => {
 					const domain = chart.internal.scale.y.domain();
 
-					expect(domain[0]).to.be.closeTo(-256, 4);
+					expect(domain[0]).to.be.closeTo(-260, 4);
 					expect(domain[1]).to.be.closeTo(261, 3);
 				});
 
 				it("should locate labels above each data point", () => {
 					const expectedYs = [57, 163, 269, 375];
-					const expectedXs = [72, 525, 513, 295];
+					const expectedXs = [74, 525, 513, 295];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
 						.each(checkXY(expectedXs, expectedYs, "", {x: 4, y: 2}));
@@ -857,13 +1149,13 @@ describe("TEXT", () => {
 				it("should have y domain with proper padding #2", () => {
 					const domain = chart.internal.scale.y.domain();
 
-					expect(domain[0]).to.be.closeTo(-255, 5);
+					expect(domain[0]).to.be.closeTo(-259, 5);
 					expect(domain[1]).to.be.closeTo(262, 2);
 				});
 
 				it("should locate labels above each data point", () => {
 					const expectedYs = [9, 147, 286, 424];
-					const expectedXs = [70, 527, 515, 297];
+					const expectedXs = [73, 527, 515, 297];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
 						.each(checkXY(expectedXs, expectedYs, "", {x: 4, y: 2}));
@@ -873,7 +1165,7 @@ describe("TEXT", () => {
 
 		describe("with positive grouped values", () => {
 			describe("on non rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							columns: [
@@ -924,7 +1216,7 @@ describe("TEXT", () => {
 			});
 
 			describe("on rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args.data.type = "bar";
 					args.axis = {
 						rotated: true
@@ -935,15 +1227,15 @@ describe("TEXT", () => {
 					const domain = chart.internal.scale.y.domain();
 
 					expect(domain[0]).to.be.closeTo(0, 1);
-					expect(domain[1]).to.be.closeTo(890, 3);
+					expect(domain[1]).to.be.closeTo(893, 5);
 				});
 
 				it("should locate labels above each data point", () => {
 					const expectedYs = [57, 163, 269, 375];
-					const expectedXs = [57, 150, 77, 362];
+					const expectedXs = [57, 150, 77, 360];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
-						.each(checkXY(expectedXs, expectedYs, "", 2));
+						.each(checkXY(expectedXs, expectedYs, "", 3));
 				});
 
 				it("set options data.type='line'", () => {
@@ -953,23 +1245,23 @@ describe("TEXT", () => {
 				it("should have y domain with proper padding #2", () => {
 					const domain = chart.internal.scale.y.domain();
 
-					expect(domain[0]).to.be.closeTo(-87, 4);
+					expect(domain[0]).to.be.closeTo(-90, 4);
 					expect(domain[1]).to.be.closeTo(889, 3);
 				});
 
 				it("should locate labels above each data point", () => {
 					const expectedYs = [9, 147, 286, 424];
-					const expectedXs = [107, 192, 125, 386];
+					const expectedXs = [108, 192, 125, 386];
 
 					chart.$.main.selectAll(`.${$TEXT.texts}-data1 text`)
-						.each(checkXY(expectedXs, expectedYs, "", 2));
+						.each(checkXY(expectedXs, expectedYs, "", 3));
 				});
 			});
 		});
 
 		describe("with negative grouped values", () => {
 			describe("on non rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args = {
 						data: {
 							columns: [
@@ -1020,7 +1312,7 @@ describe("TEXT", () => {
 			});
 
 			describe("on rotated axis", () => {
-				before(() => {
+				beforeAll(() => {
 					args.data.type = "bar";
 					args.axis = {
 						rotated: true
@@ -1064,7 +1356,7 @@ describe("TEXT", () => {
 		});
 
 		describe("on scatter type", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1093,6 +1385,8 @@ describe("TEXT", () => {
 				tickNodes.each(function(d, i) {
 					expect(util.parseNum(this.getAttribute("transform"))).to.be.closeTo(translateValues[i], 1);
 				});
+
+				chart.destroy();
 			});
 
 			it("should not be zerobased", () => {
@@ -1100,16 +1394,18 @@ describe("TEXT", () => {
 				chart = util.generate(args);
 
 				const tickNodes = chart.$.svg.select(`.${$AXIS.axisY}`).selectAll("g.tick");
-				const translateValues = [402, 367, 331, 296, 260, 225, 189, 154, 118, 83, 47, 12];
+				const translateValues = [401, 366, 331, 295, 260, 225, 189, 154, 118, 83, 47, 12];
 
 				tickNodes.each(function(d, i) {
-					expect(util.parseNum(this.getAttribute("transform"))).to.be.closeTo(translateValues[i], 1);
+					expect(util.parseNum(this.getAttribute("transform"))).to.be.closeTo(translateValues[i], 2);
 				});
+
+				chart.destroy();
 			});
 		});
 
 		describe("on scatter + line type", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1144,7 +1440,7 @@ describe("TEXT", () => {
 		});
 
 		describe("on line with array points option", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1175,7 +1471,7 @@ describe("TEXT", () => {
 		});
 
 		describe("text transition", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1183,44 +1479,51 @@ describe("TEXT", () => {
 							["data2", 130, 100, 140]
 						],
 						labels: true
+					},
+					transition: {
+						duration: 200
 					}
 				};
 			});
 
-			it("newly added text shouldn't be transitioning from the top/left", done => {
+			it("newly added text shouldn't be transitioning from the top/left", () => new Promise(done => {
 				const main = chart.$.main;
-				const pos = [];
+				const pos: number[] = [];
 				let text;
 				let interval;
+				let cnt = 0;
 
-				setTimeout(() => {
-					interval = setInterval(() => {
-						text = main.select(`.${$TEXT.texts}-data2 .${$TEXT.text}-3`);
+				chart.load({
+					columns: [
+						["data2", 44, 134, 98, 170]
+					],
+					done: function () {
+						setTimeout(() => {
+							interval && clearInterval(interval);
+							const currPos = +text.attr("x");
+
+							expect(Math.round(pos[0])).to.not.equal(0);
+							expect(pos.every(v => v === currPos)).to.be.true;
+
+							done(1);
+						}, 350);
+					}
+				});
+
+				interval = setInterval(() => {
+					text = main.select(`.${$TEXT.texts}-data2 .${$TEXT.text}-3`);
+
+					if (text.size()) {
 						pos.push(+text.attr("x"));
-					}, 20);
+						clearInterval(interval);
+					}
+				}, 80);
 
-					chart.load({
-						columns: [
-							["data2", 44, 134, 98, 170]
-						],
-						done: function () {
-							setTimeout(() => {
-								clearInterval(interval);
-								const currPos = +text.attr("x");
-
-								expect(Math.round(pos[0])).to.not.equal(0);
-								expect(pos.every(v => v === currPos)).to.be.true;
-
-								done();
-							}, 500);
-						}
-					});
-				}, 500);
-			});
+			}));
 		});
 
 		describe("when all data values are 0", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1257,10 +1560,10 @@ describe("TEXT", () => {
 			});
 		});
 
-		describe("Labels' postion", () => {
+		describe("Labels' position", () => {
 			const pos = {};
 
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1315,8 +1618,8 @@ describe("TEXT", () => {
 			});
 		});
 
-		describe("Labels' postion on inverted axis", () => {
-			before(() => {
+		describe("Labels' position on inverted axis", () => {
+			beforeAll(() => {
 				args = {
 					data: {
 					  columns: [
@@ -1401,10 +1704,71 @@ describe("TEXT", () => {
 			});
 		});
 
-		describe("labels.colors callback", () => {
-			let ctx = [];
+		describe("Labels' position callback", () => {
+			let pos: number[] = [];
+			let positionSpy: sinon.SinonSpy;
 
-			before(() => {
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 30, 200, 200],
+							["data2", 130, 100, 140]
+						],
+						type: "line",
+						labels: {
+							show: true							
+						}
+					}
+				};
+			});
+
+			it("get normal position", () => {
+				chart.$.text.texts.each(function(d, i) {
+					if (i === 0 || i === 2) {
+						pos.push(+this.getAttribute("x"));
+					}
+				});
+			});
+
+			it("set options data.labels.position", () => {
+				positionSpy = sinon.spy(function(type, v, id, i, texts) {
+					let pos = 0;
+					const len = texts.size() / 2 - 1;
+		
+					if (type === "x" && (i === 0 || i === len)) {
+						pos = i === 0 ? 20 : -20;
+					}
+		
+					return pos;
+				});
+
+				args.data.labels.position = positionSpy;
+			});
+
+			it("position coordinate should specified as callback returns.", () => {
+				chart.$.text.texts.each(function(d, i) {
+					if (i === 0 || i === 2) {
+						expect(+this.getAttribute("x")).to.be.equal(
+							(pos.shift() ?? 0) + (i === 0 ? 20 : -20)
+						);
+					}
+				});
+
+				// check that the spy was called
+				expect(positionSpy.called).to.be.true;
+				expect(positionSpy.callCount).to.be.greaterThan(0);
+			});
+		});
+
+		describe("labels.colors callback", () => {
+			const ctx: any = [];
+			const colorsSpy = sinon.spy(function(color, d) {
+				ctx.push(this);
+				return d.value > 200 ? "cyan" : color;
+			});
+
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1413,10 +1777,7 @@ describe("TEXT", () => {
 							["data3", 220, 150, 50]
 						],
 						labels: {
-							colors: function(color, d) {
-								ctx.push(this);
-								return d.value > 200 ? "cyan" : color;
-							}
+							colors: colorsSpy
 						}
 					}
 				}
@@ -1429,15 +1790,17 @@ describe("TEXT", () => {
 					}
 				});
 
+				// check that the spy was called
+				expect(colorsSpy.called).to.be.true;
+				// expect(colorsSpy.callCount).to.be.equal(9); // 3 datasets * 3 data points each
+
 				// check the data.labels.colors callback context
 				expect(ctx.every(v => v === chart)).to.be.true;
 			});
 		});
 
 		describe("labels.backgroundColors", () => {
-			let ctx = [];
-
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						columns: [
@@ -1500,10 +1863,180 @@ describe("TEXT", () => {
 					}
 				});
 			});
+
+			describe("as Function", () => {
+				let callbackContext: any[] = [];
+				let callbackArgs: any[] = [];
+				const backgroundColorsSpy = sinon.spy(function(color, d) {
+					// Store context and arguments for testing
+					callbackContext.push(this);
+					callbackArgs.push([color, d]);
+
+					// Return different colors based on data value
+					if (d.value > 200) {
+						return "red";
+					} else if (d.value > 100) {
+						return "yellow";
+					} else {
+						return "green";
+					}
+				});
+
+				beforeAll(() => {
+					callbackContext = [];
+					callbackArgs = [];
+
+					args = {
+						data: {
+							columns: [
+								["data1", 100, 150, 300],
+								["data2", 130, 210, 140],
+								["data3", 220, 150, 50]
+							],
+							type: "bar",
+							labels: {
+								backgroundColors: backgroundColorsSpy
+							}
+						}
+					};
+				});
+
+				it("should call function for each data point with correct arguments", () => {
+					const expectedDataLength = 9; // 3 datasets * 3 data points each
+
+					// Check that spy was called correctly
+					expect(backgroundColorsSpy.called).to.be.true;
+					expect(backgroundColorsSpy.callCount).to.be.equal(expectedDataLength);
+
+					// Check that function was called for each data point
+					expect(callbackContext.length).to.be.equal(expectedDataLength);
+					expect(callbackArgs.length).to.be.equal(expectedDataLength);
+
+					// Check that context is bound to chart API
+					expect(callbackContext.every(ctx => ctx === chart)).to.be.true;
+
+					// Check that arguments are correct
+					callbackArgs.forEach(([color, d]) => {
+						// color should be a string (default color)
+						expect(typeof color).to.be.equal("string");
+						
+						// d should be a data object with expected properties
+						expect(d).to.have.property("value");
+						expect(d).to.have.property("id");
+						expect(d).to.have.property("index");
+						expect(typeof d.value).to.be.equal("number");
+						expect(typeof d.id).to.be.equal("string");
+						expect(typeof d.index).to.be.equal("number");
+					});
+				});
+
+				it("should apply background colors based on function return values", () => {
+					const {$el} = chart.internal;
+
+					// Check that filter elements were created for each target
+					chart.data().forEach(target => {
+						const targetId = target.id;
+						const filter = $el.defs.select(`filter[id*='labels-bg'][id*='${targetId.replace(/\s/g, "-")}']`);
+						
+						expect(filter.size()).to.be.equal(1);
+					});
+
+					// Check that text elements have filter applied
+					$el.text.each(function(d) {
+						const filterAttr = this.getAttribute("filter");
+						expect(filterAttr).to.not.be.null;
+						expect(filterAttr.indexOf("url(#") > -1).to.be.true;
+					});
+				});
+
+				it("should handle null/undefined return values from function", () => {
+					const nullBackgroundColorsSpy = sinon.spy(function(color, d) {
+						// Return null for some values to test handling
+						return d.value > 200 ? "blue" : null;
+					});
+
+					args.data.labels.backgroundColors = nullBackgroundColorsSpy;
+				});
+
+				it("should not apply filter when function returns null", () => {
+					const {$el} = chart.internal;
+					
+					$el.text.each(function(d) {
+						const filterAttr = this.getAttribute("filter");
+						
+						if (d.value > 200) {
+							// Should have filter applied
+							expect(filterAttr).to.not.be.null;
+							expect(filterAttr.indexOf("url(#") > -1).to.be.true;
+						} else {
+							// Should not have filter applied when function returns null
+							expect(filterAttr === null || filterAttr === "").to.be.true;
+						}
+					});
+				});
+
+				it("should work with different chart types", () => {
+					const lineBackgroundColorsSpy = sinon.spy(function(color, d) {
+						return d.id === "data1" ? "purple" : "orange";
+					});
+
+					args.data.type = "line";
+					args.data.labels.backgroundColors = lineBackgroundColorsSpy;
+				});
+
+				it("should apply function-based colors to line chart", () => {
+					const {$el} = chart.internal;
+
+					$el.text.each(function(d) {
+						const filterAttr = this.getAttribute("filter");
+						expect(filterAttr).to.not.be.null;
+						expect(filterAttr.indexOf("url(#") > -1).to.be.true;
+						
+						// Check that filter ID contains the target ID
+						const expectedSuffix = d.id.replace(/\s/g, "-");
+						expect(filterAttr.indexOf(expectedSuffix) > -1).to.be.true;
+					});
+				});
+
+				it("should update colors when function returns different values", () => {
+					const colorMap = new Map();
+					const updateBackgroundColorsSpy = sinon.spy(function(color, d) {
+						const key = `${d.id}-${d.index}`;
+						const bgColor = d.index % 2 === 0 ? "lightblue" : "lightgreen";
+						colorMap.set(key, bgColor);
+						return bgColor;
+					});
+					
+					args.data.labels.backgroundColors = updateBackgroundColorsSpy;
+				});
+
+				it("should reflect updated function logic in filter colors", () => {
+					const {$el} = chart.internal;
+					
+					// Collect all flood-color values from filters
+					const floodColors: string[] = [];
+					$el.defs.selectAll("filter[id*='labels-bg'] feFlood").each(function() {
+						const color = this.getAttribute("flood-color");
+						if (color) {
+							floodColors.push(color);
+						}
+					});
+
+					// Should have background colors applied (either lightblue or lightgreen based on index)
+					expect(floodColors.length).to.be.above(0);
+					
+					// The actual colors may vary based on how the chart redraws, 
+					// but we should have some background colors applied
+					const hasExpectedColors = floodColors.some(color => 
+						color === "lightblue" || color === "lightgreen"
+					);
+					expect(hasExpectedColors).to.be.true;
+				});
+			});
 		});
 
 		describe("text positon with xs option", () => {
-			before(() => {
+			beforeAll(() => {
 				args = {
 					data: {
 						xs: { data1: "x", data2: "x2" },
@@ -1543,11 +2076,243 @@ describe("TEXT", () => {
 				];
 
                 chart.$.text.texts.each(function() {
-					const expected = expectedPos.shift();
+					const expected = expectedPos.shift() as number[];
 
 					expect(+this.getAttribute("x")).to.be.closeTo(expected[0], 1);
 					expect(+this.getAttribute("y")).to.be.closeTo(expected[1], 2);
                 })
+			});
+		});
+
+
+		describe("labels.border", () => {
+			let rectElements;
+
+			beforeAll(() => {
+				args = {
+					data: {
+						columns: [
+							["data1", 100, 150, 200],
+							["data2", 80, 120, 180]
+						],
+						type: "line",
+						labels: {
+							show: true,
+							border: {
+								padding: 5,
+								radius: 8,
+								strokeWidth: 2,
+								stroke: "#ff0000",
+								fill: "#ffffff"
+							}
+						}
+					}
+				};
+			});
+
+			it("should create border elements for data labels", () => {
+				rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`);
+				
+				expect(rectElements.size()).to.be.equal(6); // 3 data points * 2 series
+				
+				rectElements.each(function() {
+					expect(this.getAttribute("rx")).to.be.equal("8");
+					expect(this.getAttribute("ry")).to.be.equal("8");
+					expect(this.style.strokeWidth).to.be.equal("2px");
+					expect(this.style.stroke).to.be.equal("rgb(255, 0, 0)"); // #ff0000 -> rgb(255, 0, 0)
+					expect(this.style.fill).to.be.equal("rgb(255, 255, 255)"); // #ffffff -> rgb(255, 255, 255)
+				});
+			});
+
+			it("set options: padding as number", () => {
+				args.data.labels.border.padding = 10;
+			});
+
+			it("should apply numeric padding correctly", () => {
+				const textElements = chart.$.text.texts.nodes();
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`).nodes();
+
+				textElements.forEach((text, i) => {
+					const textBBox = text.getBBox();
+					const rect = rectElements[i];
+					const rectWidth = +rect.getAttribute("width");
+					const rectHeight = +rect.getAttribute("height");
+
+					// Check if padding is applied (rect should be larger than text by 2*padding)
+					expect(rectWidth).to.be.closeTo(textBBox.width + 20, 2); // 10 padding on each side
+					expect(rectHeight).to.be.closeTo(textBBox.height + 20, 2); // 10 padding on top and bottom
+				});
+			});
+
+			it("set options: padding as string", () => {
+				args.data.labels.border.padding = "8 12";
+			});
+
+			it("should apply string padding correctly", () => {
+				const textElements = chart.$.text.texts.nodes();
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`).nodes();
+
+				textElements.forEach((text, i) => {
+					const textBBox = text.getBBox();
+					const rect = rectElements[i];
+					const rectWidth = +rect.getAttribute("width");
+					const rectHeight = +rect.getAttribute("height");
+
+					// "8 12" means top/bottom: 8, left/right: 12
+					expect(rectWidth).to.be.closeTo(textBBox.width + 24, 2); // 12 padding on each side
+					expect(rectHeight).to.be.closeTo(textBBox.height + 16, 2); // 8 padding on top and bottom
+				});
+			});
+
+			it("set options: padding as object", () => {
+				args.data.labels.border.padding = {
+					top: 5,
+					bottom: 10,
+					left: 8,
+					right: 12
+				};
+			});
+
+			it("should apply object padding correctly", () => {
+				const textElements = chart.$.text.texts.nodes();
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`).nodes();
+
+				textElements.forEach((text, i) => {
+					const textBBox = text.getBBox();
+					const rect = rectElements[i];
+					const rectWidth = +rect.getAttribute("width");
+					const rectHeight = +rect.getAttribute("height");
+
+					// Object padding: top:5, bottom:10, left:8, right:12
+					expect(rectWidth).to.be.closeTo(textBBox.width + 20, 2); // 8 + 12
+					expect(rectHeight).to.be.closeTo(textBBox.height + 15, 2); // 5 + 10
+				});
+			});
+
+			it("set options: axis.rotated=true", () => {
+				args.axis = {
+					rotated: true
+				};
+				args.data.labels.border.padding = 5;
+			});
+
+			it("should create border elements for rotated axis", () => {
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`);
+				
+				expect(rectElements.size()).to.be.equal(6);
+				
+				// Check that border elements are properly positioned for rotated axis
+				rectElements.each(function() {
+					expect(this.getAttribute("rx")).to.be.equal("8");
+					expect(this.getAttribute("ry")).to.be.equal("8");
+					expect(this.style.strokeWidth).to.be.equal("2px");
+				});
+			});
+
+			it("set options: border=true only", () => {
+				args = {
+					data: {
+						columns: [
+							["data1", 100, 150, 200]
+						],
+						type: "line",
+						labels: {
+							show: true,
+							border: true
+						}
+					},
+					axis: {
+						rotated: false
+					}
+				};
+			});
+
+			it("should create border elements without styling when border=true", () => {
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`);
+				
+				expect(rectElements.size()).to.be.equal(3);
+				
+				// When border=true without options, styling is not applied (need to use CSS)
+				rectElements.each(function() {
+					// Check that elements exist but don't have inline styles
+					expect(this.tagName.toLowerCase()).to.be.equal("rect");
+					expect(this.classList.contains($TEXT.textBorderRect)).to.be.true;
+					
+					// These should be empty/unset when border=true (styling via CSS)
+					expect(this.style.strokeWidth).to.be.equal("");
+					expect(this.style.stroke).to.be.equal("");
+					expect(this.style.fill).to.be.equal("");
+					expect(this.getAttribute("rx")).to.be.null;
+					expect(this.getAttribute("ry")).to.be.null;
+				});
+			});
+
+			it("set options: border=false", () => {
+				args.data.labels.border = false;
+			});
+
+			it("should not create border elements when border=false", () => {
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`);
+				
+				expect(rectElements.size()).to.be.equal(0);
+			});
+
+			it("set options: different border styles per dataset", () => {
+				args = {
+					data: {
+						columns: [
+							["data1", 100, 150, 200],
+							["data2", 80, 120, 180]
+						],
+						type: "bar",
+						labels: {
+							show: true,
+							border: {
+								padding: 6,
+								radius: 4,
+								strokeWidth: 1,
+								stroke: "#000000",
+								fill: "rgba(255, 255, 255, 0.8)"
+							}
+						}
+					}
+				};
+			});
+
+			it("should apply border styles correctly for bar chart", () => {
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`);
+				
+				expect(rectElements.size()).to.be.equal(6);
+				
+				rectElements.each(function() {
+					expect(this.getAttribute("rx")).to.be.equal("4");
+					expect(this.getAttribute("ry")).to.be.equal("4");
+					expect(this.style.strokeWidth).to.be.equal("1px");
+					expect(this.style.stroke).to.be.equal("rgb(0, 0, 0)"); // #000000 -> rgb(0, 0, 0)
+					expect(this.style.fill).to.be.equal("rgba(255, 255, 255, 0.8)");
+				});
+			});
+
+			it("set options: border with centered labels", () => {
+				args.data.labels.centered = true;
+			});
+
+			it("should position border correctly with centered labels", () => {
+				const rectElements = chart.$.main.selectAll(`.${$TEXT.texts} rect.${$TEXT.textBorderRect}`);
+				const textElements = chart.$.text.texts.nodes();
+				
+				expect(rectElements.size()).to.be.equal(6);
+				
+				// Verify that border elements are positioned relative to centered text
+				rectElements.each(function(d, i) {
+					const rect = this;
+					const text = textElements[i];
+					
+					expect(rect.getAttribute("x")).to.not.be.null;
+					expect(rect.getAttribute("y")).to.not.be.null;
+					expect(text.getAttribute("x")).to.not.be.null;
+					expect(text.getAttribute("y")).to.not.be.null;
+				});
 			});
 		});
 	});

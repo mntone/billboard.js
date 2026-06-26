@@ -3,9 +3,9 @@
  * billboard.js project is licensed under the MIT license
  */
 import {select as d3Select} from "d3-selection";
-import drag from "../interactions/drag";
 import {$SELECT, $SHAPE} from "../../config/classes";
 import {callFn} from "../../module/util";
+import drag from "../interactions/drag";
 
 export default {
 	...drag,
@@ -37,8 +37,7 @@ export default {
 			.attr("cx", cx)
 			.attr("cy", cy)
 			.attr("stroke", $$.color)
-			.attr("r", d2 => $$.pointSelectR(d2) * 1.4)
-		).attr("r", r);
+			.attr("r", d2 => $$.pointSelectR(d2) * 1.4)).attr("r", r);
 	},
 
 	/**
@@ -52,12 +51,11 @@ export default {
 		const $$ = this;
 		const {config, $el: {main}, $T} = $$;
 
-		callFn(config.data_onunselected, $$.api, d, target.node());
+		callFn(config.data_onunselected, $$.api, d, target?.node());
 
 		// remove selected-circle from low layer g
 		$T(main.select(`.${$SELECT.selectedCircles}${$$.getTargetSelectorSuffix(d.id)}`)
-			.selectAll(`.${$SELECT.selectedCircle}-${i}`)
-		)
+			.selectAll(`.${$SELECT.selectedCircle}-${i}`))
 			.attr("r", 0)
 			.remove();
 	},
@@ -128,18 +126,17 @@ export default {
 	 * Returns the toggle method of the target
 	 * @param {object} that shape
 	 * @param {object} d Data object
-	 * @returns {Function} toggle method
+	 * @returns {function} toggle method
 	 * @private
 	 */
 	getToggle(that, d): Function {
 		const $$ = this;
 
-		return that.nodeName === "path" ?
-			$$.togglePath : (
-				$$.isStepType(d) ?
-					() => {} : // circle is hidden in step chart, so treat as within the click area
-					$$.togglePoint
-			);
+		return that.nodeName === "path" ? $$.togglePath : (
+			$$.isStepType(d) ?
+				() => {} : // circle is hidden in step chart, so treat as within the click area
+				$$.togglePoint
+		);
 	},
 
 	/**
@@ -160,21 +157,25 @@ export default {
 			let toggledShape;
 
 			if (!config.data_selection_multiple) {
-				let selector = `.${$SHAPE.shapes}`;
+				const focusOnly = $$.isPointFocusOnly?.();
+				let selector = `.${focusOnly ? $SELECT.selectedCircles : $SHAPE.shapes}`;
 
 				if (config.data_selection_grouped) {
 					selector += $$.getTargetSelectorSuffix(d.id);
 				}
 
 				main.selectAll(selector)
-					.selectAll(`.${$SHAPE.shape}`)
-					.each(function(d, i) {
+					.selectAll(
+						focusOnly ?
+							`.${$SELECT.selectedCircle}` :
+							`.${$SHAPE.shape}.${$SELECT.SELECTED}`
+					)
+					.classed($SELECT.SELECTED, false)
+					.each(function(d) {
 						const shape = d3Select(this);
 
-						if (shape.classed($SELECT.SELECTED)) {
-							toggledShape = shape;
-							toggle(false, shape.classed($SELECT.SELECTED, false), d, i);
-						}
+						toggledShape = shape;
+						toggle(false, shape, d, d.index);
 					});
 			}
 
@@ -183,5 +184,5 @@ export default {
 				toggle(!isSelected, shape, d, i);
 			}
 		}
-	},
+	}
 };

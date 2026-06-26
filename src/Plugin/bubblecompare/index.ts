@@ -45,7 +45,6 @@ import Plugin from "../Plugin";
 
 export default class BubbleCompare extends Plugin {
 	static version = `0.0.1`;
-	public $$;
 
 	constructor(options) {
 		super(options);
@@ -76,7 +75,7 @@ export default class BubbleCompare extends Plugin {
 	}
 
 	changeCursorPoint(): void {
-		this.$$.$el.svg.select(`.bb-event-rect`).style("cursor", "pointer");
+		this.$$.$el.eventRect.style("cursor", "pointer");
 	}
 
 	findClosest(values, pos): number {
@@ -111,8 +110,6 @@ export default class BubbleCompare extends Plugin {
 	}
 
 	getZData(d): number {
-		return this.$$.isBubbleZType(d) ?
-			this.$$.getBubbleZData(d.value, "z") :
-			d.value;
+		return this.$$.isBubbleZType(d) ? this.$$.getBubbleZData(d.value, "z") : d.value;
 	}
 }

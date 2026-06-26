@@ -3,12 +3,13 @@
  * billboard.js project is licensed under the MIT license
  */
 import {select as d3Select} from "d3-selection"; // selection
+import type {RegionOptions} from "../../../types/options";
+import type {AxisType} from "../../../types/types";
 import {$REGION} from "../../config/classes";
-import {isValue, parseDate} from "../../module/util";
-import {AxisType} from "../../../types/types";
+import {getBoundingRect, isString, isValue, parseDate} from "../../module/util";
 
 export default {
-	initRegion() {
+	initRegion(): void {
 		const $$ = this;
 		const {$el} = $$;
 
@@ -28,38 +29,78 @@ export default {
 
 		// hide if arc type
 		region.main.style("visibility", $$.hasArcType() ? "hidden" : null);
-		// select <g> element
 
-		let list = region.main
+		// select <g> element
+		const regions = region.main
 			.selectAll(`.${$REGION.region}`)
 			.data(config.regions);
 
-		$T(list.exit())
+		$T(regions.exit())
 			.style("opacity", "0")
 			.remove();
 
-		list = list.enter()
-			.append("g")
-			.merge(list)
-			.attr("class", $$.classRegion.bind($$));
+		const regionsEnter = regions
+			.enter()
+			.append("g");
 
-		list
+		regionsEnter
 			.append("rect")
 			.style("fill-opacity", "0");
 
-		region.list = list;
+		region.list = regionsEnter
+			.merge(regions)
+			.attr("class", $$.classRegion.bind($$));
+
+		region.list.each(function(d) {
+			const g = d3Select(this);
+
+			if (g.select("text").empty() && d.label?.text) {
+				d3Select(this).append("text")
+					.style("opacity", "0");
+			}
+		});
 	},
 
-	redrawRegion(withTransition) {
+	redrawRegion(withTransition: boolean) {
 		const $$ = this;
 		const {$el: {region}, $T} = $$;
+		const regionX = $$.regionX.bind($$);
+		const regionY = $$.regionY.bind($$);
+		const attr = ["width", "height"];
 		let regions = region.list.select("rect");
+		let label = region.list.selectAll("text");
 
 		regions = $T(regions, withTransition)
-			.attr("x", $$.regionX.bind($$))
-			.attr("y", $$.regionY.bind($$))
+			.attr("x", regionX)
+			.attr("y", regionY)
 			.attr("width", $$.regionWidth.bind($$))
 			.attr("height", $$.regionHeight.bind($$));
+
+		label = $T(label, withTransition)
+			.text(d => d.label?.text)
+			// pre-rotate so that the centering math below measures the rotated bounding box
+			.attr("transform", ({label}) => label.rotated ? ` rotate(-90)` : null)
+			.attr("transform", function(d) {
+				const {x = 0, y = 0, center = false, rotated = false} = d.label ?? {};
+				const rect = this.previousElementSibling;
+				const pos = {x: 0, y: 0};
+
+				if (isString(center)) {
+					["x", "y"].forEach((v, i) => {
+						if (center.indexOf(v) > -1) {
+							pos[v] =
+								(+rect.getAttribute(attr[i]) - getBoundingRect(this)[attr[i]]) / 2;
+						}
+					});
+				}
+
+				return `translate(${regionX(d) + pos.x + x}, ${regionY(d) + pos.y + y})${
+					rotated ? ` rotate(-90)` : ``
+				}`;
+			})
+			.attr("text-anchor", ({label}) => label?.rotated ? "end" : null)
+			.attr("dy", "1em")
+			.style("fill", ({label}) => label?.color ?? null);
 
 		return [
 			regions
@@ -69,80 +110,78 @@ export default {
 					d3Select(this.parentNode)
 						.selectAll("rect:not([x])")
 						.remove();
-				})
+				}),
+			label.style("opacity", null)
 		];
 	},
 
-	getRegionXY(type: AxisType, d): number {
-		const $$ = this;
-		const {config, scale} = $$;
-		const isRotated = config.axis_rotated;
-		const isX = type === "x";
-		let key = "start";
-		let currScale;
-		let pos = 0;
-
-		if (d.axis === "y" || d.axis === "y2") {
-			if (!isX) {
-				key = "end";
-			}
-
-			if ((isX ? isRotated : !isRotated) && key in d) {
-				currScale = scale[d.axis];
-				pos = currScale(d[key]);
-			}
-		} else if ((isX ? !isRotated : isRotated) && key in d) {
-			currScale = scale.zoom || scale.x;
-			pos = currScale($$.axis.isTimeSeries() ? parseDate.call($$, d[key]) : d[key]);
-		}
-
-		return pos;
+	regionX(d: RegionOptions): number {
+		return this.getRegionSize("x", d);
 	},
 
-	regionX(d): number {
-		return this.getRegionXY("x", d);
+	regionY(d: RegionOptions): number {
+		return this.getRegionSize("y", d);
 	},
 
-	regionY(d): number {
-		return this.getRegionXY("y", d);
-	},
-
-	getRegionSize(type, d): number {
-		const $$ = this;
-		const {config, scale, state} = $$;
-		const isRotated = config.axis_rotated;
-		const isWidth = type === "width";
-		const start = $$[isWidth ? "regionX" : "regionY"](d);
-		let currScale;
-		let key = "end";
-		let end = state[type];
-
-		if (d.axis === "y" || d.axis === "y2") {
-			if (!isWidth) {
-				key = "start";
-			}
-
-			if ((isWidth ? isRotated : !isRotated) && key in d) {
-				currScale = scale[d.axis];
-				end = currScale(d[key]);
-			}
-		} else if ((isWidth ? !isRotated : isRotated) && key in d) {
-			currScale = scale.zoom || scale.x;
-			end = currScale($$.axis.isTimeSeries() ? parseDate.call($$, d[key]) : d[key]);
-		}
-
-		return end < start ? 0 : end - start;
-	},
-
-	regionWidth(d): number {
+	regionWidth(d: RegionOptions): number {
 		return this.getRegionSize("width", d);
 	},
 
-	regionHeight(d): number {
+	regionHeight(d: RegionOptions): number {
 		return this.getRegionSize("height", d);
 	},
 
-	isRegionOnX(d): boolean {
-		return !d.axis || d.axis === "x";
+	/**
+	 * Get Region size according start/end position
+	 * @param {string} type Type string
+	 * @param {ojbect} d Data object
+	 * @returns {number}
+	 * @private
+	 */
+	getRegionSize(type: AxisType | "width" | "height", d: RegionOptions): number {
+		const $$ = this;
+		const {config, scale, state} = $$;
+		const isRotated = config.axis_rotated;
+		const isAxisType = /(x|y|y2)/.test(type);
+
+		const isType = isAxisType ? type === "x" : type === "width";
+		const start = !isAxisType && $$[isType ? "regionX" : "regionY"](d);
+		let key = isAxisType ? "start" : "end";
+		let pos = isAxisType ? 0 : state[type];
+		let currScale;
+
+		if (d.axis === "y" || d.axis === "y2") {
+			if (!isAxisType && !isType) {
+				key = "start";
+			} else if (isAxisType && !isType) {
+				key = "end";
+			}
+
+			if ((isType ? isRotated : !isRotated) && key in d) {
+				currScale = scale[d.axis];
+			}
+		} else if ((isType ? !isRotated : isRotated) && key in d) {
+			currScale = scale.zoom || scale.x;
+		}
+
+		if (currScale) {
+			let offset = 0;
+			pos = d[key];
+
+			if ($$.axis.isTimeSeries(d.axis)) {
+				pos = parseDate.call($$, pos);
+			} else if (/(x|width)/.test(type) && $$.axis.isCategorized() && isNaN(pos)) {
+				pos = config.axis_x_categories.indexOf(pos);
+				offset = $$.axis.x.tickOffset() * (key === "start" ? -1 : 1);
+			}
+
+			pos = currScale(pos) + offset;
+		}
+
+		return isAxisType ? pos : pos < start ? 0 : pos - start;
 	},
+
+	isRegionOnX(d: RegionOptions): boolean {
+		return !d.axis || d.axis === "x";
+	}
 };
