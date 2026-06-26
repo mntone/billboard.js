@@ -5,52 +5,53 @@
  * billboard.js, JavaScript chart library
  * https://naver.github.io/billboard.js/
  * 
- * @version 3.4.1-nightly-20220601004713
+ * @version 4.0.1-nightly-20260626045144
  * @requires billboard.js
  * @summary billboard.js plugin
 */
 import { select } from 'd3-selection';
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
+/**
+ * Copyright (c) 2017 ~ present NAVER Corp.
+ * billboard.js project is licensed under the MIT license
+ * @ignore
+ */
+const isDefined = (v) => typeof v !== "undefined";
+const isObjectType = (v) => typeof v === "object";
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-/* global Reflect, Promise */
-var _extendStatics = function extendStatics(d, b) {
-  _extendStatics = Object.setPrototypeOf || {
-    __proto__: []
-  } instanceof Array && function (d, b) {
-    d.__proto__ = b;
-  } || function (d, b) {
-    for (var p in b) {
-      if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p];
+/**
+ * Load configuration option
+ * @param {object} config User's generation config value
+ * @private
+ */
+function loadConfig(config) {
+    const thisConfig = this.config;
+    let target;
+    let keys;
+    let read;
+    const find = () => {
+        const key = keys.shift();
+        if (key && target && isObjectType(target) && key in target) {
+            target = target[key];
+            return find();
+        }
+        else if (!key) {
+            return target;
+        }
+        return undefined;
+    };
+    Object.keys(thisConfig).forEach(key => {
+        target = config;
+        keys = key.split("_");
+        read = find();
+        if (isDefined(read)) {
+            thisConfig[key] = read;
+        }
+    });
+    // only should run in the ChartInternal context
+    if (this.api) {
+        this.state.orgConfig = config;
     }
-  };
-
-  return _extendStatics(d, b);
-};
-
-function __extends(d, b) {
-  if (typeof b !== "function" && b !== null) throw new TypeError("Class extends value " + (b + "") + " is not a constructor or null");
-
-  _extendStatics(d, b);
-
-  function __() {
-    this.constructor = d;
-  }
-
-  d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
 /**
@@ -70,51 +71,57 @@ function __extends(d, b) {
  * @example
  *   bb.plugin.stanford.version;  // ex) 1.9.0
  */
-var Plugin = /** @class */ (function () {
+class Plugin {
+    $$;
+    options;
+    config;
+    static version = "4.0.1-nightly-20260626045144";
     /**
      * Constructor
      * @param {Any} options config option object
      * @private
      */
-    function Plugin(options) {
-        if (options === void 0) { options = {}; }
+    constructor(options = {}) {
         this.options = options;
+    }
+    /**
+     * Load plugin config from options
+     * @private
+     */
+    loadConfig() {
+        loadConfig.call(this, this.options);
     }
     /**
      * Lifecycle hook for 'beforeInit' phase.
      * @private
      */
-    Plugin.prototype.$beforeInit = function () { };
+    $beforeInit() { }
     /**
      * Lifecycle hook for 'init' phase.
      * @private
      */
-    Plugin.prototype.$init = function () { };
+    $init() { }
     /**
      * Lifecycle hook for 'afterInit' phase.
      * @private
      */
-    Plugin.prototype.$afterInit = function () { };
+    $afterInit() { }
     /**
      * Lifecycle hook for 'redraw' phase.
      * @private
      */
-    Plugin.prototype.$redraw = function () { };
+    $redraw() { }
     /**
      * Lifecycle hook for 'willDestroy' phase.
      * @private
      */
-    Plugin.prototype.$willDestroy = function () {
-        var _this = this;
-        Object.keys(this).forEach(function (key) {
-            _this[key] = null;
-            delete _this[key];
+    $willDestroy() {
+        Object.keys(this).forEach(key => {
+            this[key] = null;
+            delete this[key];
         });
-    };
-    Plugin.version = "3.4.1-nightly-20220601004713";
-    return Plugin;
-}());
-var Plugin$1 = Plugin;
+    }
+}
 
 /**
  * Bubble compare diagram plugin.<br>
@@ -157,62 +164,55 @@ var Plugin$1 = Plugin;
  *     ]
  * })
  */
-var BubbleCompare = /** @class */ (function (_super) {
-    __extends(BubbleCompare, _super);
-    function BubbleCompare(options) {
-        var _this = _super.call(this, options) || this;
-        return _this;
+class BubbleCompare extends Plugin {
+    static version = `0.0.1`;
+    constructor(options) {
+        super(options);
+        return this;
     }
-    BubbleCompare.prototype.$init = function () {
-        var $$ = this.$$;
+    $init() {
+        const { $$ } = this;
         $$.findClosest = this.findClosest.bind(this);
         $$.getBubbleR = this.getBubbleR.bind(this);
         $$.pointExpandedR = this.pointExpandedR.bind(this);
-    };
-    BubbleCompare.prototype.pointExpandedR = function (d) {
-        var baseR = this.getBubbleR(d);
-        var _a = this.options.expandScale, expandScale = _a === void 0 ? 1 : _a;
+    }
+    pointExpandedR(d) {
+        const baseR = this.getBubbleR(d);
+        const { expandScale = 1 } = this.options;
         BubbleCompare.raiseFocusedBubbleLayer(d);
         this.changeCursorPoint();
         return baseR * expandScale;
-    };
-    BubbleCompare.raiseFocusedBubbleLayer = function (d) {
+    }
+    static raiseFocusedBubbleLayer(d) {
         d.raise && select(d.node().parentNode.parentNode).raise();
-    };
-    BubbleCompare.prototype.changeCursorPoint = function () {
-        this.$$.$el.svg.select(".bb-event-rect").style("cursor", "pointer");
-    };
-    BubbleCompare.prototype.findClosest = function (values, pos) {
-        var _this = this;
-        var $$ = this.$$;
+    }
+    changeCursorPoint() {
+        this.$$.$el.eventRect.style("cursor", "pointer");
+    }
+    findClosest(values, pos) {
+        const { $$ } = this;
         return values
-            .filter(function (v) { return v && !$$.isBarType(v.id); })
-            .reduce(function (acc, cur) {
-            var d = $$.dist(cur, pos);
-            return d < _this.getBubbleR(cur) ? cur : acc;
+            .filter(v => v && !$$.isBarType(v.id))
+            .reduce((acc, cur) => {
+            const d = $$.dist(cur, pos);
+            return d < this.getBubbleR(cur) ? cur : acc;
         }, 0);
-    };
-    BubbleCompare.prototype.getBubbleR = function (d) {
-        var _this = this;
-        var _a = this.options, minR = _a.minR, maxR = _a.maxR;
-        var curVal = this.getZData(d);
+    }
+    getBubbleR(d) {
+        const { minR, maxR } = this.options;
+        const curVal = this.getZData(d);
         if (!curVal)
             return minR;
-        var _b = this.$$.data.targets.reduce(function (_a, cur) {
-            var accMin = _a[0], accMax = _a[1];
-            var val = _this.getZData(cur.values[0]);
+        const [min, max] = this.$$.data.targets.reduce(([accMin, accMax], cur) => {
+            const val = this.getZData(cur.values[0]);
             return [Math.min(accMin, val), Math.max(accMax, val)];
-        }, [10000, 0]), min = _b[0], max = _b[1];
-        var size = min > 0 && max === min ? 0 : curVal / max;
+        }, [10000, 0]);
+        const size = min > 0 && max === min ? 0 : curVal / max;
         return Math.abs(size) * (maxR - minR) + minR;
-    };
-    BubbleCompare.prototype.getZData = function (d) {
-        return this.$$.isBubbleZType(d) ?
-            this.$$.getBubbleZData(d.value, "z") :
-            d.value;
-    };
-    BubbleCompare.version = "0.0.1";
-    return BubbleCompare;
-}(Plugin$1));
+    }
+    getZData(d) {
+        return this.$$.isBubbleZType(d) ? this.$$.getBubbleZData(d.value, "z") : d.value;
+    }
+}
 
 export { BubbleCompare as default };

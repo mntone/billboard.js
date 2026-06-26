@@ -5,20 +5,20 @@
  * billboard.js, JavaScript chart library
  * https://naver.github.io/billboard.js/
  *
- * @version 3.4.1-nightly-20220601004713
+ * @version 4.0.1-nightly-20260626045144
  * @requires billboard.js
  * @summary billboard.js plugin
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("d3-interpolate"), require("d3-color"), require("d3-scale"), require("d3-selection"), require("d3-brush"), require("d3-axis"), require("d3-format"));
+		module.exports = factory(require("d3-interpolate"), require("d3-scale"), require("d3-axis"), require("d3-selection"));
 	else if(typeof define === 'function' && define.amd)
-		define("bb", ["d3-interpolate", "d3-color", "d3-scale", "d3-selection", "d3-brush", "d3-axis", "d3-format"], factory);
+		define("bb", ["d3-interpolate", "d3-scale", "d3-axis", "d3-selection"], factory);
 	else if(typeof exports === 'object')
-		exports["bb"] = factory(require("d3-interpolate"), require("d3-color"), require("d3-scale"), require("d3-selection"), require("d3-brush"), require("d3-axis"), require("d3-format"));
+		exports["bb"] = factory(require("d3-interpolate"), require("d3-scale"), require("d3-axis"), require("d3-selection"));
 	else
-		root["bb"] = root["bb"] || {}, root["bb"]["plugin"] = root["bb"]["plugin"] || {}, root["bb"]["plugin"]["stanford"] = factory(root["d3"], root["d3"], root["d3"], root["d3"], root["d3"], root["d3"], root["d3"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE__5__, __WEBPACK_EXTERNAL_MODULE__6__, __WEBPACK_EXTERNAL_MODULE__7__, __WEBPACK_EXTERNAL_MODULE__1__, __WEBPACK_EXTERNAL_MODULE__3__, __WEBPACK_EXTERNAL_MODULE__8__, __WEBPACK_EXTERNAL_MODULE__9__) {
+		root["bb"] = root["bb"] || {}, root["bb"]["plugin"] = root["bb"]["plugin"] || {}, root["bb"]["plugin"]["stanford"] = factory(root["d3"], root["d3"], root["d3"], root["d3"]);
+})(this, function(__WEBPACK_EXTERNAL_MODULE__4__, __WEBPACK_EXTERNAL_MODULE__5__, __WEBPACK_EXTERNAL_MODULE__6__, __WEBPACK_EXTERNAL_MODULE__1__) {
 return /******/ (function() { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ([
@@ -30,13 +30,13 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__1__;
 
 /***/ }),
 /* 2 */,
-/* 3 */
+/* 3 */,
+/* 4 */
 /***/ (function(module) {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__3__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__4__;
 
 /***/ }),
-/* 4 */,
 /* 5 */
 /***/ (function(module) {
 
@@ -47,24 +47,6 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__5__;
 /***/ (function(module) {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE__6__;
-
-/***/ }),
-/* 7 */
-/***/ (function(module) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__7__;
-
-/***/ }),
-/* 8 */
-/***/ (function(module) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__8__;
-
-/***/ }),
-/* 9 */
-/***/ (function(module) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__9__;
 
 /***/ })
 /******/ 	]);
@@ -113,7 +95,7 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__9__;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 !function() {
 
 // EXPORTS
@@ -121,109 +103,74 @@ __webpack_require__.d(__webpack_exports__, {
   "default": function() { return /* binding */ Stanford; }
 });
 
-;// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/newArrowCheck.js
-function _newArrowCheck(innerThis, boundThis) {
-  if (innerThis !== boundThis) {
-    throw new TypeError("Cannot instantiate an arrow function");
-  }
-}
-;// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/assertThisInitialized.js
-function _assertThisInitialized(self) {
-  if (self === void 0) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return self;
-}
-;// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/setPrototypeOf.js
-function _setPrototypeOf(o, p) {
-  _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) {
-    o.__proto__ = p;
-    return o;
-  };
-  return _setPrototypeOf(o, p);
-}
-;// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/inheritsLoose.js
-
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-  _setPrototypeOf(subClass, superClass);
-}
 // EXTERNAL MODULE: external {"commonjs":"d3-interpolate","commonjs2":"d3-interpolate","amd":"d3-interpolate","root":"d3"}
-var external_commonjs_d3_interpolate_commonjs2_d3_interpolate_amd_d3_interpolate_root_d3_ = __webpack_require__(5);
-// EXTERNAL MODULE: external {"commonjs":"d3-color","commonjs2":"d3-color","amd":"d3-color","root":"d3"}
-var external_commonjs_d3_color_commonjs2_d3_color_amd_d3_color_root_d3_ = __webpack_require__(6);
+var external_commonjs_d3_interpolate_commonjs2_d3_interpolate_amd_d3_interpolate_root_d3_ = __webpack_require__(4);
 // EXTERNAL MODULE: external {"commonjs":"d3-scale","commonjs2":"d3-scale","amd":"d3-scale","root":"d3"}
-var external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_ = __webpack_require__(7);
-;// CONCATENATED MODULE: ./node_modules/@babel/runtime/helpers/esm/defineProperty.js
-function _defineProperty(obj, key, value) {
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-
-  return obj;
-}
-;// CONCATENATED MODULE: ./src/config/classes.ts
-
-
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1, source; i < arguments.length; i++) { source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-/**
- * CSS class names definition
- * @private
- */
-var $COMMON = {
+var external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_ = __webpack_require__(5);
+;// ./src/config/classes.ts
+var __defProp = Object.defineProperty;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (__hasOwnProp.call(b, prop))
+      __defNormalProp(a, prop, b[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b)) {
+      if (__propIsEnum.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    }
+  return a;
+};
+const $COMMON = {
   button: "bb-button",
   chart: "bb-chart",
   empty: "bb-empty",
   main: "bb-main",
   target: "bb-target",
-  EXPANDED: "_expanded_"
+  EXPANDED: "_expanded_",
+  dummy: "_dummy_"
 };
-var $ARC = {
+const $ARC = {
   arc: "bb-arc",
   arcLabelLine: "bb-arc-label-line",
+  arcLabelLineText: "bb-arc-label-line-text",
+  arcRange: "bb-arc-range",
   arcs: "bb-arcs",
   chartArc: "bb-chart-arc",
   chartArcs: "bb-chart-arcs",
   chartArcsBackground: "bb-chart-arcs-background",
-  chartArcsTitle: "bb-chart-arcs-title"
+  chartArcsTitle: "bb-chart-arcs-title",
+  needle: "bb-needle"
 };
-var $AREA = {
+const $AREA = {
   area: "bb-area",
   areas: "bb-areas"
 };
-var $AXIS = {
+const $AXIS = {
   axis: "bb-axis",
   axisX: "bb-axis-x",
   axisXLabel: "bb-axis-x-label",
   axisY: "bb-axis-y",
   axisY2: "bb-axis-y2",
   axisY2Label: "bb-axis-y2-label",
-  axisYLabel: "bb-axis-y-label"
+  axisYLabel: "bb-axis-y-label",
+  axisXTooltip: "bb-axis-x-tooltip",
+  axisYTooltip: "bb-axis-y-tooltip",
+  axisY2Tooltip: "bb-axis-y2-tooltip",
+  axisTooltipX: "bb-axis-tooltip-x",
+  axisTooltipY: "bb-axis-tooltip-y"
 };
-var $BAR = {
+const $BAR = {
   bar: "bb-bar",
   bars: "bb-bars",
   chartBar: "bb-chart-bar",
-  chartBars: "bb-chart-bars"
+  chartBars: "bb-chart-bars",
+  barConnectLine: "bb-bar-connectLine"
 };
-var $CANDLESTICK = {
+const $CANDLESTICK = {
   candlestick: "bb-candlestick",
   candlesticks: "bb-candlesticks",
   chartCandlestick: "bb-chart-candlestick",
@@ -231,27 +178,33 @@ var $CANDLESTICK = {
   valueDown: "bb-value-down",
   valueUp: "bb-value-up"
 };
-var $CIRCLE = {
+const $CIRCLE = {
   chartCircles: "bb-chart-circles",
   circle: "bb-circle",
   circles: "bb-circles"
 };
-var $COLOR = {
+const $COLOR = {
   colorPattern: "bb-color-pattern",
   colorScale: "bb-colorscale"
 };
-var $DRAG = {
+const $DRAG = {
   dragarea: "bb-dragarea",
   INCLUDED: "_included_"
 };
-var $GAUGE = {
+const $FUNNEL = {
+  funnel: "bb-funnel",
+  chartFunnel: "bb-chart-funnel",
+  chartFunnels: "bb-chart-funnels",
+  funnelBackground: "bb-funnel-background"
+};
+const $GAUGE = {
   chartArcsGaugeMax: "bb-chart-arcs-gauge-max",
   chartArcsGaugeMin: "bb-chart-arcs-gauge-min",
   chartArcsGaugeUnit: "bb-chart-arcs-gauge-unit",
   chartArcsGaugeTitle: "bb-chart-arcs-gauge-title",
   gaugeValue: "bb-gauge-value"
 };
-var $LEGEND = {
+const $LEGEND = {
   legend: "bb-legend",
   legendBackground: "bb-legend-background",
   legendItem: "bb-legend-item",
@@ -260,26 +213,26 @@ var $LEGEND = {
   legendItemPoint: "bb-legend-item-point",
   legendItemTile: "bb-legend-item-tile"
 };
-var $LINE = {
+const $LINE = {
   chartLine: "bb-chart-line",
   chartLines: "bb-chart-lines",
   line: "bb-line",
   lines: "bb-lines"
 };
-var $EVENT = {
+const $EVENT = {
   eventRect: "bb-event-rect",
   eventRects: "bb-event-rects",
   eventRectsMultiple: "bb-event-rects-multiple",
   eventRectsSingle: "bb-event-rects-single"
 };
-var $FOCUS = {
+const $FOCUS = {
   focused: "bb-focused",
   defocused: "bb-defocused",
   legendItemFocused: "bb-legend-item-focused",
   xgridFocus: "bb-xgrid-focus",
   ygridFocus: "bb-ygrid-focus"
 };
-var $GRID = {
+const $GRID = {
   grid: "bb-grid",
   gridLines: "bb-grid-lines",
   xgrid: "bb-xgrid",
@@ -291,1344 +244,175 @@ var $GRID = {
   ygridLines: "bb-ygrid-lines",
   ygrids: "bb-ygrids"
 };
-var $LEVEL = {
+const $LEVEL = {
   level: "bb-level",
   levels: "bb-levels"
 };
-var $RADAR = {
+const $RADAR = {
   chartRadar: "bb-chart-radar",
   chartRadars: "bb-chart-radars"
 };
-var $REGION = {
+const $REGION = {
   region: "bb-region",
   regions: "bb-regions"
 };
-var $SELECT = {
+const $SELECT = {
   selectedCircle: "bb-selected-circle",
   selectedCircles: "bb-selected-circles",
   SELECTED: "_selected_"
 };
-var $SHAPE = {
+const $SHAPE = {
   shape: "bb-shape",
   shapes: "bb-shapes"
 };
-var $SUBCHART = {
+const $SUBCHART = {
   brush: "bb-brush",
   subchart: "bb-subchart"
 };
-var $TEXT = {
+const $TEXT = {
   chartText: "bb-chart-text",
   chartTexts: "bb-chart-texts",
   text: "bb-text",
   texts: "bb-texts",
   title: "bb-title",
+  textBorderRect: "bb-text-border",
+  textLabelImage: "bb-text-label-image",
   TextOverlapping: "text-overlapping"
 };
-var $TOOLTIP = {
+const $TOOLTIP = {
   tooltip: "bb-tooltip",
   tooltipContainer: "bb-tooltip-container",
   tooltipName: "bb-tooltip-name"
 };
-var $ZOOM = {
+const $TREEMAP = {
+  treemap: "bb-treemap",
+  chartTreemap: "bb-chart-treemap",
+  chartTreemaps: "bb-chart-treemaps"
+};
+const $ZOOM = {
   buttonZoomReset: "bb-zoom-reset",
   zoomBrush: "bb-zoom-brush"
 };
-/* harmony default export */ var classes = (_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread(_objectSpread({}, $COMMON), $ARC), $AREA), $AXIS), $BAR), $CANDLESTICK), $CIRCLE), $COLOR), $DRAG), $GAUGE), $LEGEND), $LINE), $EVENT), $FOCUS), $GRID), $RADAR), $REGION), $SELECT), $SHAPE), $SUBCHART), $TEXT), $TOOLTIP), $ZOOM));
-// EXTERNAL MODULE: external {"commonjs":"d3-selection","commonjs2":"d3-selection","amd":"d3-selection","root":"d3"}
-var external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_ = __webpack_require__(1);
-// EXTERNAL MODULE: external {"commonjs":"d3-brush","commonjs2":"d3-brush","amd":"d3-brush","root":"d3"}
-var external_commonjs_d3_brush_commonjs2_d3_brush_amd_d3_brush_root_d3_ = __webpack_require__(3);
-;// CONCATENATED MODULE: ./src/module/browser.ts
+/* harmony default export */ var classes = (__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, $COMMON), $ARC), $AREA), $AXIS), $BAR), $CANDLESTICK), $CIRCLE), $COLOR), $DRAG), $GAUGE), $LEGEND), $LINE), $EVENT), $FOCUS), $FUNNEL), $GRID), $LEVEL), $RADAR), $REGION), $SELECT), $SHAPE), $SUBCHART), $TEXT), $TOOLTIP), $TREEMAP), $ZOOM));
 
-
-var _this = undefined;
-
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-/**
- * Window object
- * @private
- */
-
-/* eslint-disable no-new-func, no-undef */
-
-
-var win = function () {
-  _newArrowCheck(this, _this);
-
-  var root = typeof globalThis === "object" && globalThis !== null && globalThis.Object === Object && globalThis || typeof global === "object" && global !== null && global.Object === Object && global || typeof self === "object" && self !== null && self.Object === Object && self;
-  return root || Function("return this")();
-}.bind(undefined)();
-/* eslint-enable no-new-func, no-undef */
-// fallback for non-supported environments
-
-
-win.requestIdleCallback = win.requestIdleCallback || function (cb) {
-  _newArrowCheck(this, _this);
-
-  return setTimeout(cb, 1);
-}.bind(undefined);
-
-win.cancelIdleCallback = win.cancelIdleCallback || function (id) {
-  _newArrowCheck(this, _this);
-
-  return clearTimeout(id);
-}.bind(undefined);
-
-var doc = win == null ? void 0 : win.document;
-;// CONCATENATED MODULE: ./src/module/util.ts
-
-
-
-var util_this = undefined;
-
-function util_ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-
-function util_objectSpread(target) { for (var i = 1, source; i < arguments.length; i++) { source = null != arguments[i] ? arguments[i] : {}; i % 2 ? util_ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : util_ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- * @ignore
- */
-
-
-
-
-
-var isValue = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return v || v === 0;
-}.bind(undefined),
-    isFunction = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v === "function";
-}.bind(undefined),
-    isString = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v === "string";
-}.bind(undefined),
-    isNumber = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v === "number";
-}.bind(undefined),
-    isUndefined = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v === "undefined";
-}.bind(undefined),
-    isDefined = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v !== "undefined";
-}.bind(undefined),
-    isboolean = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v === "boolean";
-}.bind(undefined),
-    ceil10 = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return Math.ceil(v / 10) * 10;
-}.bind(undefined),
-    asHalfPixel = function (n) {
-  _newArrowCheck(this, util_this);
-
-  return Math.ceil(n) + .5;
-}.bind(undefined),
-    diffDomain = function (d) {
-  _newArrowCheck(this, util_this);
-
-  return d[1] - d[0];
-}.bind(undefined),
-    isObjectType = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return typeof v === "object";
-}.bind(undefined),
-    isEmpty = function (o) {
-  _newArrowCheck(this, util_this);
-
-  return isUndefined(o) || o === null || isString(o) && o.length === 0 || isObjectType(o) && !(o instanceof Date) && Object.keys(o).length === 0 || isNumber(o) && isNaN(o);
-}.bind(undefined),
-    notEmpty = function (o) {
-  _newArrowCheck(this, util_this);
-
-  return !isEmpty(o);
-}.bind(undefined),
-    isArray = function (arr) {
-  _newArrowCheck(this, util_this);
-
-  return Array.isArray(arr);
-}.bind(undefined),
-    isObject = function (obj) {
-  _newArrowCheck(this, util_this);
-
-  return obj && !(obj != null && obj.nodeType) && isObjectType(obj) && !isArray(obj);
-}.bind(undefined);
-
-/**
- * Get specified key value from object
- * If default value is given, will return if given key value not found
- * @param {object} options Source object
- * @param {string} key Key value
- * @param {*} defaultValue Default value
- * @returns {*}
- * @private
- */
-function getOption(options, key, defaultValue) {
-  return isDefined(options[key]) ? options[key] : defaultValue;
-}
-/**
- * Check if value exist in the given object
- * @param {object} dict Target object to be checked
- * @param {*} value Value to be checked
- * @returns {boolean}
- * @private
- */
-
-
-function hasValue(dict, value) {
-  var _this2 = this,
-      found = !1;
-
-  Object.keys(dict).forEach(function (key) {
-    _newArrowCheck(this, _this2);
-
-    return dict[key] === value && (found = !0);
-  }.bind(this));
-  return found;
-}
-/**
- * Call function with arguments
- * @param {Function} fn Function to be called
- * @param {*} thisArg "this" value for fn
- * @param {*} args Arguments for fn
- * @returns {boolean} true: fn is function, false: fn is not function
- * @private
- */
-
-
-function callFn(fn, thisArg) {
-  for (var isFn = isFunction(fn), _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-    args[_key - 2] = arguments[_key];
+;// ./src/module/util/type-checks.ts
+const isValue = (v) => v || v === 0;
+const isFunction = (v) => typeof v === "function";
+const isString = (v) => typeof v === "string";
+const isNumber = (v) => typeof v === "number";
+const isUndefined = (v) => typeof v === "undefined";
+const isDefined = (v) => typeof v !== "undefined";
+const isBoolean = (v) => typeof v === "boolean";
+const ceil10 = (v) => Math.ceil(v / 10) * 10;
+const asHalfPixel = (n) => Math.ceil(n) + 0.5;
+const diffDomain = (d) => d[1] - d[0];
+const isObjectType = (v) => typeof v === "object";
+const isEmptyObject = (obj) => {
+  for (const x in obj) {
+    return false;
   }
+  return true;
+};
+const isEmpty = (o) => isUndefined(o) || o === null || isString(o) && o.length === 0 || isObjectType(o) && !(o instanceof Date) && isEmptyObject(o) || isNumber(o) && isNaN(o);
+const notEmpty = (o) => !isEmpty(o);
+const isArray = (arr) => Array.isArray(arr);
+const isObject = (obj) => obj && !(obj == null ? void 0 : obj.nodeType) && isObjectType(obj) && !isArray(obj);
 
-  isFn && fn.call.apply(fn, [thisArg].concat(args));
-  return isFn;
-}
-/**
- * Call function after all transitions ends
- * @param {d3.transition} transition Transition
- * @param {Fucntion} cb Callback function
- * @private
- */
 
+;// ./src/config/config.ts
 
-function endall(transition, cb) {
-  var _this3 = this,
-      n = 0,
-      end = function () {
-    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-      args[_key2] = arguments[_key2];
-    }
-
-    --n || cb.apply.apply(cb, [this].concat(args));
-  };
-
-  // if is transition selection
-  if ("duration" in transition) {
-    transition.each(function () {
-      _newArrowCheck(this, _this3);
-
-      return ++n;
-    }.bind(this)).on("end", end);
-  } else {
-    ++n;
-    transition.call(end);
-  }
-}
-/**
- * Replace tag sign to html entity
- * @param {string} str Target string value
- * @returns {string}
- * @private
- */
-
-
-function sanitise(str) {
-  return isString(str) ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : str;
-}
-/**
- * Set text value. If there's multiline add nodes.
- * @param {d3Selection} node Text node
- * @param {string} text Text value string
- * @param {Array} dy dy value for multilined text
- * @param {boolean} toMiddle To be alingned vertically middle
- * @private
- */
-
-
-function setTextValue(node, text, dy, toMiddle) {
-  var _this4 = this;
-
-  if (dy === void 0) {
-    dy = [-1, 1];
-  }
-
-  if (toMiddle === void 0) {
-    toMiddle = !1;
-  }
-
-  if (!node || !isString(text)) {
-    return;
-  }
-
-  if (text.indexOf("\n") === -1) {
-    node.text(text);
-  } else {
-    var diff = [node.text(), text].map(function (v) {
-      _newArrowCheck(this, _this4);
-
-      return v.replace(/[\s\n]/g, "");
-    }.bind(this));
-
-    if (diff[0] !== diff[1]) {
-      var multiline = text.split("\n"),
-          len = toMiddle ? multiline.length - 1 : 1;
-      // reset possible text
-      node.html("");
-      multiline.forEach(function (v, i) {
-        _newArrowCheck(this, _this4);
-
-        node.append("tspan").attr("x", 0).attr("dy", (i === 0 ? dy[0] * len : dy[1]) + "em").text(v);
-      }.bind(this));
-    }
-  }
-}
-/**
- * Substitution of SVGPathSeg API polyfill
- * @param {SVGGraphicsElement} path Target svg element
- * @returns {Array}
- * @private
- */
-
-
-function getRectSegList(path) {
-  /*
-   * seg1 ---------- seg2
-   *   |               |
-   *   |               |
-   *   |               |
-   * seg0 ---------- seg3
-   * */
-  var _path$getBBox = path.getBBox(),
-      x = _path$getBBox.x,
-      y = _path$getBBox.y,
-      width = _path$getBBox.width,
-      height = _path$getBBox.height;
-
-  return [{
-    x: x,
-    y: y + height
-  }, // seg0
-  {
-    x: x,
-    y: y
-  }, // seg1
-  {
-    x: x + width,
-    y: y
-  }, // seg2
-  {
-    x: x + width,
-    y: y + height
-  } // seg3
-  ];
-}
-/**
- * Get svg bounding path box dimension
- * @param {SVGGraphicsElement} path Target svg element
- * @returns {object}
- * @private
- */
-
-
-function getPathBox(path) {
-  var _path$getBoundingClie = path.getBoundingClientRect(),
-      width = _path$getBoundingClie.width,
-      height = _path$getBoundingClie.height,
-      items = getRectSegList(path),
-      x = items[0].x,
-      y = Math.min(items[0].y, items[1].y);
-
-  return {
-    x: x,
-    y: y,
-    width: width,
-    height: height
-  };
-}
-/**
- * Get event's current position coordinates
- * @param {object} event Event object
- * @param {SVGElement|HTMLElement} element Target element
- * @returns {Array} [x, y] Coordinates x, y array
- * @private
- */
-
-
-function getPointer(event, element) {
-  var _ref,
-      touches = event && ((_ref = event.touches || event.sourceEvent && event.sourceEvent.touches) == null ? void 0 : _ref[0]),
-      pointer = (0,external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_.pointer)(touches || event, element),
-      _this5 = this;
-
-  return pointer.map(function (v) {
-    _newArrowCheck(this, _this5);
-
-    return isNaN(v) ? 0 : v;
-  }.bind(this));
-}
-/**
- * Return brush selection array
- * @param {object} ctx Current instance
- * @returns {d3.brushSelection}
- * @private
- */
-
-
-function getBrushSelection(ctx) {
-  var event = ctx.event,
-      $el = ctx.$el,
-      main = $el.subchart.main || $el.main,
-      selection;
-
-  // check from event
-  if (event && event.type === "brush") {
-    selection = event.selection; // check from brush area selection
-  } else if (main && (selection = main.select(".bb-brush").node())) {
-    selection = (0,external_commonjs_d3_brush_commonjs2_d3_brush_amd_d3_brush_root_d3_.brushSelection)(selection);
-  }
-
-  return selection;
-}
-/**
- * Get boundingClientRect.
- * Cache the evaluated value once it was called.
- * @param {HTMLElement} node Target element
- * @returns {object}
- * @private
- */
-
-
-function getBoundingRect(node) {
-  var needEvaluate = !("rect" in node) || "rect" in node && node.hasAttribute("width") && node.rect.width !== +node.getAttribute("width");
-  return needEvaluate ? node.rect = node.getBoundingClientRect() : node.rect;
-}
-/**
- * Retrun random number
- * @param {boolean} asStr Convert returned value as string
- * @param {number} min Minimum value
- * @param {number} max Maximum value
- * @returns {number|string}
- * @private
- */
-
-
-function getRandom(asStr, min, max) {
-  if (asStr === void 0) {
-    asStr = !0;
-  }
-
-  if (min === void 0) {
-    min = 0;
-  }
-
-  if (max === void 0) {
-    max = 1e4;
-  }
-
-  var rand = Math.floor(Math.random() * (max - min) + min);
-  return asStr ? rand + "" : rand;
-}
-/**
- * Find index based on binary search
- * @param {Array} arr Data array
- * @param {number} v Target number to find
- * @param {number} start Start index of data array
- * @param {number} end End index of data arr
- * @param {boolean} isRotated Weather is roted axis
- * @returns {number} Index number
- * @private
- */
-
-
-function findIndex(arr, v, start, end, isRotated) {
-  if (start > end) {
-    return -1;
-  }
-
-  var mid = Math.floor((start + end) / 2),
-      _arr$mid = arr[mid],
-      x = _arr$mid.x,
-      _arr$mid$w = _arr$mid.w,
-      w = _arr$mid$w === void 0 ? 0 : _arr$mid$w;
-
-  if (isRotated) {
-    x = arr[mid].y;
-    w = arr[mid].h;
-  }
-
-  if (v >= x && v <= x + w) {
-    return mid;
-  }
-
-  return v < x ? findIndex(arr, v, start, mid - 1, isRotated) : findIndex(arr, v, mid + 1, end, isRotated);
-}
-/**
- * Check if brush is empty
- * @param {object} ctx Bursh context
- * @returns {boolean}
- * @private
- */
-
-
-function brushEmpty(ctx) {
-  var selection = getBrushSelection(ctx);
-
-  if (selection) {
-    // brush selected area
-    // two-dimensional: [[x0, y0], [x1, y1]]
-    // one-dimensional: [x0, x1] or [y0, y1]
-    return selection[0] === selection[1];
-  }
-
-  return !0;
-}
-/**
- * Deep copy object
- * @param {object} objectN Source object
- * @returns {object} Cloned object
- * @private
- */
-
-
-function deepClone() {
-  for (var _this6 = this, clone = function (v) {
-    _newArrowCheck(this, _this6);
-
-    if (isObject(v) && v.constructor) {
-      var r = new v.constructor();
-
-      for (var k in v) {
-        r[k] = clone(v[k]);
-      }
-
-      return r;
-    }
-
-    return v;
-  }.bind(this), _len3 = arguments.length, objectN = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-    objectN[_key3] = arguments[_key3];
-  }
-
-  return objectN.map(function (v) {
-    _newArrowCheck(this, _this6);
-
-    return clone(v);
-  }.bind(this)).reduce(function (a, c) {
-    _newArrowCheck(this, _this6);
-
-    return util_objectSpread(util_objectSpread({}, a), c);
-  }.bind(this));
-}
-/**
- * Extend target from source object
- * @param {object} target Target object
- * @param {object|Array} source Source object
- * @returns {object}
- * @private
- */
-
-
-function extend(target, source) {
-  var _this7 = this;
-
-  if (target === void 0) {
-    target = {};
-  }
-
-  if (isArray(source)) {
-    source.forEach(function (v) {
-      _newArrowCheck(this, _this7);
-
-      return extend(target, v);
-    }.bind(this));
-  } // exclude name with only numbers
-
-
-  for (var p in source) {
-    if (/^\d+$/.test(p) || p in target) {
-      continue;
-    }
-
-    target[p] = source[p];
-  }
-
-  return target;
-}
-/**
- * Return first letter capitalized
- * @param {string} str Target string
- * @returns {string} capitalized string
- * @private
- */
-
-
-var capitalize = function (str) {
-  _newArrowCheck(this, util_this);
-
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}.bind(undefined);
-/**
- * Camelize from kebob style string
- * @param {string} str Target string
- * @param {string} separator Separator string
- * @returns {string} camelized string
- * @private
- */
-
-
-function camelize(str, separator) {
-  var _this8 = this;
-
-  if (separator === void 0) {
-    separator = "-";
-  }
-
-  return str.split(separator).map(function (v, i) {
-    _newArrowCheck(this, _this8);
-
-    return i ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase() : v.toLowerCase();
-  }.bind(this)).join("");
-}
-/**
- * Convert to array
- * @param {object} v Target to be converted
- * @returns {Array}
- * @private
- */
-
-
-var toArray = function (v) {
-  _newArrowCheck(this, util_this);
-
-  return [].slice.call(v);
-}.bind(undefined);
-/**
- * Get css rules for specified stylesheets
- * @param {Array} styleSheets The stylesheets to get the rules from
- * @returns {Array}
- * @private
- */
-
-
-function getCssRules(styleSheets) {
-  var _this9 = this,
-      rules = [];
-
-  styleSheets.forEach(function (sheet) {
-    _newArrowCheck(this, _this9);
-
-    try {
-      if (sheet.cssRules && sheet.cssRules.length) {
-        rules = rules.concat(toArray(sheet.cssRules));
-      }
-    } catch (e) {
-      console.error("Error while reading rules from " + sheet.href + ": " + e.toString());
-    }
-  }.bind(this));
-  return rules;
-}
-/**
- * Gets the SVGMatrix of an SVGGElement
- * @param {SVGElement} node Node element
- * @returns {SVGMatrix} matrix
- * @private
- */
-
-
-function getTranslation(node) {
-  var transform = node ? node.transform : null,
-      baseVal = transform && transform.baseVal;
-  return baseVal && baseVal.numberOfItems ? baseVal.getItem(0).matrix : {
-    a: 0,
-    b: 0,
-    c: 0,
-    d: 0,
-    e: 0,
-    f: 0
-  };
-}
-/**
- * Get unique value from array
- * @param {Array} data Source data
- * @returns {Array} Unique array value
- * @private
- */
-
-
-function getUnique(data) {
-  var _this10 = this,
-      isDate = data[0] instanceof Date,
-      d = (isDate ? data.map(Number) : data).filter(function (v, i, self) {
-    _newArrowCheck(this, _this10);
-
-    return self.indexOf(v) === i;
-  }.bind(this));
-
-  return isDate ? d.map(function (v) {
-    _newArrowCheck(this, _this10);
-
-    return new Date(v);
-  }.bind(this)) : d;
-}
-/**
- * Merge array
- * @param {Array} arr Source array
- * @returns {Array}
- * @private
- */
-
-
-function mergeArray(arr) {
-  var _this11 = this;
-
-  return arr && arr.length ? arr.reduce(function (p, c) {
-    _newArrowCheck(this, _this11);
-
-    return p.concat(c);
-  }.bind(this)) : [];
-}
-/**
- * Merge object returning new object
- * @param {object} target Target object
- * @param {object} objectN Source object
- * @returns {object} merged target object
- * @private
- */
-
-
-function mergeObj(target) {
-  for (var _this12 = this, _len4 = arguments.length, objectN = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-    objectN[_key4 - 1] = arguments[_key4];
-  }
-
-  if (!objectN.length || objectN.length === 1 && !objectN[0]) {
-    return target;
-  }
-
-  var source = objectN.shift();
-
-  if (isObject(target) && isObject(source)) {
-    Object.keys(source).forEach(function (key) {
-      _newArrowCheck(this, _this12);
-
-      var value = source[key];
-
-      if (isObject(value)) {
-        target[key] || (target[key] = {});
-        target[key] = mergeObj(target[key], value);
-      } else {
-        target[key] = isArray(value) ? value.concat() : value;
-      }
-    }.bind(this));
-  }
-
-  return mergeObj.apply(void 0, [target].concat(objectN));
-}
-/**
- * Sort value
- * @param {Array} data value to be sorted
- * @param {boolean} isAsc true: asc, false: desc
- * @returns {number|string|Date} sorted date
- * @private
- */
-
-
-function sortValue(data, isAsc) {
-  var _this13 = this;
-
-  if (isAsc === void 0) {
-    isAsc = !0;
-  }
-
-  var fn;
-
-  if (data[0] instanceof Date) {
-    fn = isAsc ? function (a, b) {
-      _newArrowCheck(this, _this13);
-
-      return a - b;
-    }.bind(this) : function (a, b) {
-      _newArrowCheck(this, _this13);
-
-      return b - a;
-    }.bind(this);
-  } else {
-    if (isAsc && !data.every(isNaN)) {
-      fn = function (a, b) {
-        _newArrowCheck(this, _this13);
-
-        return a - b;
-      }.bind(this);
-    } else if (!isAsc) {
-      fn = function (a, b) {
-        _newArrowCheck(this, _this13);
-
-        return a > b && -1 || a < b && 1 || a === b && 0;
-      }.bind(this);
-    }
-  }
-
-  return data.concat().sort(fn);
-}
-/**
- * Get min/max value
- * @param {string} type 'min' or 'max'
- * @param {Array} data Array data value
- * @returns {number|Date|undefined}
- * @private
- */
-
-
-function getMinMax(type, data) {
-  var _this14 = this,
-      res = data.filter(function (v) {
-    _newArrowCheck(this, _this14);
-
-    return notEmpty(v);
-  }.bind(this));
-
-  if (res.length) {
-    if (isNumber(res[0])) {
-      res = Math[type].apply(Math, res);
-    } else if (res[0] instanceof Date) {
-      res = sortValue(res, type === "min")[0];
-    }
-  } else {
-    res = undefined;
-  }
-
-  return res;
-}
-/**
- * Get range
- * @param {number} start Start number
- * @param {number} end End number
- * @param {number} step Step number
- * @returns {Array}
- * @private
- */
-
-
-var getRange = function (start, end, step) {
-  if (step === void 0) {
-    step = 1;
-  }
-
-  _newArrowCheck(this, util_this);
-
-  var res = [],
-      n = Math.max(0, Math.ceil((end - start) / step)) | 0;
-
-  for (var i = start; i < n; i++) {
-    res.push(start + i * step);
-  }
-
-  return res;
-}.bind(undefined),
-    emulateEvent = {
-  mouse: function () {
-    var _this15 = this;
-
-    _newArrowCheck(this, util_this);
-
-    var getParams = function () {
-      _newArrowCheck(this, _this15);
-
-      return {
-        bubbles: !1,
-        cancelable: !1,
-        screenX: 0,
-        screenY: 0,
-        clientX: 0,
-        clientY: 0
-      };
-    }.bind(this);
-
-    try {
-      // eslint-disable-next-line no-new
-      new MouseEvent("t");
-      return function (el, eventType, params) {
-        if (params === void 0) {
-          params = getParams();
-        }
-
-        _newArrowCheck(this, _this15);
-
-        el.dispatchEvent(new MouseEvent(eventType, params));
-      }.bind(this);
-    } catch (e) {
-      // Polyfills DOM4 MouseEvent
-      return function (el, eventType, params) {
-        if (params === void 0) {
-          params = getParams();
-        }
-
-        _newArrowCheck(this, _this15);
-
-        var mouseEvent = doc.createEvent("MouseEvent"); // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/initMouseEvent
-
-        mouseEvent.initMouseEvent(eventType, params.bubbles, params.cancelable, win, 0, // the event's mouse click count
-        params.screenX, params.screenY, params.clientX, params.clientY, !1, !1, !1, !1, 0, null);
-        el.dispatchEvent(mouseEvent);
-      }.bind(this);
-    }
-  }.bind(undefined)(),
-  touch: function touch(el, eventType, params) {
-    _newArrowCheck(this, util_this);
-
-    var touchObj = new Touch(mergeObj({
-      identifier: Date.now(),
-      target: el,
-      radiusX: 2.5,
-      radiusY: 2.5,
-      rotationAngle: 10,
-      force: .5
-    }, params));
-    el.dispatchEvent(new TouchEvent(eventType, {
-      cancelable: !0,
-      bubbles: !0,
-      shiftKey: !0,
-      touches: [touchObj],
-      targetTouches: [],
-      changedTouches: [touchObj]
-    }));
-  }.bind(undefined)
-}; // emulate event
-
-
-/**
- * Process the template  & return bound string
- * @param {string} tpl Template string
- * @param {object} data Data value to be replaced
- * @returns {string}
- * @private
- */
-function tplProcess(tpl, data) {
-  var res = tpl;
-
-  for (var x in data) {
-    res = res.replace(new RegExp("{=" + x + "}", "g"), data[x]);
-  }
-
-  return res;
-}
-/**
- * Get parsed date value
- * (It must be called in 'ChartInternal' context)
- * @param {Date|string|number} date Value of date to be parsed
- * @returns {Date}
- * @private
- */
-
-
-function parseDate(date) {
-  var parsedDate;
-
-  if (date instanceof Date) {
-    parsedDate = date;
-  } else if (isString(date)) {
-    var _format$dataTime,
-        config = this.config,
-        format = this.format;
-
-    // if fails to parse, try by new Date()
-    // https://github.com/naver/billboard.js/issues/1714
-    parsedDate = (_format$dataTime = format.dataTime(config.data_xFormat)(date)) != null ? _format$dataTime : new Date(date);
-  } else if (isNumber(date) && !isNaN(date)) {
-    parsedDate = new Date(+date);
-  }
-
-  if (!parsedDate || isNaN(+parsedDate)) {
-    console && console.error && console.error("Failed to parse x '" + date + "' to Date object");
-  }
-
-  return parsedDate;
-}
-/**
- * Return if the current doc is visible or not
- * @returns {boolean}
- * @private
- */
-
-
-function isTabVisible() {
-  return (doc == null ? void 0 : doc.hidden) === !1 || (doc == null ? void 0 : doc.visibilityState) === "visible";
-}
-/**
- * Get the current input type
- * @param {boolean} mouse Config value: interaction.inputType.mouse
- * @param {boolean} touch Config value: interaction.inputType.touch
- * @returns {string} "mouse" | "touch" | null
- * @private
- */
-
-
-function convertInputType(mouse, touch) {
-  var _this16 = this,
-      DocumentTouch = win.DocumentTouch,
-      matchMedia = win.matchMedia,
-      navigator = win.navigator,
-      hasTouch = !1;
-
-  if (touch) {
-    // Some Edge desktop return true: https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/20417074/
-    if (navigator && "maxTouchPoints" in navigator) {
-      hasTouch = navigator.maxTouchPoints > 0; // Ref: https://github.com/Modernizr/Modernizr/blob/master/feature-detects/touchevents.js
-      // On IE11 with IE9 emulation mode, ('ontouchstart' in window) is returning true
-    } else if ("ontouchmove" in win || DocumentTouch && doc instanceof DocumentTouch) {
-      hasTouch = !0;
-    } else {
-      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent#avoiding_user_agent_detection
-      if (matchMedia != null && matchMedia("(pointer:coarse)").matches) {
-        hasTouch = !0;
-      } else {
-        // Only as a last resort, fall back to user agent sniffing
-        var UA = navigator.userAgent;
-        hasTouch = /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) || /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
-      }
-    }
-  } // Check if agent has mouse using any-hover, touch devices (e.g iPad) with external mouse will return true as long as mouse is connected
-  // https://css-tricks.com/interaction-media-features-and-their-potential-for-incorrect-assumptions/#aa-testing-the-capabilities-of-all-inputs
-  // Demo: https://patrickhlauke.github.io/touch/pointer-hover-any-pointer-any-hover/
-
-
-  var hasMouse = mouse && ["any-hover:hover", "any-pointer:fine"].some(function (v) {
-    _newArrowCheck(this, _this16);
-
-    return matchMedia == null ? void 0 : matchMedia("(" + v + ")").matches;
-  }.bind(this)); // fallback to 'mouse' if no input type is detected.
-
-  return hasMouse && "mouse" || hasTouch && "touch" || "mouse";
-}
-;// CONCATENATED MODULE: ./src/config/config.ts
-
-
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-
-/**
- * Load configuration option
- * @param {object} config User's generation config value
- * @private
- */
 function loadConfig(config) {
-  var _this = this,
-      thisConfig = this.config,
-      target,
-      keys,
-      read,
-      find = function () {
-    _newArrowCheck(this, _this);
-
-    var key = keys.shift();
-
+  const thisConfig = this.config;
+  let target;
+  let keys;
+  let read;
+  const find = () => {
+    const key = keys.shift();
     if (key && target && isObjectType(target) && key in target) {
       target = target[key];
       return find();
     } else if (!key) {
       return target;
     }
-
-    return undefined;
-  }.bind(this);
-
-  Object.keys(thisConfig).forEach(function (key) {
-    _newArrowCheck(this, _this);
-
+    return void 0;
+  };
+  Object.keys(thisConfig).forEach((key) => {
     target = config;
     keys = key.split("_");
     read = find();
-
     if (isDefined(read)) {
       thisConfig[key] = read;
     }
-  }.bind(this));
+  });
+  if (this.api) {
+    this.state.orgConfig = config;
+  }
 }
-;// CONCATENATED MODULE: ./src/Plugin/Plugin.ts
 
+;// ./src/Plugin/Plugin.ts
+var Plugin_defProp = Object.defineProperty;
+var Plugin_defNormalProp = (obj, key, value) => key in obj ? Plugin_defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => Plugin_defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-/**
- * Base class to generate billboard.js plugin
- * @class Plugin
- */
-
-/**
- * Version info string for plugin
- * @name version
- * @static
- * @memberof Plugin
- * @type {string}
- * @example
- *   bb.plugin.stanford.version;  // ex) 1.9.0
- */
-var Plugin = /*#__PURE__*/function () {
+class Plugin {
   /**
    * Constructor
    * @param {Any} options config option object
    * @private
    */
-  function Plugin(options) {
-    if (options === void 0) {
-      options = {};
-    }
-
-    this.$$ = void 0;
-    this.options = void 0;
+  constructor(options = {}) {
+    __publicField(this, "$$");
+    __publicField(this, "options");
+    __publicField(this, "config");
     this.options = options;
+  }
+  /**
+   * Load plugin config from options
+   * @private
+   */
+  loadConfig() {
+    loadConfig.call(this, this.options);
   }
   /**
    * Lifecycle hook for 'beforeInit' phase.
    * @private
    */
-
-
-  var _proto = Plugin.prototype;
-
-  _proto.$beforeInit = function $beforeInit() {}
+  $beforeInit() {
+  }
   /**
    * Lifecycle hook for 'init' phase.
    * @private
    */
-  ;
-
-  _proto.$init = function $init() {}
+  $init() {
+  }
   /**
    * Lifecycle hook for 'afterInit' phase.
    * @private
    */
-  ;
-
-  _proto.$afterInit = function $afterInit() {}
+  $afterInit() {
+  }
   /**
    * Lifecycle hook for 'redraw' phase.
    * @private
    */
-  ;
-
-  _proto.$redraw = function $redraw() {}
+  $redraw() {
+  }
   /**
    * Lifecycle hook for 'willDestroy' phase.
    * @private
    */
-  ;
-
-  _proto.$willDestroy = function $willDestroy() {
-    var _this = this;
-
-    Object.keys(this).forEach(function (key) {
-      _newArrowCheck(this, _this);
-
+  $willDestroy() {
+    Object.keys(this).forEach((key) => {
       this[key] = null;
       delete this[key];
-    }.bind(this));
-  };
+    });
+  }
+}
+__publicField(Plugin, "version", "4.0.1-nightly-20260626045144");
 
-  return Plugin;
-}();
-
-Plugin.version = "3.4.1-nightly-20220601004713";
-
-;// CONCATENATED MODULE: ./src/Plugin/stanford/Options.ts
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-/**
- * Stanford diagram plugin option class
- * @class StanfordOptions
- * @param {Options} options Stanford plugin options
- * @augments Plugin
- * @returns {StanfordOptions}
- * @private
- */
-var Options = function () {
-  return {
-    /**
-     * Set the color of the color scale. This function receives a value between 0 and 1, and should return a color.
-     * @name colors
-     * @memberof plugin-stanford
-     * @type {Function}
-     * @default undefined
-     * @example
-     *   colors: d3.interpolateHslLong(
-     *      d3.hsl(250, 1, 0.5), d3.hsl(0, 1, 0.5)
-     *   )
-     */
-    colors: undefined,
-
-    /**
-     * Specify the key of epochs values in the data.
-     * @name epochs
-     * @memberof plugin-stanford
-     * @type {Array}
-     * @default []
-     * @example
-     * 	epochs: [ 1, 1, 2, 2, ... ]
-     */
-    epochs: [],
-
-    /**
-     * Show additional lines anywhere on the chart.
-     * - Each line object should consist with following options:
-     *
-     * | Key | Type | Description |
-     * | --- | --- | --- |
-     * | x1 | Number | Starting position on the x axis |
-     * | y1 | Number | Starting position on the y axis |
-     * | x2 | Number | Ending position on the x axis  |
-     * | y2 | Number | Ending position on the y axis |
-     * | class | String | Optional value. Set a custom css class to this line. |
-     * @type {Array}
-     * @memberof plugin-stanford
-     * @default []
-     * @example
-     *   lines: [
-     *       { x1: 0, y1: 0, x2: 65, y2: 65, class: "line1" },
-     *       { x1: 0, x2: 65, y1: 40, y2: 40, class: "line2" }
-     *   ]
-     */
-    lines: [],
-
-    /**
-     * Set scale values
-     * @name scale
-     * @memberof plugin-stanford
-     * @type {object}
-     * @property {object} [scale] scale object
-     * @property {number} [scale.min=undefined] Minimum value of the color scale. Default: lowest value in epochs
-     * @property {number} [scale.max=undefined] Maximum value of the color scale. Default: highest value in epochs
-     * @property {number} [scale.width=20] Width of the color scale
-     * @property {string|Function} [scale.format=undefined] Format of the axis of the color scale. Use 'pow10' to format as powers of 10 or a custom function. Example: d3.format("d")
-     * @example
-     *  scale: {
-     *    max: 10000,
-     *    min: 1,
-     *    width: 500,
-     *
-     *    // specify 'pow10' to format as powers of 10
-     *    format: "pow10",
-     *
-     *    // or specify a format function
-     *    format: function(x) {
-     *    	return x +"%";
-     *    }
-     *  },
-     */
-    scale_min: undefined,
-    scale_max: undefined,
-    scale_width: 20,
-    scale_format: undefined,
-
-    /**
-     * The padding for color scale element
-     * @name padding
-     * @memberof plugin-stanford
-     * @type {object}
-     * @property {object} [padding] padding object
-     * @property {number} [padding.top=0] Top padding value.
-     * @property {number} [padding.right=0] Right padding value.
-     * @property {number} [padding.bottom=0] Bottom padding value.
-     * @property {number} [padding.left=0] Left padding value.
-     * @example
-     *  padding: {
-     *     top: 15,
-     *     right: 0,
-     *     bottom: 0,
-     *     left: 0
-     *  },
-     */
-    padding_top: 0,
-    padding_right: 0,
-    padding_bottom: 0,
-    padding_left: 0,
-
-    /**
-     * Show additional regions anywhere on the chart.
-     * - Each region object should consist with following options:
-     *
-     *   | Key | Type | Default | Attributes | Description |
-     *   | --- | --- | --- | --- | --- |
-     *   | points | Array |  | | Accepts a group of objects that has x and y.<br>These points should be added in a counter-clockwise fashion to make a closed polygon. |
-     *   | opacity | Number | `0.2` | &lt;optional> | Sets the opacity of the region as value between 0 and 1 |
-     *   | text | Function |  | &lt;optional> | This function receives a value and percentage of the number of epochs in this region.<br>Return a string to place text in the middle of the region. |
-     *   | class | String | | &lt;optional> | Se a custom css class to this region, use the fill property in css to set a background color. |
-     * @name regions
-     * @memberof plugin-stanford
-     * @type {Array}
-     * @default []
-     * @example
-     *   regions: [
-     *       {
-     *           points: [ // add points counter-clockwise
-     *               { x: 0, y: 0 },
-     *               { x: 40, y: 40 },
-     *               { x: 0, y: 40 },
-     *           ],
-     *           text: function (value, percentage) {
-     *               return `Normal Operations: ${value} (${percentage}%)`;
-     *           },
-     *           opacity: 0.2, // 0 to 1
-     *           class: "test-polygon1"
-     *       },
-     *       ...
-     *   ]
-     */
-    regions: []
-  };
-};
-
-
-;// CONCATENATED MODULE: ./src/Plugin/stanford/classes.ts
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-/**
- * CSS class names definition
- * @private
- */
+// EXTERNAL MODULE: external {"commonjs":"d3-axis","commonjs2":"d3-axis","amd":"d3-axis","root":"d3"}
+var external_commonjs_d3_axis_commonjs2_d3_axis_amd_d3_axis_root_d3_ = __webpack_require__(6);
+;// ./src/Plugin/stanford/classes.ts
 /* harmony default export */ var stanford_classes = ({
   colorScale: "bb-colorscale",
   stanfordElements: "bb-stanford-elements",
@@ -1637,108 +421,954 @@ var Options = function () {
   stanfordRegion: "bb-stanford-region",
   stanfordRegions: "bb-stanford-regions"
 });
-;// CONCATENATED MODULE: ./src/Plugin/stanford/util.ts
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- * @ignore
- */
 
-/**
- * Check if point is in region
- * @param {object} point Point
- * @param {Array} region Region
- * @returns {boolean}
- * @private
- */
+;// ./src/module/browser.ts
+function getGlobal() {
+  return typeof globalThis === "object" && globalThis !== null && globalThis.Object === Object && globalThis || typeof self === "object" && self !== null && self.Object === Object && self || Function("return this")();
+}
+function getFallback(w) {
+  const hasRAF = typeof (w == null ? void 0 : w.requestAnimationFrame) === "function" && typeof (w == null ? void 0 : w.cancelAnimationFrame) === "function";
+  const hasRIC = typeof (w == null ? void 0 : w.requestIdleCallback) === "function" && typeof (w == null ? void 0 : w.cancelIdleCallback) === "function";
+  const request = (cb) => setTimeout(cb, 1);
+  const cancel = (id) => clearTimeout(id);
+  return [
+    hasRAF ? w.requestAnimationFrame : request,
+    hasRAF ? w.cancelAnimationFrame : cancel,
+    hasRIC ? w.requestIdleCallback : request,
+    hasRIC ? w.cancelIdleCallback : cancel
+  ];
+}
+const win = getGlobal();
+const doc = win == null ? void 0 : win.document;
+const [
+  requestAnimationFrame,
+  cancelAnimationFrame,
+  requestIdleCallback,
+  cancelIdleCallback
+] = getFallback(win);
+
+
+;// ./src/module/sanitize.ts
+const ALLOWED_TAGS = /* @__PURE__ */ new Set([
+  // HTML tags for tooltip/legend templates
+  "span",
+  "div",
+  "p",
+  "br",
+  "b",
+  "i",
+  "em",
+  "small",
+  "strong",
+  "mark",
+  "u",
+  "s",
+  "sub",
+  "sup",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "ul",
+  "ol",
+  "li",
+  "dl",
+  "dt",
+  "dd",
+  "table",
+  "thead",
+  "tbody",
+  "tfoot",
+  "tr",
+  "th",
+  "td",
+  "caption",
+  "colgroup",
+  "col",
+  "hr",
+  "pre",
+  "code",
+  "blockquote",
+  "abbr",
+  "ins",
+  "del",
+  "a",
+  "img",
+  "figure",
+  "figcaption",
+  // SVG tags for point patterns
+  "svg",
+  "g",
+  "path",
+  "circle",
+  "ellipse",
+  "rect",
+  "line",
+  "polyline",
+  "polygon",
+  "text",
+  "tspan",
+  "textPath",
+  "use",
+  "defs",
+  "symbol",
+  "clipPath",
+  "mask",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "pattern",
+  "marker",
+  "title",
+  "desc"
+]);
+const ALLOWED_ATTRS = /* @__PURE__ */ new Set([
+  // Common attributes
+  "class",
+  "id",
+  "style",
+  "title",
+  "lang",
+  "dir",
+  // HTML specific
+  "href",
+  "src",
+  "alt",
+  "width",
+  "height",
+  "colspan",
+  "rowspan",
+  "scope",
+  "headers",
+  // SVG presentation attributes
+  "d",
+  "points",
+  "x",
+  "y",
+  "x1",
+  "x2",
+  "y1",
+  "y2",
+  "cx",
+  "cy",
+  "r",
+  "rx",
+  "ry",
+  "dx",
+  "dy",
+  "viewBox",
+  "preserveAspectRatio",
+  "transform",
+  "fill",
+  "fill-opacity",
+  "fill-rule",
+  "stroke",
+  "stroke-width",
+  "stroke-opacity",
+  "stroke-linecap",
+  "stroke-linejoin",
+  "stroke-dasharray",
+  "stroke-dashoffset",
+  "opacity",
+  "clip-path",
+  "clip-rule",
+  "mask",
+  "font-family",
+  "font-size",
+  "font-weight",
+  "font-style",
+  "text-anchor",
+  "dominant-baseline",
+  "offset",
+  "stop-color",
+  "stop-opacity",
+  "gradientUnits",
+  "gradientTransform",
+  "spreadMethod",
+  "patternUnits",
+  "patternTransform",
+  "marker-start",
+  "marker-mid",
+  "marker-end",
+  "markerWidth",
+  "markerHeight",
+  "refX",
+  "refY",
+  "xlink:href"
+]);
+const TAG_CASE_MAP = /* @__PURE__ */ new Map();
+ALLOWED_TAGS.forEach((tag) => TAG_CASE_MAP.set(tag.toLowerCase(), tag));
+const ATTR_CASE_MAP = /* @__PURE__ */ new Map();
+ALLOWED_ATTRS.forEach((attr) => ATTR_CASE_MAP.set(attr.toLowerCase(), attr));
+const ALLOWED_URI_PROTOCOLS = /* @__PURE__ */ new Set([
+  "http:",
+  "https:",
+  "mailto:"
+]);
+const URI_ATTRS = /* @__PURE__ */ new Set(["href", "src", "xlink:href"]);
+const TAG_NAME_REGEX = /^<\/?([a-zA-Z][a-zA-Z0-9]*)/;
+const CLOSING_TAG_REGEX = /^<\/([a-zA-Z][a-zA-Z0-9]*)\s*>$/;
+const OPENING_TAG_REGEX = /^<([a-zA-Z][a-zA-Z0-9]*)([\s\S]*?)(\/?)>$/;
+const ATTR_REGEX = /([a-zA-Z][\w:-]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+const URL_IN_STYLE_REGEX = /url\s*\(\s*["']?([^"')]+)["']?\s*\)/gi;
+const DANGEROUS_CSS_PATTERNS = [
+  "expression(",
+  "behavior:",
+  "binding:",
+  "@import",
+  "@charset",
+  "-moz-binding:"
+];
+function decodeHTMLEntities(str) {
+  return str.replace(/&colon;/gi, ":").replace(/&newline;/gi, "\n").replace(/&tab;/gi, "	").replace(/&nbsp;/gi, " ").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&apos;/gi, "'").replace(/&#(\d+);?/gi, (_, code) => String.fromCharCode(parseInt(code, 10))).replace(/&#x([0-9a-f]+);?/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
+}
+function isSafeURI(uri) {
+  const decoded = decodeHTMLEntities(uri).trim();
+  const normalized = decoded.replace(/[\s\u0000-\u001f]/g, "").toLowerCase();
+  if (!normalized || normalized.startsWith("#")) {
+    return true;
+  }
+  const schemeMatch = normalized.match(/^[^/?#]*:/);
+  if (schemeMatch) {
+    return ALLOWED_URI_PROTOCOLS.has(schemeMatch[0]);
+  }
+  return true;
+}
+function sanitizeStyleValue(style) {
+  const decoded = decodeHTMLEntities(style);
+  const cleaned = decoded.replace(/[\u0000-\u001f]/g, "");
+  URL_IN_STYLE_REGEX.lastIndex = 0;
+  let match;
+  while ((match = URL_IN_STYLE_REGEX.exec(cleaned)) !== null) {
+    if (!isSafeURI(match[1])) {
+      return null;
+    }
+  }
+  const normalizedLower = cleaned.toLowerCase().replace(/\s/g, "");
+  for (const pattern of DANGEROUS_CSS_PATTERNS) {
+    if (normalizedLower.includes(pattern)) {
+      return null;
+    }
+  }
+  return style;
+}
+const ATTR_ENCODE_MAP = {
+  '"': "&quot;",
+  "'": "&#39;",
+  "`": "&#96;"
+};
+const ATTR_ENCODE_REGEX = /["'`]/g;
+function encodeAttrValue(value) {
+  return value.replace(ATTR_ENCODE_REGEX, (char) => ATTR_ENCODE_MAP[char]);
+}
+function sanitizeAttrValue(name, value, wasUnquoted = false) {
+  if (URI_ATTRS.has(name)) {
+    if (!isSafeURI(value)) {
+      return null;
+    }
+    return wasUnquoted ? encodeAttrValue(value) : value;
+  }
+  if (name === "style") {
+    const sanitizedStyle = sanitizeStyleValue(value);
+    if (sanitizedStyle === null) {
+      return null;
+    }
+    return wasUnquoted ? encodeAttrValue(sanitizedStyle) : sanitizedStyle;
+  }
+  const decoded = decodeHTMLEntities(value).toLowerCase().replace(/\s/g, "");
+  if (/\bon\w+=/.test(decoded)) {
+    return null;
+  }
+  return wasUnquoted ? encodeAttrValue(value) : value;
+}
+function extractTagName(tag) {
+  const match = tag.match(TAG_NAME_REGEX);
+  return match ? match[1].toLowerCase() : null;
+}
+function isAllowedTag(tag) {
+  const tagName = extractTagName(tag);
+  return tagName !== null && TAG_CASE_MAP.has(tagName);
+}
+function sanitizeTag(fullTag) {
+  var _a, _b, _c;
+  const closingMatch = fullTag.match(CLOSING_TAG_REGEX);
+  if (closingMatch) {
+    const lowerName = closingMatch[1].toLowerCase();
+    return `</${(_a = TAG_CASE_MAP.get(lowerName)) != null ? _a : lowerName}>`;
+  }
+  const openingMatch = fullTag.match(OPENING_TAG_REGEX);
+  if (!openingMatch) {
+    return "";
+  }
+  const [, tagName, attrString, selfClose] = openingMatch;
+  const lowerTagName = tagName.toLowerCase();
+  const canonicalTagName = (_b = TAG_CASE_MAP.get(lowerTagName)) != null ? _b : lowerTagName;
+  const allowedAttrs = [];
+  ATTR_REGEX.lastIndex = 0;
+  let attrMatch;
+  while ((attrMatch = ATTR_REGEX.exec(attrString)) !== null) {
+    const lowerAttrName = attrMatch[1].toLowerCase();
+    const doubleQuotedValue = attrMatch[2];
+    const singleQuotedValue = attrMatch[3];
+    const unquotedValue = attrMatch[4];
+    if (lowerAttrName.startsWith("on")) {
+      continue;
+    }
+    const canonicalAttrName = (_c = ATTR_CASE_MAP.get(lowerAttrName)) != null ? _c : lowerAttrName;
+    let attrValue;
+    let quoteChar;
+    if (doubleQuotedValue !== void 0) {
+      attrValue = doubleQuotedValue;
+      quoteChar = '"';
+    } else if (singleQuotedValue !== void 0) {
+      attrValue = singleQuotedValue;
+      quoteChar = "'";
+    } else if (unquotedValue !== void 0) {
+      attrValue = unquotedValue;
+      quoteChar = '"';
+    } else {
+      if (ATTR_CASE_MAP.has(lowerAttrName)) {
+        allowedAttrs.push(canonicalAttrName);
+      }
+      continue;
+    }
+    if (ATTR_CASE_MAP.has(lowerAttrName)) {
+      const wasUnquoted = unquotedValue !== void 0;
+      const sanitizedValue = sanitizeAttrValue(lowerAttrName, attrValue, wasUnquoted);
+      if (sanitizedValue !== null) {
+        allowedAttrs.push(`${canonicalAttrName}=${quoteChar}${sanitizedValue}${quoteChar}`);
+      }
+    }
+  }
+  const attrsStr = allowedAttrs.length > 0 ? ` ${allowedAttrs.join(" ")}` : "";
+  const selfCloseStr = selfClose ? "/>" : ">";
+  return `<${canonicalTagName}${attrsStr}${selfCloseStr}`;
+}
+function sanitize(str) {
+  if (typeof str !== "string" || !str || str.indexOf("<") === -1) {
+    return str;
+  }
+  return str.replace(
+    /<\/?[^>]*>|[^<>\s]+>/g,
+    (match) => {
+      if (match.startsWith("<!--")) {
+        return "";
+      }
+      if (!match.startsWith("<")) {
+        return match.slice(0, -1) + "&gt;";
+      }
+      if (isAllowedTag(match)) {
+        return sanitizeTag(match);
+      }
+      return match.replace(/</g, "&lt;");
+    }
+  );
+}
+
+;// ./src/module/util/object.ts
+var object_defProp = Object.defineProperty;
+var object_getOwnPropSymbols = Object.getOwnPropertySymbols;
+var object_hasOwnProp = Object.prototype.hasOwnProperty;
+var object_propIsEnum = Object.prototype.propertyIsEnumerable;
+var object_defNormalProp = (obj, key, value) => key in obj ? object_defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var object_spreadValues = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (object_hasOwnProp.call(b, prop))
+      object_defNormalProp(a, prop, b[prop]);
+  if (object_getOwnPropSymbols)
+    for (var prop of object_getOwnPropSymbols(b)) {
+      if (object_propIsEnum.call(b, prop))
+        object_defNormalProp(a, prop, b[prop]);
+    }
+  return a;
+};
+
+
+
+function _forEachValidItem(items, callback) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item !== null && isDefined(item)) {
+      callback(item, i);
+    }
+  }
+}
+function getOption(options, key, defaultValue) {
+  return isDefined(options[key]) ? options[key] : defaultValue;
+}
+function hasValue(dict, value) {
+  for (const key in dict) {
+    if (dict[key] === value) return true;
+  }
+  return false;
+}
+function callFn(fn, thisArg, ...args) {
+  const isFn = isFunction(fn);
+  isFn && fn.call(thisArg, ...args);
+  return isFn;
+}
+function endall(transition, cb) {
+  let n = 0;
+  const end = function(...args) {
+    !--n && cb.apply(this, args);
+  };
+  if ("duration" in transition) {
+    transition.each(() => ++n).on("end", end);
+  } else {
+    ++n;
+    transition.call(end);
+  }
+}
+const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+function camelize(str, separator = "-") {
+  return str.split(separator).map((v, i) => i ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase() : v.toLowerCase()).join("");
+}
+const toArray = (v) => [].slice.call(v);
+function deepClone(...objectN) {
+  const clone = (v) => {
+    if (isArray(v)) {
+      return v.map(clone);
+    } else if (isObject(v) && v.constructor) {
+      const r = new v.constructor();
+      for (const k in v) {
+        r[k] = clone(v[k]);
+      }
+      return r;
+    }
+    return v;
+  };
+  return objectN.map((v) => clone(v)).reduce((a, c) => object_spreadValues(object_spreadValues({}, a), c));
+}
+function extend(target = {}, source) {
+  if (isArray(source)) {
+    source.forEach((v) => extend(target, v));
+  }
+  for (const p in source) {
+    if (/^\d+$/.test(p) || p in target) {
+      continue;
+    }
+    target[p] = source[p];
+  }
+  return target;
+}
+function getUnique(data) {
+  const isDate = data[0] instanceof Date;
+  const d = Array.from(new Set(isDate ? data.map(Number) : data));
+  return isDate ? d.map((v) => new Date(v)) : d;
+}
+function mergeArray(arr) {
+  return arr && arr.length ? arr.reduce((p, c) => p.concat(c)) : [];
+}
+function mergeObj(target, ...objectN) {
+  if (!objectN.length || objectN.length === 1 && !objectN[0]) {
+    return target;
+  }
+  const source = objectN.shift();
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach((key) => {
+      if (!/^(__proto__|constructor|prototype)$/i.test(key)) {
+        const value = source[key];
+        if (value instanceof Date) {
+          target[key] = new Date(value.getTime());
+        } else if (isObject(value)) {
+          !target[key] && (target[key] = {});
+          target[key] = mergeObj(target[key], value);
+        } else {
+          target[key] = isArray(value) ? value.concat() : value;
+        }
+      }
+    });
+  }
+  return mergeObj(target, ...objectN);
+}
+function sortValue(data, isAsc = true) {
+  let fn;
+  if (data[0] instanceof Date) {
+    fn = isAsc ? (a, b) => a - b : (a, b) => b - a;
+  } else {
+    if (isAsc && !data.every(isNaN)) {
+      fn = (a, b) => a - b;
+    } else if (!isAsc) {
+      fn = (a, b) => a > b && -1 || a < b && 1 || a === b && 0;
+    }
+  }
+  return data.concat().sort(fn);
+}
+function getMinMax(type, data) {
+  let res = data.filter((v) => notEmpty(v));
+  if (res.length) {
+    if (isNumber(res[0])) {
+      let result = type === "min" ? Infinity : -Infinity;
+      for (const v of res) {
+        if (type === "min" ? v < result : v > result) {
+          result = v;
+        }
+      }
+      res = result;
+    } else if (res[0] instanceof Date) {
+      res = sortValue(res, type === "min")[0];
+    }
+  } else {
+    res = void 0;
+  }
+  return res;
+}
+const getRange = (start, end, step = 1) => {
+  const res = [];
+  const n = Math.max(0, Math.ceil((end - start) / step)) | 0;
+  for (let i = 0; i < n; i++) {
+    res.push(start + i * step);
+  }
+  return res;
+};
+let _transitionCounter = 0;
+function getRandom(asStr = true) {
+  const id = ++_transitionCounter;
+  return asStr ? String(id) : id;
+}
+function findIndex(arr, v, start, end, isRotated) {
+  if (start > end) {
+    return -1;
+  }
+  const mid = Math.floor((start + end) / 2);
+  let { x, w = 0 } = arr[mid];
+  if (isRotated) {
+    x = arr[mid].y;
+    w = arr[mid].h;
+  }
+  if (v >= x && v <= x + w) {
+    return mid;
+  }
+  return v < x ? findIndex(arr, v, start, mid - 1, isRotated) : findIndex(arr, v, mid + 1, end, isRotated);
+}
+function tplProcess(tpl, data) {
+  return sanitize(tpl.replace(/\{=([^}]+)\}/g, (_, key) => {
+    var _a;
+    return (_a = data[key]) != null ? _a : "";
+  }));
+}
+function parseDate(date) {
+  var _a;
+  let parsedDate;
+  if (date instanceof Date) {
+    parsedDate = date;
+  } else if (isString(date)) {
+    const { config, format } = this;
+    parsedDate = (_a = format.dataTime(config.data_xFormat)(date)) != null ? _a : new Date(date);
+  } else if (isNumber(date) && !isNaN(date)) {
+    parsedDate = /* @__PURE__ */ new Date(+date);
+  }
+  if (!parsedDate || isNaN(+parsedDate)) {
+    console && console.error && console.error(`Failed to parse x '${date}' to Date object`);
+  }
+  return parsedDate;
+}
+function parseShorthand(value) {
+  if (isObject(value) && !isString(value)) {
+    const obj = value;
+    return {
+      top: obj.top || 0,
+      right: obj.right || 0,
+      bottom: obj.bottom || 0,
+      left: obj.left || 0
+    };
+  }
+  const values = (isString(value) ? value.trim().split(/\s+/) : [value]).map((v) => +v || 0);
+  const [a, b = a, c = a, d = b] = values;
+  return { top: a, right: b, bottom: c, left: d };
+}
+function runUntil(fn, conditionFn) {
+  if (conditionFn() === false) {
+    requestAnimationFrame(() => runUntil(fn, conditionFn));
+  } else {
+    fn();
+  }
+}
+function toSet(items, keyFn = ((item) => item)) {
+  const set = /* @__PURE__ */ new Set();
+  _forEachValidItem(items, (item, i) => {
+    set.add(keyFn(item, i));
+  });
+  return set;
+}
+function toMap(items, keyFn, valueFn = ((item) => item)) {
+  const map = /* @__PURE__ */ new Map();
+  _forEachValidItem(items, (item, i) => {
+    map.set(keyFn(item, i), valueFn(item, i));
+  });
+  return map;
+}
+
+
+// EXTERNAL MODULE: external {"commonjs":"d3-selection","commonjs2":"d3-selection","amd":"d3-selection","root":"d3"}
+var external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_ = __webpack_require__(1);
+;// ./src/module/util/dom.ts
+
+
+
+
+const RE_CSS_BB = /\s?(bb-)/g;
+const RE_CSS_DOTS = /\.+/g;
+function getCssSelector(s) {
+  return s.replace(RE_CSS_BB, ".$1").replace(RE_CSS_DOTS, ".");
+}
+function _getRect(relativeViewport, node, forceEval = false) {
+  const _ = (n) => n[relativeViewport ? "getBoundingClientRect" : "getBBox"]();
+  const cacheKey = relativeViewport ? "rectClient" : "rectBBox";
+  if (forceEval) {
+    return _(node);
+  } else {
+    const needEvaluate = !(cacheKey in node) || node.hasAttribute("width") && node[cacheKey].width !== +(node.getAttribute("width") || 0);
+    return needEvaluate ? node[cacheKey] = _(node) : node[cacheKey];
+  }
+}
+function setTextValue(node, text, dy = [-1, 1], toMiddle = false) {
+  if (!node || !isString(text)) {
+    return;
+  }
+  if (text.indexOf("\n") === -1) {
+    node.text(text);
+  } else {
+    const diff = [node.text(), text].map((v) => v.replace(/[\s\n]/g, ""));
+    if (diff[0] !== diff[1]) {
+      const multiline = text.split("\n");
+      const len = toMiddle ? multiline.length - 1 : 1;
+      node.html("");
+      multiline.forEach((v, i) => {
+        node.append("tspan").attr("x", 0).attr("dy", `${i === 0 ? dy[0] * len : dy[1]}em`).text(v);
+      });
+    }
+  }
+}
+function getRectSegList(path) {
+  const { x, y, width, height } = getBBox(path, true);
+  return [
+    { x, y: y + height },
+    // seg0
+    { x, y },
+    // seg1
+    { x: x + width, y },
+    // seg2
+    { x: x + width, y: y + height }
+    // seg3
+  ];
+}
+function getPathBox(path) {
+  const { width, height } = getBoundingRect(path);
+  const items = getRectSegList(path);
+  const x = items[0].x;
+  const y = Math.min(items[0].y, items[1].y);
+  return {
+    x,
+    y,
+    width,
+    height
+  };
+}
+function getPointer(event, element) {
+  var _a;
+  const touches = event && ((_a = event.touches || event.sourceEvent && event.sourceEvent.touches) == null ? void 0 : _a[0]);
+  let pointer = [0, 0];
+  try {
+    pointer = (0,external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_.pointer)(touches || event, element);
+  } catch (e) {
+  }
+  return pointer.map((v) => isNaN(v) ? 0 : v);
+}
+function getBoundingRect(node, forceEval = false) {
+  return _getRect(true, node, forceEval);
+}
+function getBBox(node, forceEval = false) {
+  return _getRect(false, node, forceEval);
+}
+function addCssRules(style, selector, prop) {
+  const { rootSelector = "", sheet } = style;
+  const rule = `${rootSelector} ${getCssSelector(selector)} {${prop.join(";")}}`;
+  return sheet[sheet.insertRule ? "insertRule" : "addRule"](
+    rule,
+    sheet.cssRules.length
+  );
+}
+function getCssRules(styleSheets) {
+  let rules = [];
+  styleSheets.forEach((sheet) => {
+    var _a;
+    try {
+      if (sheet.cssRules && sheet.cssRules.length) {
+        rules = rules.concat(toArray(sheet.cssRules));
+      }
+    } catch (e) {
+      (_a = win.console) == null ? void 0 : _a.warn(`Error while reading rules from ${sheet.href}: ${String(e)}`);
+    }
+  });
+  return rules;
+}
+function getScrollPosition(node) {
+  var _a, _b, _c, _d, _e, _f;
+  return {
+    x: ((_b = (_a = win.pageXOffset) != null ? _a : win.scrollX) != null ? _b : 0) + ((_c = node.scrollLeft) != null ? _c : 0),
+    y: ((_e = (_d = win.pageYOffset) != null ? _d : win.scrollY) != null ? _e : 0) + ((_f = node.scrollTop) != null ? _f : 0)
+  };
+}
+function getTransformCTM(node, x = 0, y = 0, inverse = true) {
+  const point = new DOMPoint(x, y);
+  const screen = node.getScreenCTM();
+  const res = point.matrixTransform(
+    inverse ? screen == null ? void 0 : screen.inverse() : screen
+  );
+  if (inverse === false) {
+    const rect = getBoundingRect(node);
+    res.x -= rect.x;
+    res.y -= rect.y;
+  }
+  return res;
+}
+function getTranslation(node) {
+  const transform = node ? node.transform : null;
+  const baseVal = transform && transform.baseVal;
+  return baseVal && baseVal.numberOfItems ? baseVal.getItem(0).matrix : { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 };
+}
+function getElementPos(element, type) {
+  var _a;
+  const attr = (_a = element == null ? void 0 : element.getAttribute) == null ? void 0 : _a.call(element, type);
+  if (attr) {
+    return parseFloat(attr);
+  }
+  const matrix = getTranslation(element);
+  return type === "x" ? matrix.e : matrix.f;
+}
+function hasViewBox(svg) {
+  const attr = svg.attr("viewBox");
+  return attr ? attr.trim().split(/[\s,]+/).length === 4 : false;
+}
+function hasStyle(node, condition, all = false) {
+  const isD3Node = !!node.node;
+  let has = false;
+  for (const [key, value] of Object.entries(condition)) {
+    has = isD3Node ? node.style(key) === value : node.style[key] === value;
+    if (all ? !has : has) {
+      break;
+    }
+  }
+  return has;
+}
+function isTabVisible() {
+  var _a, _b;
+  return ((_a = doc) == null ? void 0 : _a.hidden) === false || ((_b = doc) == null ? void 0 : _b.visibilityState) === "visible";
+}
+function convertInputType(mouse, touch) {
+  const { DocumentTouch, matchMedia, navigator } = win;
+  const hasPointerCoarse = matchMedia == null ? void 0 : matchMedia("(pointer:coarse)").matches;
+  let hasTouch = false;
+  if (touch) {
+    if (navigator && "maxTouchPoints" in navigator) {
+      hasTouch = navigator.maxTouchPoints > 0;
+    } else if ("ontouchmove" in win || DocumentTouch && doc instanceof DocumentTouch) {
+      hasTouch = true;
+    } else {
+      if (hasPointerCoarse) {
+        hasTouch = true;
+      } else {
+        const UA = navigator.userAgent;
+        hasTouch = /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(UA) || /\b(Android|Windows Phone|iPad|iPod)\b/i.test(UA);
+      }
+    }
+  }
+  const hasMouse = mouse && !hasPointerCoarse && (matchMedia == null ? void 0 : matchMedia("(pointer:fine)").matches);
+  return hasMouse && "mouse" || hasTouch && "touch" || "mouse";
+}
+function scheduleRAFUpdate(rafState, callback) {
+  if (rafState.pendingRaf !== null) {
+    win.cancelAnimationFrame(rafState.pendingRaf);
+    rafState.pendingRaf = win.requestAnimationFrame(() => {
+      rafState.pendingRaf = null;
+      callback();
+    });
+  } else {
+    rafState.pendingRaf = win.requestAnimationFrame(() => {
+      rafState.pendingRaf = null;
+    });
+    callback();
+  }
+}
+const emulateEvent = {
+  mouse: (() => {
+    const getParams = () => ({
+      bubbles: false,
+      cancelable: false,
+      screenX: 0,
+      screenY: 0,
+      clientX: 0,
+      clientY: 0
+    });
+    try {
+      new MouseEvent("t");
+      return (el, eventType, params = getParams()) => {
+        el.dispatchEvent(new MouseEvent(eventType, params));
+      };
+    } catch (e) {
+      return (el, eventType, params = getParams()) => {
+        const mouseEvent = doc.createEvent("MouseEvent");
+        mouseEvent.initMouseEvent(
+          eventType,
+          params.bubbles,
+          params.cancelable,
+          win,
+          0,
+          // the event's mouse click count
+          params.screenX,
+          params.screenY,
+          params.clientX,
+          params.clientY,
+          false,
+          false,
+          false,
+          false,
+          0,
+          null
+        );
+        el.dispatchEvent(mouseEvent);
+      };
+    }
+  })(),
+  touch: (el, eventType, params) => {
+    const touchObj = new Touch(mergeObj({
+      identifier: Date.now(),
+      target: el,
+      radiusX: 2.5,
+      radiusY: 2.5,
+      rotationAngle: 10,
+      force: 0.5
+    }, params));
+    el.dispatchEvent(new TouchEvent(eventType, {
+      cancelable: true,
+      bubbles: true,
+      shiftKey: true,
+      touches: [touchObj],
+      targetTouches: [],
+      changedTouches: [touchObj]
+    }));
+  }
+};
+
+
+;// ./src/Plugin/stanford/ColorScale.ts
+var ColorScale_defProp = Object.defineProperty;
+var ColorScale_defNormalProp = (obj, key, value) => key in obj ? ColorScale_defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var ColorScale_publicField = (obj, key, value) => ColorScale_defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+
+
+
+function format(specifier) {
+  if (specifier === "d") {
+    return (n) => Math.round(n).toString();
+  }
+  return (n) => String(n);
+}
+class ColorScale {
+  constructor(owner) {
+    ColorScale_publicField(this, "owner");
+    ColorScale_publicField(this, "colorScale");
+    this.owner = owner;
+  }
+  drawColorScale() {
+    const { $$, config } = this.owner;
+    const target = $$.data.targets[0];
+    const height = $$.state.height - config.padding_bottom - config.padding_top;
+    const barWidth = config.scale_width;
+    const barHeight = 5;
+    const points = getRange(config.padding_bottom, height, barHeight);
+    const inverseScale = (0,external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_.scaleSequential)(target.colors).domain([points[points.length - 1], points[0]]);
+    if (this.colorScale) {
+      this.colorScale.remove();
+    }
+    this.colorScale = $$.$el.svg.append("g").attr("width", 50).attr("height", height).attr("class", stanford_classes.colorScale);
+    this.colorScale.append("g").attr("transform", `translate(0, ${config.padding_top})`).selectAll("bars").data(points).enter().append("rect").attr("y", (d, i) => i * barHeight).attr("x", 0).attr("width", barWidth).attr("height", barHeight).attr("fill", (d) => inverseScale(d));
+    const axisScale = (0,external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_.scaleSymlog)().domain([target.minEpochs, target.maxEpochs]).range([
+      points[0] + config.padding_top + points[points.length - 1] + barHeight - 1,
+      points[0] + config.padding_top
+    ]);
+    const legendAxis = (0,external_commonjs_d3_axis_commonjs2_d3_axis_amd_d3_axis_root_d3_.axisRight)(axisScale);
+    const scaleFormat = config.scale_format;
+    if (scaleFormat === "pow10") {
+      legendAxis.tickValues([1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7]);
+    } else if (isFunction(scaleFormat)) {
+      legendAxis.tickFormat(scaleFormat);
+    } else {
+      legendAxis.tickFormat(format("d"));
+    }
+    const axis = this.colorScale.append("g").attr("class", "legend axis").attr("transform", `translate(${barWidth},0)`).call(legendAxis);
+    if (scaleFormat === "pow10") {
+      axis.selectAll(".tick text").text(null).filter((d) => d / Math.pow(10, Math.ceil(Math.log(d) / Math.LN10 - 1e-12)) === 1).text(10).append("tspan").attr("dy", "-.7em").text((d) => Math.round(Math.log(d) / Math.LN10));
+    }
+    this.colorScale.attr(
+      "transform",
+      `translate(${$$.state.current.width - this.xForColorScale()}, 0)`
+    );
+  }
+  xForColorScale() {
+    return this.owner.config.padding_right + getBBox(this.colorScale.node(), true).width;
+  }
+  getColorScalePadding() {
+    return this.xForColorScale() + this.owner.config.padding_left + 20;
+  }
+}
+
+;// ./src/Plugin/stanford/util.ts
 
 function pointInRegion(point, region) {
-  // thanks to: http://bl.ocks.org/bycoffe/5575904
-  // ray-casting algorithm based on
-  // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-  var x = point.x,
-      y = point.value,
-      inside = !1;
-
-  for (var i = 0, j = region.length - 1; i < region.length; j = i++) {
-    var xi = region[i].x,
-        yi = region[i].y,
-        xj = region[j].x,
-        yj = region[j].y;
-
-    if (yi > y !== yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi) {
+  const x = point.x;
+  const y = point.value;
+  let inside = false;
+  for (let i = 0, j = region.length - 1; i < region.length; j = i++) {
+    const xi = region[i].x;
+    const yi = region[i].y;
+    const xj = region[j].x;
+    const yj = region[j].y;
+    const intersect = yi > y !== yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi;
+    if (intersect) {
       inside = !inside;
     }
   }
-
   return inside;
 }
-/**
- * Compare epochs
- * @param {object} a Target
- * @param {object} b Source
- * @returns {number}
- * @private
- */
-
-
 function compareEpochs(a, b) {
   if (a.epochs < b.epochs) {
     return -1;
   }
-
   if (a.epochs > b.epochs) {
     return 1;
   }
-
   return 0;
 }
-/**
- * Get region area
- * @param {Array} points Points
- * @returns {number}
- * @private
- */
-
-
 function getRegionArea(points) {
-  // thanks to: https://stackoverflow.com/questions/16282330/find-centerpoint-of-polygon-in-javascript
-  var area = 0,
-      point1,
-      point2;
-
-  for (var i = 0, l = points.length, j = l - 1; i < l; j = i, i++) {
+  let area = 0;
+  let point1;
+  let point2;
+  for (let i = 0, l = points.length, j = l - 1; i < l; j = i, i++) {
     point1 = points[i];
     point2 = points[j];
     area += point1.x * point2.y;
     area -= point1.y * point2.x;
   }
-
   area /= 2;
   return area;
 }
-/**
- * Get centroid
- * @param {Array} points Points
- * @returns {object}
- * @private
- */
-
-
 function getCentroid(points) {
-  var area = getRegionArea(points),
-      x = 0,
-      y = 0,
-      f;
-
-  for (var i = 0, l = points.length, j = l - 1; i < l; j = i, i++) {
-    var point1 = points[i],
-        point2 = points[j];
+  const area = getRegionArea(points);
+  let x = 0;
+  let y = 0;
+  let f;
+  for (let i = 0, l = points.length, j = l - 1; i < l; j = i, i++) {
+    const point1 = points[i];
+    const point2 = points[j];
     f = point1.x * point2.y - point2.x * point1.y;
     x += (point1.x + point2.x) * f;
     y += (point1.y + point2.y) * f;
   }
-
   f = area * 6;
   return {
     x: x / f,
@@ -1747,433 +1377,274 @@ function getCentroid(points) {
 }
 
 
-;// CONCATENATED MODULE: ./src/Plugin/stanford/Elements.ts
+;// ./src/Plugin/stanford/Elements.ts
+var Elements_defProp = Object.defineProperty;
+var Elements_defNormalProp = (obj, key, value) => key in obj ? Elements_defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var Elements_publicField = (obj, key, value) => Elements_defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
 
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-// @ts-nocheck
-
-
-/**
- * Stanford diagram plugin element class
- * @class ColorScale
- * @param {Stanford} owner Stanford instance
- * @private
- */
-
-var Elements = /*#__PURE__*/function () {
-  function Elements(owner) {
-    this.owner = void 0;
-    this.owner = owner; // MEMO: Avoid blocking eventRect
-
-    var elements = owner.$$.$el.main.select(".bb-chart").append("g").attr("class", stanford_classes.stanfordElements);
+class Elements {
+  constructor(owner) {
+    Elements_publicField(this, "owner");
+    this.owner = owner;
+    const elements = owner.$$.$el.main.select(".bb-chart").append("g").attr("class", stanford_classes.stanfordElements);
     elements.append("g").attr("class", stanford_classes.stanfordLines);
     elements.append("g").attr("class", stanford_classes.stanfordRegions);
   }
-
-  var _proto = Elements.prototype;
-
-  _proto.updateStanfordLines = function updateStanfordLines(duration) {
-    var _this = this,
-        $$ = this.owner.$$,
-        config = $$.config,
-        main = $$.$el.main,
-        isRotated = config.axis_rotated,
-        xvCustom = this.xvCustom.bind($$),
-        yvCustom = this.yvCustom.bind($$),
-        stanfordLine = main.select("." + stanford_classes.stanfordLines).style("shape-rendering", "geometricprecision").selectAll("." + stanford_classes.stanfordLine).data(this.owner.config.lines);
-
-    // exit
-    stanfordLine.exit().transition().duration(duration).style("opacity", "0").remove(); // enter
-
-    var stanfordLineEnter = stanfordLine.enter().append("g");
+  updateStanfordLines(duration) {
+    const { $$ } = this.owner;
+    const { config, $el: { main } } = $$;
+    const isRotated = config.axis_rotated;
+    const xvCustom = this.xvCustom.bind($$);
+    const yvCustom = this.yvCustom.bind($$);
+    const stanfordLine = main.select(`.${stanford_classes.stanfordLines}`).style("shape-rendering", "geometricprecision").selectAll(`.${stanford_classes.stanfordLine}`).data(this.owner.config.lines);
+    stanfordLine.exit().transition().duration(duration).style("opacity", "0").remove();
+    const stanfordLineEnter = stanfordLine.enter().append("g");
     stanfordLineEnter.append("line").style("opacity", "0");
-    stanfordLineEnter.merge(stanfordLine).attr("class", function (d) {
-      _newArrowCheck(this, _this);
-
-      return stanford_classes.stanfordLine + (d.class ? " " + d.class : "");
-    }.bind(this)).select("line").transition().duration(duration).attr("x1", function (d) {
-      _newArrowCheck(this, _this);
-
-      return isRotated ? yvCustom(d, "y1") : xvCustom(d, "x1");
-    }.bind(this)).attr("x2", function (d) {
-      _newArrowCheck(this, _this);
-
-      return isRotated ? yvCustom(d, "y2") : xvCustom(d, "x2");
-    }.bind(this)).attr("y1", function (d) {
-      _newArrowCheck(this, _this);
-
-      return isRotated ? xvCustom(d, "x1") : yvCustom(d, "y1");
-    }.bind(this)).attr("y2", function (d) {
-      _newArrowCheck(this, _this);
-
-      return isRotated ? xvCustom(d, "x2") : yvCustom(d, "y2");
-    }.bind(this)).transition().style("opacity", null);
-  };
-
-  _proto.updateStanfordRegions = function updateStanfordRegions(duration) {
-    var _this2 = this,
-        $$ = this.owner.$$,
-        config = $$.config,
-        main = $$.$el.main,
-        isRotated = config.axis_rotated,
-        xvCustom = this.xvCustom.bind($$),
-        yvCustom = this.yvCustom.bind($$),
-        countPointsInRegion = this.owner.countEpochsInRegion.bind($$),
-        stanfordRegion = main.select("." + stanford_classes.stanfordRegions).selectAll("." + stanford_classes.stanfordRegion).data(this.owner.config.regions);
-
-    // exit
-    stanfordRegion.exit().transition().duration(duration).style("opacity", "0").remove(); // enter
-
-    var stanfordRegionEnter = stanfordRegion.enter().append("g");
+    stanfordLineEnter.merge(stanfordLine).attr("class", (d) => stanford_classes.stanfordLine + (d.class ? ` ${d.class}` : "")).select("line").transition().duration(duration).attr("x1", (d) => {
+      const v = isRotated ? yvCustom(d, "y1") : xvCustom(d, "x1");
+      return v;
+    }).attr("x2", (d) => isRotated ? yvCustom(d, "y2") : xvCustom(d, "x2")).attr("y1", (d) => {
+      const v = isRotated ? xvCustom(d, "x1") : yvCustom(d, "y1");
+      return v;
+    }).attr("y2", (d) => isRotated ? xvCustom(d, "x2") : yvCustom(d, "y2")).transition().style("opacity", null);
+  }
+  updateStanfordRegions(duration) {
+    const { $$ } = this.owner;
+    const { config, $el: { main } } = $$;
+    const isRotated = config.axis_rotated;
+    const xvCustom = this.xvCustom.bind($$);
+    const yvCustom = this.yvCustom.bind($$);
+    const countPointsInRegion = this.owner.countEpochsInRegion.bind($$);
+    let stanfordRegion = main.select(`.${stanford_classes.stanfordRegions}`).selectAll(`.${stanford_classes.stanfordRegion}`).data(this.owner.config.regions);
+    stanfordRegion.exit().transition().duration(duration).style("opacity", "0").remove();
+    const stanfordRegionEnter = stanfordRegion.enter().append("g");
     stanfordRegionEnter.append("polygon").style("opacity", "0");
     stanfordRegionEnter.append("text").attr("transform", isRotated ? "rotate(-90)" : "").style("opacity", "0");
-    stanfordRegion = stanfordRegionEnter.merge(stanfordRegion); // update
-
-    stanfordRegion.attr("class", function (d) {
-      _newArrowCheck(this, _this2);
-
-      return stanford_classes.stanfordRegion + (d.class ? " " + d.class : "");
-    }.bind(this)).select("polygon").transition().duration(duration).attr("points", function (d) {
-      var _this3 = this;
-
-      _newArrowCheck(this, _this2);
-
-      return d.points.map(function (value) {
-        _newArrowCheck(this, _this3);
-
-        return [isRotated ? yvCustom(value, "y") : xvCustom(value, "x"), isRotated ? xvCustom(value, "x") : yvCustom(value, "y")].join(",");
-      }.bind(this)).join(" ");
-    }.bind(this)).transition().style("opacity", function (d) {
-      _newArrowCheck(this, _this2);
-
-      return (d.opacity ? d.opacity : .2) + "";
-    }.bind(this));
-    stanfordRegion.select("text").transition().duration(duration).attr("x", function (d) {
-      _newArrowCheck(this, _this2);
-
-      return isRotated ? yvCustom(getCentroid(d.points), "y") : xvCustom(getCentroid(d.points), "x");
-    }.bind(this)).attr("y", function (d) {
-      _newArrowCheck(this, _this2);
-
-      return isRotated ? xvCustom(getCentroid(d.points), "x") : yvCustom(getCentroid(d.points), "y");
-    }.bind(this)).text(function (d) {
-      _newArrowCheck(this, _this2);
-
+    stanfordRegion = stanfordRegionEnter.merge(stanfordRegion);
+    stanfordRegion.attr("class", (d) => stanford_classes.stanfordRegion + (d.class ? ` ${d.class}` : "")).select("polygon").transition().duration(duration).attr("points", (d) => d.points.map(
+      (value) => [
+        isRotated ? yvCustom(value, "y") : xvCustom(value, "x"),
+        isRotated ? xvCustom(value, "x") : yvCustom(value, "y")
+      ].join(",")
+    ).join(" ")).transition().style("opacity", (d) => String(d.opacity ? d.opacity : 0.2));
+    stanfordRegion.select("text").transition().duration(duration).attr(
+      "x",
+      (d) => isRotated ? yvCustom(getCentroid(d.points), "y") : xvCustom(getCentroid(d.points), "x")
+    ).attr(
+      "y",
+      (d) => isRotated ? xvCustom(getCentroid(d.points), "x") : yvCustom(getCentroid(d.points), "y")
+    ).text((d) => {
       if (d.text) {
-        var _countPointsInRegion = countPointsInRegion(d.points),
-            value = _countPointsInRegion.value,
-            percentage = _countPointsInRegion.percentage;
-
+        const { value, percentage } = countPointsInRegion(d.points);
         return d.text(value, percentage);
       }
-
       return "";
-    }.bind(this)).attr("text-anchor", "middle").attr("dominant-baseline", "middle").transition().style("opacity", null);
-  };
-
-  _proto.updateStanfordElements = function updateStanfordElements(duration) {
-    if (duration === void 0) {
-      duration = 0;
-    }
-
+    }).attr("text-anchor", "middle").attr("dominant-baseline", "middle").transition().style("opacity", null);
+  }
+  updateStanfordElements(duration = 0) {
     this.updateStanfordLines(duration);
     this.updateStanfordRegions(duration);
-  };
-
-  _proto.xvCustom = function xvCustom(d, xyValue) {
-    var $$ = this,
-        axis = $$.axis,
-        config = $$.config,
-        value = xyValue ? d[xyValue] : $$.getBaseValue(d);
-
+  }
+  xvCustom(d, xyValue) {
+    const $$ = this;
+    const { axis, config } = $$;
+    let value = xyValue ? d[xyValue] : $$.getBaseValue(d);
     if (axis.isTimeSeries()) {
       value = parseDate.call($$, value);
     } else if (axis.isCategorized() && isString(value)) {
       value = config.axis_x_categories.indexOf(d.value);
     }
-
-    return Math.ceil($$.scale.x(value));
-  };
-
-  _proto.yvCustom = function yvCustom(d, xyValue) {
-    var $$ = this,
-        yScale = d.axis && d.axis === "y2" ? $$.scale.y2 : $$.scale.y,
-        value = xyValue ? d[xyValue] : $$.getBaseValue(d);
-    return Math.ceil(yScale(value));
-  };
-
-  return Elements;
-}();
-
-
-// EXTERNAL MODULE: external {"commonjs":"d3-axis","commonjs2":"d3-axis","amd":"d3-axis","root":"d3"}
-var external_commonjs_d3_axis_commonjs2_d3_axis_amd_d3_axis_root_d3_ = __webpack_require__(8);
-// EXTERNAL MODULE: external {"commonjs":"d3-format","commonjs2":"d3-format","amd":"d3-format","root":"d3"}
-var external_commonjs_d3_format_commonjs2_d3_format_amd_d3_format_root_d3_ = __webpack_require__(9);
-;// CONCATENATED MODULE: ./src/Plugin/stanford/ColorScale.ts
-
-
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-
-
-
-
-
-/**
- * Stanford diagram plugin color scale class
- * @class ColorScale
- * @param {Stanford} owner Stanford instance
- * @private
- */
-
-var ColorScale = /*#__PURE__*/function () {
-  function ColorScale(owner) {
-    this.owner = void 0;
-    this.colorScale = void 0;
-    this.owner = owner;
+    return $$.scale.x(value);
   }
-
-  var _proto = ColorScale.prototype;
-
-  _proto.drawColorScale = function drawColorScale() {
-    var _this = this,
-        _this$owner = this.owner,
-        $$ = _this$owner.$$,
-        config = _this$owner.config,
-        target = $$.data.targets[0],
-        height = $$.state.height - config.padding_bottom - config.padding_top,
-        barWidth = config.scale_width,
-        points = getRange(config.padding_bottom, height, 5),
-        inverseScale = (0,external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_.scaleSequential)(target.colors).domain([points[points.length - 1], points[0]]);
-
-    if (this.colorScale) {
-      this.colorScale.remove();
-    }
-
-    this.colorScale = $$.$el.svg.append("g").attr("width", 50).attr("height", height).attr("class", stanford_classes.colorScale);
-    this.colorScale.append("g").attr("transform", "translate(0, " + config.padding_top + ")").selectAll("bars").data(points).enter().append("rect").attr("y", function (d, i) {
-      _newArrowCheck(this, _this);
-
-      return i * 5;
-    }.bind(this)).attr("x", 0).attr("width", barWidth).attr("height", 5).attr("fill", function (d) {
-      _newArrowCheck(this, _this);
-
-      return inverseScale(d);
-    }.bind(this)); // Legend Axis
-
-    var axisScale = (0,external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_.scaleLog)().domain([target.minEpochs, target.maxEpochs]).range([points[0] + config.padding_top + points[points.length - 1] + 5 - 1, points[0] + config.padding_top]),
-        legendAxis = (0,external_commonjs_d3_axis_commonjs2_d3_axis_amd_d3_axis_root_d3_.axisRight)(axisScale),
-        scaleFormat = config.scale_format;
-
-    if (scaleFormat === "pow10") {
-      legendAxis.tickValues([1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7]);
-    } else if (isFunction(scaleFormat)) {
-      legendAxis.tickFormat(scaleFormat);
-    } else {
-      legendAxis.tickFormat((0,external_commonjs_d3_format_commonjs2_d3_format_amd_d3_format_root_d3_.format)("d"));
-    } // Draw Axis
-
-
-    var axis = this.colorScale.append("g").attr("class", "legend axis").attr("transform", "translate(" + barWidth + ",0)").call(legendAxis);
-
-    if (scaleFormat === "pow10") {
-      axis.selectAll(".tick text").text(null).filter(function (d) {
-        _newArrowCheck(this, _this);
-
-        return d / Math.pow(10, Math.ceil(Math.log(d) / Math.LN10 - 1e-12)) === 1;
-      }.bind(this)) // Power of Ten
-      .text(10).append("tspan").attr("dy", "-.7em") // https://bl.ocks.org/mbostock/6738229
-      .text(function (d) {
-        _newArrowCheck(this, _this);
-
-        return Math.round(Math.log(d) / Math.LN10);
-      }.bind(this));
-    }
-
-    this.colorScale.attr("transform", "translate(" + ($$.state.current.width - this.xForColorScale()) + ", 0)");
-  };
-
-  _proto.xForColorScale = function xForColorScale() {
-    return this.owner.config.padding_right + this.colorScale.node().getBBox().width;
-  };
-
-  _proto.getColorScalePadding = function getColorScalePadding() {
-    return this.xForColorScale() + this.owner.config.padding_left + 20;
-  };
-
-  return ColorScale;
-}();
-
-
-;// CONCATENATED MODULE: ./src/Plugin/stanford/index.ts
-
-
-
-
-/**
- * Copyright (c) 2017 ~ present NAVER Corp.
- * billboard.js project is licensed under the MIT license
- */
-// @ts-nocheck
-
-
-
-
-
-
-
-
-
-
-/**
- * Stanford diagram plugin
- * - **NOTE:**
- *   - Plugins aren't built-in. Need to be loaded or imported to be used.
- *   - Non required modules from billboard.js core, need to be installed separately.
- *   - Is preferable use `scatter` as data.type
- * - **Required modules:**
- *   - [d3-selection](https://github.com/d3/d3-selection)
- *   - [d3-interpolate](https://github.com/d3/d3-interpolate)
- *   - [d3-color](https://github.com/d3/d3-color)
- *   - [d3-scale](https://github.com/d3/d3-scale)
- *   - [d3-brush](https://github.com/d3/d3-brush)
- *   - [d3-axis](https://github.com/d3/d3-axis)
- *   - [d3-format](https://github.com/d3/d3-format)
- * @class plugin-stanford
- * @requires d3-selection
- * @requires d3-interpolate
- * @requires d3-color
- * @requires d3-scale
- * @requires d3-brush
- * @requires d3-axis
- * @requires d3-format
- * @param {object} options Stanford plugin options
- * @augments Plugin
- * @returns {Stanford}
- * @example
- * // Plugin must be loaded before the use.
- * <script src="$YOUR_PATH/plugin/billboardjs-plugin-stanford.js"></script>
- *
- *  var chart = bb.generate({
- *     data: {
- *        columns: [ ... ],
- *        type: "scatter"
- *     }
- *     ...
- *     plugins: [
- *        new bb.plugin.stanford({
- *           colors: d3.interpolateHslLong(
- *              d3.hsl(250, 1, 0.5), d3.hsl(0, 1, 0.5)
- *           ),
- *           epochs: [ 1, 1, 2, 2, ... ],
- *           lines: [
- *                  { x1: 0, y1: 0, x2: 65, y2: 65, class: "line1" },
- *                  { x1: 0, x2: 65, y1: 40, y2: 40, class: "line2" }
- *           ],
- *           scale: {
- *           	max: 10000,
- *             	min: 1,
- *           	width: 500,
- *             	format: 'pow10',
- *           },
- *           padding: {
- *           	top: 15,
- *           	right: 0,
- *           	bottom: 0,
- *           	left: 0
- *           },
- *           regions: [
- *           	{
- *               	points: [ // add points counter-clockwise
- *               	    { x: 0, y: 0 },
- *               	    { x: 40, y: 40 },
- *               	    { x: 0, y: 40 }
- *               	],
- *               	text: function (value, percentage) {
- *               	    return `Normal Operations: ${value} (${percentage}%)`;
- *               	},
- *               	opacity: 0.2, // 0 to 1
- *               	class: "test-polygon1"
- *              },
- *             	...
- *           ]
- *        }
- *     ]
- *  });
- * @example
- *	import {bb} from "billboard.js";
- * import Stanford from "billboard.js/dist/billboardjs-plugin-stanford";
- *
- * bb.generate({
- *     plugins: [
- *        new Stanford({ ... })
- *     ]
- * })
- */
-
-var Stanford = /*#__PURE__*/function (_Plugin) {
-  _inheritsLoose(Stanford, _Plugin);
-
-  function Stanford(options) {
-    var _this = _Plugin.call(this, options) || this;
-
-    _this.config = void 0;
-    _this.colorScale = void 0;
-    _this.elements = void 0;
-    _this.config = new Options();
-    return _assertThisInitialized(_this) || _assertThisInitialized(_this);
+  yvCustom(d, xyValue) {
+    const $$ = this;
+    const yScale = d.axis && d.axis === "y2" ? $$.scale.y2 : $$.scale.y;
+    const value = xyValue ? d[xyValue] : $$.getBaseValue(d);
+    return yScale(value);
   }
+}
 
-  var _proto = Stanford.prototype;
+;// ./src/Plugin/stanford/Options.ts
+class Options {
+  constructor() {
+    return {
+      /**
+       * Set the color of the color scale. This function receives a value between 0 and 1, and should return a color.
+       * @name colors
+       * @memberof plugin-stanford
+       * @type {function}
+       * @default undefined
+       * @example
+       *   colors: d3.interpolateHslLong(
+       *      d3.hsl(250, 1, 0.5), d3.hsl(0, 1, 0.5)
+       *   )
+       */
+      colors: void 0,
+      /**
+       * Specify the key of epochs values in the data.
+       * @name epochs
+       * @memberof plugin-stanford
+       * @type {Array}
+       * @default []
+       * @example
+       * 	epochs: [ 1, 1, 2, 2, ... ]
+       */
+      epochs: [],
+      /**
+       * Show additional lines anywhere on the chart.
+       * - Each line object should consist with following options:
+       *
+       * | Key | Type | Description |
+       * | --- | --- | --- |
+       * | x1 | Number | Starting position on the x axis |
+       * | y1 | Number | Starting position on the y axis |
+       * | x2 | Number | Ending position on the x axis  |
+       * | y2 | Number | Ending position on the y axis |
+       * | class | String | Optional value. Set a custom css class to this line. |
+       * @type {Array}
+       * @memberof plugin-stanford
+       * @default []
+       * @example
+       *   lines: [
+       *       { x1: 0, y1: 0, x2: 65, y2: 65, class: "line1" },
+       *       { x1: 0, x2: 65, y1: 40, y2: 40, class: "line2" }
+       *   ]
+       */
+      lines: [],
+      /**
+       * Set scale values
+       * @name scale
+       * @memberof plugin-stanford
+       * @type {object}
+       * @property {object} [scale] scale object
+       * @property {number} [scale.min=undefined] Minimum value of the color scale. Default: lowest value in epochs
+       * @property {number} [scale.max=undefined] Maximum value of the color scale. Default: highest value in epochs
+       * @property {number} [scale.width=20] Width of the color scale
+       * @property {string|function} [scale.format=undefined] Format of the axis of the color scale. Use 'pow10' to format as powers of 10 or a custom function. Example: d3.format("d")
+       * @example
+       *  scale: {
+       *    max: 10000,
+       *    min: 1,
+       *    width: 500,
+       *
+       *    // specify 'pow10' to format as powers of 10
+       *    format: "pow10",
+       *
+       *    // or specify a format function
+       *    format: function(x) {
+       *    	return x +"%";
+       *    }
+       *  },
+       */
+      scale_min: void 0,
+      scale_max: void 0,
+      scale_width: 20,
+      scale_format: void 0,
+      /**
+       * The padding for color scale element
+       * @name padding
+       * @memberof plugin-stanford
+       * @type {object}
+       * @property {object} [padding] padding object
+       * @property {number} [padding.top=0] Top padding value.
+       * @property {number} [padding.right=0] Right padding value.
+       * @property {number} [padding.bottom=0] Bottom padding value.
+       * @property {number} [padding.left=0] Left padding value.
+       * @example
+       *  padding: {
+       *     top: 15,
+       *     right: 0,
+       *     bottom: 0,
+       *     left: 0
+       *  },
+       */
+      padding_top: 0,
+      padding_right: 0,
+      padding_bottom: 0,
+      padding_left: 0,
+      /**
+       * Show additional regions anywhere on the chart.
+       * - Each region object should consist with following options:
+       *
+       *   | Key | Type | Default | Attributes | Description |
+       *   | --- | --- | --- | --- | --- |
+       *   | points | Array |  | | Accepts a group of objects that has x and y.<br>These points should be added in a counter-clockwise fashion to make a closed polygon. |
+       *   | opacity | Number | `0.2` | &lt;optional> | Sets the opacity of the region as value between 0 and 1 |
+       *   | text | Function |  | &lt;optional> | This function receives a value and percentage of the number of epochs in this region.<br>Return a string to place text in the middle of the region. |
+       *   | class | String | | &lt;optional> | Se a custom css class to this region, use the fill property in css to set a background color. |
+       * @name regions
+       * @memberof plugin-stanford
+       * @type {Array}
+       * @default []
+       * @example
+       *   regions: [
+       *       {
+       *           points: [ // add points counter-clockwise
+       *               { x: 0, y: 0 },
+       *               { x: 40, y: 40 },
+       *               { x: 0, y: 40 },
+       *           ],
+       *           text: function (value, percentage) {
+       *               return `Normal Operations: ${value} (${percentage}%)`;
+       *           },
+       *           opacity: 0.2, // 0 to 1
+       *           class: "test-polygon1"
+       *       },
+       *       ...
+       *   ]
+       */
+      regions: []
+    };
+  }
+}
 
-  _proto.$beforeInit = function $beforeInit() {
-    var _this2 = this,
-        $$ = this.$$;
+;// ./src/Plugin/stanford/index.ts
+var stanford_defProp = Object.defineProperty;
+var stanford_defNormalProp = (obj, key, value) => key in obj ? stanford_defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var stanford_publicField = (obj, key, value) => stanford_defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-    // override on config values & methods
-    $$.config.data_xSort = !1;
 
-    $$.isMultipleX = function () {
-      _newArrowCheck(this, _this2);
 
-      return !0;
-    }.bind(this);
 
-    $$.showGridFocus = function () {
-      _newArrowCheck(this, _this2);
-    }.bind(this);
 
-    $$.labelishData = function (d) {
-      _newArrowCheck(this, _this2);
 
-      return d.values;
-    }.bind(this);
 
-    $$.opacityForCircle = function () {
-      _newArrowCheck(this, _this2);
 
-      return 1;
-    }.bind(this);
-
-    var getCurrentPaddingRight = $$.getCurrentPaddingRight.bind($$);
-
-    $$.getCurrentPaddingRight = function () {
-      _newArrowCheck(this, _this2);
-
-      return getCurrentPaddingRight() + (this.colorScale ? this.colorScale.getColorScalePadding() : 0);
-    }.bind(this);
+function hsl(h, s, l, opacity = 1) {
+  return {
+    h: +h,
+    s: +s,
+    l: +l,
+    opacity: +opacity
   };
-
-  _proto.$init = function $init() {
-    var $$ = this.$$;
-    loadConfig.call(this, this.options);
+}
+class Stanford extends Plugin {
+  constructor(options) {
+    super(options);
+    stanford_publicField(this, "colorScale");
+    stanford_publicField(this, "elements");
+    this.config = new Options();
+    return this;
+  }
+  $beforeInit() {
+    const { $$ } = this;
+    $$.config.data_xSort = false;
+    $$.isMultipleX = () => true;
+    $$.showGridFocus = () => {
+    };
+    $$.labelishData = (d) => d.values;
+    $$.opacityForCircle = () => 1;
+    const getCurrentPadding = $$.getCurrentPadding.bind($$);
+    $$.getCurrentPadding = () => {
+      const padding = getCurrentPadding();
+      padding.right += this.colorScale ? this.colorScale.getColorScalePadding() : 0;
+      return padding;
+    };
+  }
+  $init() {
+    const { $$ } = this;
+    this.loadConfig();
     $$.color = this.getStanfordPointColor.bind($$);
     this.colorScale = new ColorScale(this);
     this.elements = new Elements(this);
@@ -2181,145 +1652,94 @@ var Stanford = /*#__PURE__*/function (_Plugin) {
     this.initStanfordData();
     this.setStanfordTooltip();
     this.colorScale.drawColorScale();
+    $$.right += this.colorScale ? this.colorScale.getColorScalePadding() : 0;
     this.$redraw();
-  };
-
-  _proto.$redraw = function $redraw(duration) {
-    var _this$colorScale, _this$elements;
-
-    (_this$colorScale = this.colorScale) == null ? void 0 : _this$colorScale.drawColorScale();
-    (_this$elements = this.elements) == null ? void 0 : _this$elements.updateStanfordElements(duration);
-  };
-
-  _proto.getOptions = function getOptions() {
+  }
+  $redraw(duration) {
+    var _a, _b;
+    (_a = this.colorScale) == null ? void 0 : _a.drawColorScale();
+    (_b = this.elements) == null ? void 0 : _b.updateStanfordElements(duration);
+  }
+  getOptions() {
     return new Options();
-  };
-
-  _proto.convertData = function convertData() {
-    var _this3 = this,
-        data = this.$$.data.targets,
-        epochs = this.options.epochs;
-
-    data.forEach(function (d) {
-      var _this4 = this;
-
-      _newArrowCheck(this, _this3);
-
-      d.values.forEach(function (v, i) {
-        _newArrowCheck(this, _this4);
-
+  }
+  convertData() {
+    const data = this.$$.data.targets;
+    const epochs = this.options.epochs;
+    data.forEach((d) => {
+      d.values.forEach((v, i) => {
         v.epochs = epochs[i];
-      }.bind(this));
-      d.minEpochs = undefined;
-      d.maxEpochs = undefined;
-      d.colors = undefined;
-      d.colorscale = undefined;
-    }.bind(this));
-  };
-
-  _proto.xvCustom = function xvCustom(d, xyValue) {
-    var $$ = this,
-        axis = $$.axis,
-        config = $$.config,
-        value = xyValue ? d[xyValue] : $$.getBaseValue(d);
-
-    if (axis.isTimeSeries()) {
-      value = parseDate.call($$, value);
-    } else if (axis.isCategorized() && isString(value)) {
-      value = config.axis_x_categories.indexOf(d.value);
+      });
+      d.minEpochs = void 0;
+      d.maxEpochs = void 0;
+      d.colors = void 0;
+      d.colorscale = void 0;
+    });
+  }
+  initStanfordData() {
+    const { config } = this;
+    const target = this.$$.data.targets[0];
+    target.values.sort(compareEpochs);
+    let minEpoch = Infinity;
+    let maxEpoch = -Infinity;
+    for (let i = 0; i < target.values.length; i++) {
+      const e = target.values[i].epochs;
+      if (e < minEpoch) minEpoch = e;
+      if (e > maxEpoch) maxEpoch = e;
     }
-
-    return Math.ceil($$.scale.x(value));
-  };
-
-  _proto.yvCustom = function yvCustom(d, xyValue) {
-    var $$ = this,
-        scale = $$.scale,
-        yScale = d.axis && d.axis === "y2" ? scale.y2 : scale.y,
-        value = xyValue ? d[xyValue] : $$.getBaseValue(d);
-    return Math.ceil(yScale(value));
-  };
-
-  _proto.initStanfordData = function initStanfordData() {
-    var _this5 = this,
-        config = this.config,
-        target = this.$$.data.targets[0];
-
-    // TODO STANFORD see if (data.js -> orderTargets)+ can be used instead
-    // Make larger values appear on top
-    target.values.sort(compareEpochs); // Get array of epochs
-
-    var epochs = target.values.map(function (a) {
-      _newArrowCheck(this, _this5);
-
-      return a.epochs;
-    }.bind(this));
-    target.minEpochs = !isNaN(config.scale_min) ? config.scale_min : Math.min.apply(Math, epochs);
-    target.maxEpochs = !isNaN(config.scale_max) ? config.scale_max : Math.max.apply(Math, epochs);
-    target.colors = isFunction(config.colors) ? config.colors : (0,external_commonjs_d3_interpolate_commonjs2_d3_interpolate_amd_d3_interpolate_root_d3_.interpolateHslLong)((0,external_commonjs_d3_color_commonjs2_d3_color_amd_d3_color_root_d3_.hsl)(250, 1, .5), (0,external_commonjs_d3_color_commonjs2_d3_color_amd_d3_color_root_d3_.hsl)(0, 1, .5));
+    target.minEpochs = !isNaN(config.scale_min) ? config.scale_min : minEpoch;
+    target.maxEpochs = !isNaN(config.scale_max) ? config.scale_max : maxEpoch;
+    target.colors = isFunction(config.colors) ? config.colors : (0,external_commonjs_d3_interpolate_commonjs2_d3_interpolate_amd_d3_interpolate_root_d3_.interpolateHslLong)(hsl(250, 1, 0.5), hsl(0, 1, 0.5));
     target.colorscale = (0,external_commonjs_d3_scale_commonjs2_d3_scale_amd_d3_scale_root_d3_.scaleSequentialLog)(target.colors).domain([target.minEpochs, target.maxEpochs]);
-  };
-
-  _proto.getStanfordPointColor = function getStanfordPointColor(d) {
-    var target = this.data.targets[0];
+  }
+  getStanfordPointColor(d) {
+    const target = this.data.targets[0];
     return target.colorscale(d.epochs);
-  };
-
-  _proto.setStanfordTooltip = function setStanfordTooltip() {
-    var config = this.$$.config;
-
+  }
+  setStanfordTooltip() {
+    const { config } = this.$$;
     if (isEmpty(config.tooltip_contents)) {
-      config.tooltip_contents = function (d, defaultTitleFormat, defaultValueFormat, color) {
-        var _this6 = this,
-            data_x = config.data_x,
-            html = "<table class=\"" + $TOOLTIP.tooltip + "\"><tbody>";
-
-        d.forEach(function (v) {
-          _newArrowCheck(this, _this6);
-
-          var _v$id = v.id,
-              id = _v$id === void 0 ? "" : _v$id,
-              _v$value = v.value,
-              value = _v$value === void 0 ? 0 : _v$value,
-              _v$epochs = v.epochs,
-              epochs = _v$epochs === void 0 ? 0 : _v$epochs,
-              _v$x = v.x,
-              x = _v$x === void 0 ? "" : _v$x;
-          html += "<tr>\n\t\t\t\t\t\t\t<th>" + (data_x || "") + "</th>\n\t\t\t\t\t\t\t<th class=\"value\">" + defaultTitleFormat(x) + "</th>\n\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t<tr>\n\t\t\t\t\t\t\t<th>" + v.id + "</th>\n\t\t\t\t\t\t\t<th class=\"value\">" + defaultValueFormat(value) + "</th>\n\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t<tr class=\"" + $TOOLTIP.tooltipName + "-" + id + "\">\n\t\t\t\t\t\t\t<td class=\"name\"><span style=\"background-color:" + color(v) + "\"></span>Epochs</td>\n\t\t\t\t\t\t\t<td class=\"value\">" + defaultValueFormat(epochs) + "</td>\n\t\t\t\t\t\t</tr>";
-        }.bind(this));
-        return html + "</tbody></table>";
+      config.tooltip_contents = function(d, defaultTitleFormat, defaultValueFormat, color) {
+        const { data_x } = config;
+        let html = `<table class="${$TOOLTIP.tooltip}"><tbody>`;
+        d.forEach((v) => {
+          const { id = "", value = 0, epochs = 0, x = "" } = v;
+          html += `<tr>
+							<th>${data_x || ""}</th>
+							<th class="value">${defaultTitleFormat(x)}</th>
+						</tr>
+						<tr>
+							<th>${v.id}</th>
+							<th class="value">${defaultValueFormat(value)}</th>
+						</tr>
+						<tr class="${$TOOLTIP.tooltipName}-${id}">
+							<td class="name"><span style="background-color:${color(v)}"></span>Epochs</td>
+							<td class="value">${defaultValueFormat(epochs)}</td>
+						</tr>`;
+        });
+        return `${html}</tbody></table>`;
       };
     }
-  };
-
-  _proto.countEpochsInRegion = function countEpochsInRegion(region) {
-    var _this7 = this,
-        $$ = this,
-        target = $$.data.targets[0],
-        total = target.values.reduce(function (accumulator, currentValue) {
-      _newArrowCheck(this, _this7);
-
-      return accumulator + +currentValue.epochs;
-    }.bind(this), 0),
-        value = target.values.reduce(function (accumulator, currentValue) {
-      _newArrowCheck(this, _this7);
-
+  }
+  countEpochsInRegion(region) {
+    const $$ = this;
+    const target = $$.data.targets[0];
+    const total = target.values.reduce(
+      (accumulator, currentValue) => accumulator + Number(currentValue.epochs),
+      0
+    );
+    const value = target.values.reduce((accumulator, currentValue) => {
       if (pointInRegion(currentValue, region)) {
-        return accumulator + +currentValue.epochs;
+        return accumulator + Number(currentValue.epochs);
       }
-
       return accumulator;
-    }.bind(this), 0);
-
+    }, 0);
     return {
-      value: value,
+      value,
       percentage: value !== 0 ? +(value / total * 100).toFixed(1) : 0
     };
-  };
-
-  return Stanford;
-}(Plugin);
-
+  }
+}
 
 }();
 __webpack_exports__ = __webpack_exports__["default"];
