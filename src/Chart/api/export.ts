@@ -10,6 +10,7 @@ import {
 	getCssRules,
 	isFunction,
 	mergeObj,
+	serializeCssText,
 	toArray
 } from "../../module/util";
 
@@ -47,6 +48,17 @@ const b64EncodeUnicode = (str: string): string =>
 				(match, p: number | string): string => String.fromCharCode(Number(`0x${p}`)))
 	);
 
+const excludedProperties = new Set([
+	"min-width",
+	"max-width",
+	"min-height",
+	"max-height",
+	"overflow",
+	"overflow-x",
+	"overflow-y",
+	"resize"
+]);
+
 /**
  * Convert svg node to data url
  * @param {HTMLElement} node target node
@@ -60,8 +72,9 @@ function nodeToSvgDataUrl(node, option: TExportOption, orgSize: TSize) {
 	const serializer = new XMLSerializer();
 	const clone = node.cloneNode(true);
 	const cssText = getCssRules(toArray(document.styleSheets))
-		.filter((r: CSSStyleRule) => r.cssText)
-		.map((r: CSSStyleRule) => r.cssText);
+		.map((r: CSSRule) => serializeCssText(r, excludedProperties))
+		.filter(r => r.length !== 0)
+		.join("\n");
 
 	clone.setAttribute("xmlns", d3Namespaces.xhtml);
 
@@ -81,7 +94,7 @@ function nodeToSvgDataUrl(node, option: TExportOption, orgSize: TSize) {
 	// escape css for XML
 	const style = document.createElement("style");
 
-	style.appendChild(document.createTextNode(cssText.join("\n")));
+	style.appendChild(document.createTextNode(cssText));
 
 	const styleXml = serializer.serializeToString(style);
 

@@ -65,6 +65,7 @@ export {
 	hasViewBox,
 	isTabVisible,
 	scheduleRAFUpdate,
+	serializeCssText,
 	setTextValue
 } from "./dom";
 
