@@ -58,6 +58,7 @@ export const {
 	parseShorthand,
 	runUntil,
 	sanitize,
+	serializeCssText,
 	scheduleRAFUpdate,
 	setTextValue,
 	sortValue,

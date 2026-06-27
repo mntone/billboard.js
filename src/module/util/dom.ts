@@ -231,6 +231,81 @@ function getCssRules(styleSheets: any[]) {
 	return rules;
 }
 
+const svgTagSelectors = new Set([
+	"svg",
+	"g",
+	"path",
+	"line",
+	"rect",
+	"circle",
+	"ellipse",
+	"polygon",
+	"polyline",
+	"text",
+	"tspan"
+]);
+
+/**
+ * Serializes a CSS style rule into CSS text while omitting specified properties.
+ * @param {CSSStyleRule} rule The CSS style rule to serialize.
+ * @param {ReadonlySet<string>} excludedProperties The CSS properties to omit from the serialized rule.
+ * @returns {string} The serialized CSS text.
+ * @private
+ */
+function _serializeCssStyleRule(rule: CSSStyleRule,
+	excludedProperties: ReadonlySet<string>): string {
+	const selector = rule.selectorText.trim();
+	if (!selector.includes(".bb") && !svgTagSelectors.has(selector)) {
+		return "";
+	}
+
+	const declarations = toArray(rule.style)
+		.filter(p => !excludedProperties.has(p))
+		.map(p => {
+			const priority = rule.style.getPropertyPriority(p);
+			return `${p}:${rule.style.getPropertyValue(p)}${priority ? ` !${priority}` : ""}`;
+		})
+		.join(";");
+	if (!declarations) {
+		return "";
+	}
+
+	return `${rule.selectorText}{${declarations}}`;
+}
+
+/**
+ * Serializes a CSS rule while excluding specified properties.
+ * @param {CSSRule} rule The CSS rule to serialize.
+ * @param {ReadonlySet<string>} excludedProperties The properties to exclude.
+ * @returns {string} The serialized CSS text.
+ * @private
+ */
+function serializeCssText(rule: CSSRule, excludedProperties: ReadonlySet<string>): string {
+	let cssText: string = "";
+
+	if (rule instanceof CSSStyleRule) {
+		cssText = _serializeCssStyleRule(rule, excludedProperties);
+	} else if (rule instanceof CSSMediaRule) {
+		const cssRuleText = toArray(rule.cssRules)
+			.map(r => serializeCssText(r, excludedProperties))
+			.join("");
+		if (cssRuleText) {
+			cssText = `@media ${rule.conditionText}{${cssRuleText}}`;
+		}
+	} else if (rule instanceof CSSSupportsRule) {
+		const cssRuleText = toArray(rule.cssRules)
+			.map(r => serializeCssText(r, excludedProperties))
+			.join("");
+		if (cssRuleText) {
+			cssText = `@supports ${rule.conditionText}{${cssRuleText}}`;
+		}
+	} else {
+		cssText = rule.cssText;
+	}
+
+	return cssText;
+}
+
 /**
  * Get current window and container scroll position
  * @param {HTMLElement} node Target element
@@ -512,5 +587,6 @@ export {
 	hasViewBox,
 	isTabVisible,
 	scheduleRAFUpdate,
+	serializeCssText,
 	setTextValue
 };
