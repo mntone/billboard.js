@@ -5,7 +5,7 @@
  * billboard.js, JavaScript chart library
  * https://naver.github.io/billboard.js/
  *
- * @version 4.0.1-nightly-20260626045144
+ * @version 4.0.1-nightly-20260627043620
  *
  * All-in-one packaged file for ease use of 'billboard.js' with dependant d3.js modules & polyfills.
  * - @types/d3-selection ^3.0.11
@@ -37071,6 +37071,52 @@ function getCssRules(styleSheets) {
   });
   return rules;
 }
+const svgTagSelectors = /* @__PURE__ */ new Set([
+  "svg",
+  "g",
+  "path",
+  "line",
+  "rect",
+  "circle",
+  "ellipse",
+  "polygon",
+  "polyline",
+  "text",
+  "tspan"
+]);
+function _serializeCssStyleRule(rule, excludedProperties) {
+  const selector = rule.selectorText.trim();
+  if (!selector.includes(".bb") && !svgTagSelectors.has(selector)) {
+    return "";
+  }
+  const declarations = toArray(rule.style).filter((p) => !excludedProperties.has(p)).map((p) => {
+    const priority = rule.style.getPropertyPriority(p);
+    return `${p}:${rule.style.getPropertyValue(p)}${priority ? ` !${priority}` : ""}`;
+  }).join(";");
+  if (!declarations) {
+    return "";
+  }
+  return `${rule.selectorText}{${declarations}}`;
+}
+function serializeCssText(rule, excludedProperties) {
+  let cssText = "";
+  if (rule instanceof CSSStyleRule) {
+    cssText = _serializeCssStyleRule(rule, excludedProperties);
+  } else if (rule instanceof CSSMediaRule) {
+    const cssRuleText = toArray(rule.cssRules).map((r) => serializeCssText(r, excludedProperties)).join("");
+    if (cssRuleText) {
+      cssText = `@media ${rule.conditionText}{${cssRuleText}}`;
+    }
+  } else if (rule instanceof CSSSupportsRule) {
+    const cssRuleText = toArray(rule.cssRules).map((r) => serializeCssText(r, excludedProperties)).join("");
+    if (cssRuleText) {
+      cssText = `@supports ${rule.conditionText}{${cssRuleText}}`;
+    }
+  } else {
+    cssText = rule.cssText;
+  }
+  return cssText;
+}
 function getScrollPosition(node) {
   var _a, _b, _c, _d, _e, _f;
   return {
@@ -50661,11 +50707,21 @@ const b64EncodeUnicode = (str) => {
     )
   );
 };
+const excludedProperties = /* @__PURE__ */ new Set([
+  "min-width",
+  "max-width",
+  "min-height",
+  "max-height",
+  "overflow",
+  "overflow-x",
+  "overflow-y",
+  "resize"
+]);
 function nodeToSvgDataUrl(node, option, orgSize) {
   const { width, height } = option || orgSize;
   const serializer = new XMLSerializer();
   const clone = node.cloneNode(true);
-  const cssText = getCssRules(toArray(browser_doc.styleSheets)).filter((r) => r.cssText).map((r) => r.cssText);
+  const cssText = getCssRules(toArray(browser_doc.styleSheets)).map((r) => serializeCssText(r, excludedProperties)).filter((r) => r.length !== 0).join("\n");
   clone.setAttribute("xmlns", namespaces.xhtml);
   clone.style.margin = "0";
   clone.style.padding = "0";
@@ -50676,7 +50732,7 @@ function nodeToSvgDataUrl(node, option, orgSize) {
   }
   const nodeXml = serializer.serializeToString(clone);
   const style = browser_doc.createElement("style");
-  style.appendChild(browser_doc.createTextNode(cssText.join("\n")));
+  style.appendChild(browser_doc.createTextNode(cssText));
   const styleXml = serializer.serializeToString(style);
   const dataStr = `<svg xmlns="${namespaces.svg}" width="${width}" height="${height}" 
 		viewBox="0 0 ${orgSize.width} ${orgSize.height}" 
@@ -65035,7 +65091,7 @@ const bb = {
    *    bb.version;  // "1.0.0"
    * @memberof bb
    */
-  version: "4.0.1-nightly-20260626045144",
+  version: "4.0.1-nightly-20260627043620",
   /**
    * Generate chart
    * - **NOTE:** Bear in mind for the possibility of ***throwing an error***, during the generation when:

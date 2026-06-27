@@ -5,7 +5,7 @@
  * billboard.js, JavaScript chart library
  * https://naver.github.io/billboard.js/
  *
- * @version 4.0.1-nightly-20260626045144
+ * @version 4.0.1-nightly-20260627043620
  * @requires billboard.js
  * @summary billboard.js plugin
  */
@@ -978,6 +978,52 @@ function getCssRules(styleSheets) {
   });
   return rules;
 }
+const svgTagSelectors = /* @__PURE__ */ new Set([
+  "svg",
+  "g",
+  "path",
+  "line",
+  "rect",
+  "circle",
+  "ellipse",
+  "polygon",
+  "polyline",
+  "text",
+  "tspan"
+]);
+function _serializeCssStyleRule(rule, excludedProperties) {
+  const selector = rule.selectorText.trim();
+  if (!selector.includes(".bb") && !svgTagSelectors.has(selector)) {
+    return "";
+  }
+  const declarations = toArray(rule.style).filter((p) => !excludedProperties.has(p)).map((p) => {
+    const priority = rule.style.getPropertyPriority(p);
+    return `${p}:${rule.style.getPropertyValue(p)}${priority ? ` !${priority}` : ""}`;
+  }).join(";");
+  if (!declarations) {
+    return "";
+  }
+  return `${rule.selectorText}{${declarations}}`;
+}
+function serializeCssText(rule, excludedProperties) {
+  let cssText = "";
+  if (rule instanceof CSSStyleRule) {
+    cssText = _serializeCssStyleRule(rule, excludedProperties);
+  } else if (rule instanceof CSSMediaRule) {
+    const cssRuleText = toArray(rule.cssRules).map((r) => serializeCssText(r, excludedProperties)).join("");
+    if (cssRuleText) {
+      cssText = `@media ${rule.conditionText}{${cssRuleText}}`;
+    }
+  } else if (rule instanceof CSSSupportsRule) {
+    const cssRuleText = toArray(rule.cssRules).map((r) => serializeCssText(r, excludedProperties)).join("");
+    if (cssRuleText) {
+      cssText = `@supports ${rule.conditionText}{${cssRuleText}}`;
+    }
+  } else {
+    cssText = rule.cssText;
+  }
+  return cssText;
+}
 function getScrollPosition(node) {
   var _a, _b, _c, _d, _e, _f;
   return {
@@ -1216,7 +1262,7 @@ class Plugin {
     });
   }
 }
-__publicField(Plugin, "version", "4.0.1-nightly-20260626045144");
+__publicField(Plugin, "version", "4.0.1-nightly-20260627043620");
 
 ;// ./src/Plugin/sparkline/Options.ts
 class Options {
