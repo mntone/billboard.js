@@ -237,8 +237,7 @@
 	empty-cells:show;
 	opacity: 0.9;
 	box-shadow: 7px 7px 12px -9px rgb(119,119,119);
-	user-select: none;
-	white-space: nowrap;
+		white-space: nowrap;
 
 	tr {
 		border:1px solid #CCC;
@@ -275,6 +274,9 @@
 .bb-area {
 	stroke-width: 0;
 	opacity: 0.2;
+}
+.bb-areas + .bb-lines > .bb-line {
+	shape-rendering: optimizeSpeed;
 }
 
 /*-- Arc --*/
