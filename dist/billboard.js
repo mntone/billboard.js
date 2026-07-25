@@ -5,7 +5,7 @@
  * billboard.js, JavaScript chart library
  * https://naver.github.io/billboard.js/
  *
- * @version 4.0.1-nightly-20260701050748
+ * @version 4.0.3-nightly-20260725035016
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -117,11 +117,26 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__12__;
 /************************************************************************/
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	!function() {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = function(exports, definition) {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};
@@ -161,19 +176,19 @@ __webpack_require__.d(__webpack_exports__, {
   "default": function() { return /* reexport */ bb; }
 });
 
-// NAMESPACE OBJECT: ./src/config/resolver/interaction/index.ts
-var resolver_interaction_namespaceObject = {};
-__webpack_require__.r(resolver_interaction_namespaceObject);
-__webpack_require__.d(resolver_interaction_namespaceObject, {
+// NAMESPACE OBJECT (decoupled): ./src/config/resolver/interaction/index.ts
+var interaction_namespaceObject = {};
+__webpack_require__.r(interaction_namespaceObject);
+__webpack_require__.d(interaction_namespaceObject, {
   selection: function() { return selectionModule; },
   subchart: function() { return subchartModule; },
   zoom: function() { return zoomModule; }
 });
 
-// NAMESPACE OBJECT: ./src/config/resolver/shape/index.ts
-var resolver_shape_namespaceObject = {};
-__webpack_require__.r(resolver_shape_namespaceObject);
-__webpack_require__.d(resolver_shape_namespaceObject, {
+// NAMESPACE OBJECT (decoupled): ./src/config/resolver/shape/index.ts
+var shape_namespaceObject = {};
+__webpack_require__.r(shape_namespaceObject);
+__webpack_require__.d(shape_namespaceObject, {
   area: function() { return area_area; },
   areaLineRange: function() { return areaLineRange; },
   areaSpline: function() { return areaSpline; },
@@ -11473,6 +11488,9 @@ const rangedDataKeyIndex = {
   areaRange: { high: 0, mid: 1, low: 2 },
   candlestick: { open: 0, high: 1, low: 2, close: 3, volume: 4 }
 };
+function normalizeTargetIds(targetIds) {
+  return isArray(targetIds) ? targetIds : [targetIds];
+}
 /* harmony default export */ var data_data = ({
   isX(key) {
     const $$ = this;
@@ -11909,8 +11927,7 @@ const rangedDataKeyIndex = {
    */
   addTargetIds(type, targetIds) {
     const { state } = this;
-    const ids = isArray(targetIds) ? targetIds : [targetIds];
-    ids.forEach((v) => state[type].add(v));
+    normalizeTargetIds(targetIds).forEach((v) => state[type].add(v));
   },
   /**
    * Remove from the state target Ids
@@ -11920,8 +11937,7 @@ const rangedDataKeyIndex = {
    */
   removeTargetIds(type, targetIds) {
     const { state } = this;
-    const ids = isArray(targetIds) ? targetIds : [targetIds];
-    ids.forEach((v) => state[type].delete(v));
+    normalizeTargetIds(targetIds).forEach((v) => state[type].delete(v));
   },
   addHiddenTargetIds(targetIds) {
     this.addTargetIds("hiddenTargetIds", targetIds);
@@ -12320,7 +12336,9 @@ const rangedDataKeyIndex = {
     const yIndex = +!isRotated;
     const y = $$.circleY(data, data.index);
     const x = (scale.zoom || scale.x)(data.x);
-    return Math.sqrt(Math.pow(x - pos[xIndex], 2) + Math.pow(y - pos[yIndex], 2));
+    const dx = x - pos[xIndex];
+    const dy = y - pos[yIndex];
+    return Math.sqrt(dx * dx + dy * dy);
   },
   /**
    * Convert data for step type
@@ -13178,8 +13196,9 @@ const schemeCategory10 = [
         const id = `${state.datetimeId}-labels-bg${$$.getTargetSelectorSuffix(v)}${isString(color) ? $$.getTargetSelectorSuffix(color) : ""}`;
         const colorValue = sanitize(v === "" ? color : (color == null ? void 0 : color[v]) || "");
         if (defs.select(`#${id}`).empty()) {
-          defs.append("filter").attr("x", attr.x).attr("y", attr.y).attr("width", attr.width).attr("height", attr.height).attr("id", id).html(`<feFlood flood-color="${colorValue}" />
-							<feComposite in="SourceGraphic" />`);
+          const filter = defs.append("filter").attr("x", attr.x).attr("y", attr.y).attr("width", attr.width).attr("height", attr.height).attr("id", id);
+          filter.append("feFlood").attr("flood-color", colorValue);
+          filter.append("feComposite").attr("in", "SourceGraphic");
         }
       });
     }
@@ -15830,7 +15849,7 @@ function batchGetBBox(elements) {
     const filteredTextNodes = textNodes.filter((node) => node.data.id !== id);
     const textNode = textNodes.filter((node) => node.data.id === id);
     const translate = getTranslation(textNode.node());
-    const calcHypo = (x, y) => Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    const calcHypo = (x, y) => Math.sqrt(x * x + y * y);
     textNode.node() && filteredTextNodes.each(function() {
       const coordinate = getTranslation(this);
       const filteredTextNode = (0,external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_.select)(this);
@@ -16564,6 +16583,23 @@ const RE_TOOLTIP_TPL = /{{(.*)}}/;
 ;// ./src/ChartInternal/internals/type.ts
 
 
+const INTERPOLATION_TYPES = /* @__PURE__ */ new Set([
+  "basis",
+  "basis-closed",
+  "basis-open",
+  "bundle",
+  "cardinal",
+  "cardinal-closed",
+  "cardinal-open",
+  "catmull-rom",
+  "catmull-rom-closed",
+  "catmull-rom-open",
+  "linear",
+  "linear-closed",
+  "monotone-x",
+  "monotone-y",
+  "natural"
+]);
 /* harmony default export */ var type = ({
   /**
    * Check if the given chart type is valid
@@ -16618,26 +16654,17 @@ const RE_TOOLTIP_TPL = /{{(.*)}}/;
     const { config, state: { current } } = $$;
     const types = config.data_types;
     const targets = targetsValue || $$.data.targets;
-    let has = false;
     if (!checkFromData && ((_a = current.types) == null ? void 0 : _a.indexOf(type)) > -1) {
-      has = true;
+      return true;
     } else if (targets == null ? void 0 : targets.length) {
-      targets.forEach((target) => {
+      return targets.some((target) => {
         const t = types[target.id];
-        if (t === type || !t && type === "line") {
-          has = true;
-        }
+        return t === type || !t && type === "line";
       });
     } else if (Object.keys(types).length) {
-      Object.keys(types).forEach((id) => {
-        if (types[id] === type) {
-          has = true;
-        }
-      });
-    } else {
-      has = config.data_type === type;
+      return Object.values(types).some((t) => t === type);
     }
-    return has;
+    return config.data_type === type;
   },
   /**
    * Check if contains given chart types
@@ -16760,25 +16787,8 @@ const RE_TOOLTIP_TPL = /{{(.*)}}/;
   barLineBubbleData(d) {
     return this.isBarType(d) || this.isLineType(d) || this.isBubbleType(d) ? d.values : [];
   },
-  // https://github.com/d3/d3-shape#curves
   isInterpolationType(type) {
-    return [
-      "basis",
-      "basis-closed",
-      "basis-open",
-      "bundle",
-      "cardinal",
-      "cardinal-closed",
-      "cardinal-open",
-      "catmull-rom",
-      "catmull-rom-closed",
-      "catmull-rom-open",
-      "linear",
-      "linear-closed",
-      "monotone-x",
-      "monotone-y",
-      "natural"
-    ].indexOf(type) >= 0;
+    return INTERPOLATION_TYPES.has(type);
   }
 });
 
@@ -17228,8 +17238,13 @@ function updateTargetsForShape(targets, config) {
     const y = $$.getShapeY(!!isSub);
     const areaOffset = $$.getShapeOffset($$.isAreaType, areaIndices, isSub);
     const yScale = $$.getYScaleById.bind($$);
+    const y0Cache = /* @__PURE__ */ new Map();
     return function(d, i) {
-      const y0 = yScale.call($$, d.id, isSub)($$.getShapeYMin(d.id));
+      let y0 = y0Cache.get(d.id);
+      if (y0 === void 0) {
+        y0 = yScale.call($$, d.id, isSub)($$.getShapeYMin(d.id));
+        y0Cache.set(d.id, y0);
+      }
       const offset = areaOffset(d, i) || y0;
       const posX = x(d);
       const value = d.value;
@@ -17262,12 +17277,20 @@ function updateTargetsForShape(targets, config) {
     const barY = $$.getShapeY(!!isSub);
     const barOffset = $$.getShapeOffset($$.isBarType, barIndices, !!isSub);
     const yScale = $$.getYScaleById.bind($$);
+    const idCache = /* @__PURE__ */ new Map();
     return (d, i) => {
       const { id } = d;
-      const y0 = yScale.call($$, id, isSub)($$.getShapeYMin(id));
+      let idInfo = idCache.get(id);
+      if (!idInfo) {
+        idInfo = {
+          y0: yScale.call($$, id, isSub)($$.getShapeYMin(id)),
+          isInverted: config[`axis_${$$.axis.getId(id)}_inverted`]
+        };
+        idCache.set(id, idInfo);
+      }
+      const { y0, isInverted } = idInfo;
       const offset = barOffset(d, i) || y0;
       const width = isNumber(barW) ? barW : barW[d.id] || barW._$width;
-      const isInverted = config[`axis_${$$.axis.getId(id)}_inverted`];
       const value = d.value;
       const posX = barX(d);
       let posY = barY(d);
@@ -18417,8 +18440,10 @@ function bindCanvasHtmlLegendInteractions($$, item) {
   }, touchOption);
   !isTouch && item.on("mouseover", interaction || isFunction(config.legend_item_onover) ? function(event, id) {
     if (!callFn(config.legend_item_onover, api, id, !state.hiddenTargetIds.has(id))) {
-      setCanvasHtmlLegendFocus($$, id);
-      !state.transiting && $$.isTargetToShow(id) && setCanvasLegendTargetFocus($$, id);
+      if (!state.transiting && $$.isTargetToShow(id)) {
+        setCanvasHtmlLegendFocus($$, id);
+        setCanvasLegendTargetFocus($$, id);
+      }
     }
   } : null).on("mouseout", interaction || isFunction(config.legend_item_onout) ? function(event, id) {
     if (!callFn(config.legend_item_onout, api, id, !state.hiddenTargetIds.has(id))) {
@@ -20900,14 +20925,17 @@ extend(api_data_data, {
     const $$ = this.internal;
     const { config, state, $el } = $$;
     const targetIds = $$.mapToTargetIds(targetIdsValue);
-    if (state.isCanvasMode) {
-      const changed = !!((_a = state.focusedTargetIds) == null ? void 0 : _a.size) || !!((_b = state.defocusedTargetIds) == null ? void 0 : _b.size);
+    const resetLegend = () => {
       if (config.legend_show) {
         $$.showLegend(targetIds.filter($$.isLegendToShow.bind($$)));
         $el.legend.selectAll($$.selectorLegends(targetIds)).filter(function() {
           return (0,external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_.select)(this).classed($FOCUS.legendItemFocused);
         }).classed($FOCUS.legendItemFocused, false);
       }
+    };
+    if (state.isCanvasMode) {
+      const changed = !!((_a = state.focusedTargetIds) == null ? void 0 : _a.size) || !!((_b = state.defocusedTargetIds) == null ? void 0 : _b.size);
+      resetLegend();
       state.focusedTargetIds = /* @__PURE__ */ new Set();
       state.defocusedTargetIds = /* @__PURE__ */ new Set();
       changed && ((_c = $$.renderCanvasFrame) == null ? void 0 : _c.call($$, void 0, null, false));
@@ -20916,12 +20944,7 @@ extend(api_data_data, {
     const candidates = $el.svg.selectAll($$.selectorTargets(targetIds));
     candidates.classed($FOCUS.focused, false).classed($FOCUS.defocused, false);
     $$.hasArcType(null, ["polar"]) && $$.unexpandArc(targetIds);
-    if (config.legend_show) {
-      $$.showLegend(targetIds.filter($$.isLegendToShow.bind($$)));
-      $el.legend.selectAll($$.selectorLegends(targetIds)).filter(function() {
-        return (0,external_commonjs_d3_selection_commonjs2_d3_selection_amd_d3_selection_root_d3_.select)(this).classed($FOCUS.legendItemFocused);
-      }).classed($FOCUS.legendItemFocused, false);
-    }
+    resetLegend();
     state.focusedTargetIds = /* @__PURE__ */ new Set();
     state.defocusedTargetIds = /* @__PURE__ */ new Set();
   }
@@ -25205,7 +25228,7 @@ function _getStrokeDashArray(start, end, pattern, isLastX = false) {
         if (hasNullDataValue) {
           const dx = x(data.x) - x(prevData.x);
           const dy = y(data.value) - y(prevData.value);
-          const dd = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+          const dd = Math.sqrt(dx * dx + dy * dy);
           diff = style[0] / dd;
           diffx2 = diff * style[1];
           for (let j = diff; j <= 1; j += diffx2) {
@@ -25361,11 +25384,22 @@ function getPointBBox(node) {
       });
       circles.exit().remove();
       const pointR = $$.pointR.bind($$);
-      const updateCircleColor = $$.updateCircleColor.bind($$);
+      const updateCircleColor = $$.generateUpdateCircleColor();
       const initialOpacityForCircle = $$.initialOpacityForCircle.bind($$);
       circles.enter().filter(Boolean).append($$.point("create", this, pointR, updateCircleColor));
       $root.circle = $root.main.selectAll(`.${$CIRCLE.circles} .${$CIRCLE.circle}`).style("stroke", $$.getStylePropValue($$.color)).style("opacity", initialOpacityForCircle);
     }
+  },
+  /**
+   * Generate circle color accessor, hoisting the bound color function
+   * to be created once per call (not per datum)
+   * @returns {function} Color accessor
+   * @private
+   */
+  generateUpdateCircleColor() {
+    const $$ = this;
+    const fn = $$.getStylePropValue($$.color);
+    return (d) => $$.config.point_radialGradient ? $$.getGradienColortUrl(d.id) : fn ? fn(d) : null;
   },
   /**
    * Update circle color
@@ -25374,9 +25408,7 @@ function getPointBBox(node) {
    * @private
    */
   updateCircleColor(d) {
-    const $$ = this;
-    const fn = $$.getStylePropValue($$.color);
-    return $$.config.point_radialGradient ? $$.getGradienColortUrl(d.id) : fn ? fn(d) : null;
+    return this.generateUpdateCircleColor()(d);
   },
   redrawCircle(cx, cy, withTransition, flow, isSub = false) {
     const $$ = this;
@@ -25389,6 +25421,7 @@ function getPointBBox(node) {
     const posAttr = $$.isCirclePoint() ? "c" : "";
     const t = getRandom();
     const opacityStyleFn = $$.opacityForCircle.bind($$);
+    const updateCircleColor = $$.generateUpdateCircleColor();
     if ($$.isCirclePoint()) {
       const sel = $root.circle;
       if ($$.hasType("bubble")) {
@@ -25398,12 +25431,12 @@ function getPointBBox(node) {
         flow && sel.attr("cx", cx);
         $T(sel.filter(function() {
           return !!this.getAttribute("cx");
-        }), true, `${t}-pos`).attr("cx", cx).attr("cy", cy).style("fill", $$.updateCircleColor.bind($$));
+        }), true, `${t}-pos`).attr("cx", cx).attr("cy", cy).style("fill", updateCircleColor);
         sel.filter(function() {
           return !this.getAttribute("cx");
-        }).attr("cx", cx).attr("cy", cy).style("fill", $$.updateCircleColor.bind($$));
+        }).attr("cx", cx).attr("cy", cy).style("fill", updateCircleColor);
       } else {
-        sel.attr("cx", cx).attr("cy", cy).style("fill", $$.updateCircleColor.bind($$));
+        sel.attr("cx", cx).attr("cy", cy).style("fill", updateCircleColor);
       }
       const result = $T(sel, withTransition || !rendered, t).style("opacity", opacityStyleFn);
       return [
@@ -25416,7 +25449,7 @@ function getPointBBox(node) {
       $$,
       cx,
       cy,
-      $$.updateCircleColor.bind($$),
+      updateCircleColor,
       withTransition,
       flow,
       selectedCircles
@@ -25532,9 +25565,9 @@ function getPointBBox(node) {
       cx = x;
       cy = y;
     }
-    return Math.sqrt(
-      Math.pow(cx - mouse[0], 2) + Math.pow(cy - mouse[1], 2)
-    ) < (r || pointSensitivity);
+    const dx = cx - mouse[0];
+    const dy = cy - mouse[1];
+    return Math.sqrt(dx * dx + dy * dy) < (r || pointSensitivity);
   },
   updatePointClass(d) {
     const $$ = this;
@@ -28123,9 +28156,9 @@ var __pow = Math.pow;
    * @private
    */
   selectRectForSingle(context, index) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const $$ = this;
-    const { config, $el: { main, circle } } = $$;
+    const { config, state, $el: { main, circle } } = $$;
     const isSelectionEnabled = config.data_selection_enabled;
     const isSelectionGrouped = config.data_selection_grouped;
     const isSelectable = config.data_selection_isselectable;
@@ -28145,11 +28178,6 @@ var __pow = Math.pow;
     const shapeAtIndex = main.selectAll(`.${$SHAPE.shape}-${index}`).classed($COMMON.EXPANDED, true).style("cursor", isSelectable ? "pointer" : null).filter(function(d) {
       return $$.isWithinShape(this, d);
     });
-    if (shapeAtIndex.empty() && !isTooltipGrouped && config.interaction_onout) {
-      (_b = $$.hideGridFocus) == null ? void 0 : _b.call($$);
-      $$.hideTooltip();
-      !isSelectionGrouped && $$.setExpand(index);
-    }
     shapeAtIndex.call((selected) => {
       var _a2, _b2;
       const d = selected.data();
@@ -28163,6 +28191,39 @@ var __pow = Math.pow;
         selected.each((d2) => $$.setExpand(index, d2.id));
       }
     });
+    if (!isTooltipGrouped && shapeAtIndex.empty()) {
+      const mouse = getPointer(state.event, context);
+      const closestData = selectedData.filter((d) => {
+        if ($$.isTargetToShow(d.id)) {
+          const dist = $$.dist(d, mouse);
+          return dist < $$.getPointSensitivity(d);
+        }
+        return false;
+      });
+      if (closestData.length > 0) {
+        let closest = closestData[0];
+        let minDist = $$.dist(closest, mouse);
+        for (let i = 1; i < closestData.length; i++) {
+          const d = closestData[i];
+          const dist = $$.dist(d, mouse);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = d;
+          }
+        }
+        $$.showTooltip([closest], context);
+        (_b = $$.showGridFocus) == null ? void 0 : _b.call($$, [closest]);
+        (_c = $$.unexpandCircles) == null ? void 0 : _c.call($$);
+        $$.setExpand(index, closest.id, true);
+        if (isSelectionEnabled && (isSelectionGrouped || (isSelectable == null ? void 0 : isSelectable.bind($$.api)(closest)))) {
+          context.style.cursor = "pointer";
+        }
+      } else if (config.interaction_onout) {
+        (_d = $$.hideGridFocus) == null ? void 0 : _d.call($$);
+        $$.hideTooltip();
+        !isSelectionGrouped && $$.setExpand(index);
+      }
+    }
   },
   /**
    * Select rect for multiple x values
@@ -30741,8 +30802,19 @@ function _getConnectLineType(id) {
     config.bar_linearGradient && $$.updateLinearGradient();
     const bar = $root.main.selectAll(`.${$BAR.bars}`).selectAll(`.${$BAR.bar}`).data($$.labelishData.bind($$));
     $T(bar.exit(), withTransition).style("opacity", "0").remove();
-    $root.bar = bar.enter().append("path").attr("class", classBar).style("fill", $$.updateBarColor.bind($$)).merge(bar).style("opacity", initialOpacity);
+    $root.bar = bar.enter().append("path").attr("class", classBar).style("fill", $$.generateUpdateBarColor()).merge(bar).style("opacity", initialOpacity);
     $$.setRatioForGroupedData($root.bar.data());
+  },
+  /**
+   * Generate bar color accessor, hoisting the bound color function
+   * to be created once per call (not per datum)
+   * @returns {function} Color accessor
+   * @private
+   */
+  generateUpdateBarColor() {
+    const $$ = this;
+    const fn = $$.getStylePropValue($$.color) || (() => null);
+    return (d) => getShapeColorWithGradient.call($$, d, "bar_linearGradient", fn);
   },
   /**
    * Update bar color
@@ -30751,9 +30823,7 @@ function _getConnectLineType(id) {
    * @private
    */
   updateBarColor(d) {
-    const $$ = this;
-    const fn = $$.getStylePropValue($$.color);
-    return getShapeColorWithGradient.call($$, d, "bar_linearGradient", fn || (() => null));
+    return this.generateUpdateBarColor()(d);
   },
   /**
    * Redraw function
@@ -30792,7 +30862,7 @@ function _getConnectLineType(id) {
           barPath.splice(0);
         }
         return path[0];
-      }).style("fill", $$.updateBarColor.bind($$)).style("clip-path", (d) => d.clipPath).style("opacity", null)
+      }).style("fill", $$.generateUpdateBarColor()).style("clip-path", (d) => d.clipPath).style("opacity", null)
     ];
   },
   /**
@@ -30821,6 +30891,7 @@ function _getConnectLineType(id) {
     const getPoints = $$.generateGetBarPoints(barIndices, isSub);
     const getRadius = getBarRadiusResolver($$);
     const stackingRadiusSet = getRadius ? getStackingBarRadiusSet($$) : /* @__PURE__ */ new Set();
+    const connectLineCache = /* @__PURE__ */ new Map();
     return (d, i) => {
       const points = getPoints(d, i);
       const {
@@ -30848,7 +30919,12 @@ function _getConnectLineType(id) {
       }
       const path = config.axis_rotated ? `H${pos} ${pathRadius[0]}V${points[2][indexY] - radius} ${pathRadius[1]}H${points[3][indexX]}` : `V${pos} ${pathRadius[0]}H${points[2][indexX] - radius} ${pathRadius[1]}V${points[3][indexY]}`;
       const coords = [`M${points[0][indexX]},${points[0][indexY]}${path}z`];
-      if (_getConnectLineType.call($$, d.id)) {
+      let connectLineType = connectLineCache.get(d.id);
+      if (connectLineType === void 0) {
+        connectLineType = _getConnectLineType.call($$, d.id);
+        connectLineCache.set(d.id, connectLineType);
+      }
+      if (connectLineType) {
         coords.push(config.axis_rotated ? {
           x: points[0][indexX],
           y: points[0][indexY],
@@ -34756,7 +34832,7 @@ const bb = {
    *    bb.version;  // "1.0.0"
    * @memberof bb
    */
-  version: "4.0.1-nightly-20260701050748",
+  version: "4.0.3-nightly-20260725035016",
   /**
    * Generate chart
    * - **NOTE:** Bear in mind for the possibility of ***throwing an error***, during the generation when:
@@ -34960,8 +35036,8 @@ const bb = {
 
 
 
-Object.keys(resolver_shape_namespaceObject).forEach((v) => resolver_shape_namespaceObject[v]());
-Object.keys(resolver_interaction_namespaceObject).forEach((v) => resolver_interaction_namespaceObject[v]());
+Object.keys(shape_namespaceObject).forEach((v) => shape_namespaceObject[v]());
+Object.keys(interaction_namespaceObject).forEach((v) => interaction_namespaceObject[v]());
 exportApi();
 flow_flow();
 grid_grid();

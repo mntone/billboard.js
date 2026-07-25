@@ -5,7 +5,7 @@
  * billboard.js, JavaScript chart library
  * https://naver.github.io/billboard.js/
  *
- * @version 4.0.1-nightly-20260701050748
+ * @version 4.0.3-nightly-20260725035016
  */
 /*-- Chart --*/
 .bb svg {
@@ -268,7 +268,6 @@ button.bb-legend-item.bb-legend-item-interactive {
   empty-cells: show;
   opacity: 0.9;
   box-shadow: 7px 7px 12px -9px rgb(119, 119, 119);
-  user-select: none;
   white-space: nowrap;
 }
 .bb-tooltip tr {
@@ -301,6 +300,10 @@ button.bb-legend-item.bb-legend-item-interactive {
 .bb-area {
   stroke-width: 0;
   opacity: 0.2;
+}
+
+.bb-areas + .bb-lines > .bb-line {
+  shape-rendering: optimizeSpeed;
 }
 
 /*-- Arc --*/
